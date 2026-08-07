@@ -145,7 +145,7 @@ export default function QuickView() {
                     <a
                       className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
                       onClick={() =>
-                        addProductToCart(quickViewItem.id, quantity)
+                        addProductToCart(quickViewItem, quantity)
                       }
                     >
                       <span>

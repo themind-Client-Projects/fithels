@@ -16,14 +16,15 @@ export default {
     signIn: "/",
   },
   callbacks: {
-    jwt({ token, user, trigger, session }) {
+    jwt({ token, user }) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role ?? "CUSTOMER"
       }
-      if (trigger === "update" && session?.role) {
-        token.role = session.role
-      }
+      // NOTE: the role is deliberately NOT refreshable via `useSession().update()`.
+      // That payload is fully client-controlled, so honouring it here would let any
+      // signed-in user grant themselves ADMIN. Routes that need an authoritative
+      // role must read it from the database via `getAuthUser()` (lib/auth-utils.ts).
       return token
     },
     session({ session, token }) {

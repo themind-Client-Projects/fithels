@@ -1,40 +1,18 @@
-import Footer1 from "@/components/footers/Footer1";
-import Header1 from "@/components/headers/Header1";
-import Topbar from "@/components/headers/Topbar";
-import BannerCollection from "@/components/homes/home-1/BannerCollection";
-import Features from "@/components/common/Features";
-import Hero from "@/components/homes/home-1/Hero";
-import Catalog from "@/components/homes/home-1/Catalog";
-import Products from "@/components/common/Products3";
-import Showcase from "@/components/homes/home-1/Showcase";
+import { redirect } from "next/navigation";
+import { routing } from "@/i18n/routing";
 
-export const metadata = {
-  title: "Home || Fit Women Heels - Multipurpose React Nextjs eCommerce Template",
-  description: "Fit Women Heels - Multipurpose React Nextjs eCommerce Template",
-};
-
-export default function HomePage() {
-  return (
-    <>
-      <Topbar />
-      <Header1 />
-      <Hero />
-
-      <Catalog
-        leftImage="/images/banner/catalog2-left.png"
-        rightImage="/images/banner/catalog2-right.png"
-        leftAlt="Evening Collection"
-        rightAlt="Luxury Heels Selection"
-        leftLabel="EVENING ELEGANCE"
-        rightLabel="LUXURY PICKS"
-        leftCta="Discover →"
-        rightCta="View All →"
-      />
-      <Showcase />
-      <Products />
-      <BannerCollection />
-      <Features />
-      <Footer1 />
-    </>
-  );
+/**
+ * The unlocalised `/` route.
+ *
+ * In practice the next-intl middleware already rewrites `/` to `/<defaultLocale>`
+ * before this ever renders. It still has to exist as a valid page though: the
+ * previous version rendered the full storefront here, and because this segment
+ * sits outside `app/[locale]` there is no `NextIntlClientProvider` above it — so
+ * every `useTranslations()` call inside those components threw and the
+ * production build failed while prerendering `/`.
+ *
+ * Redirecting keeps the observable behaviour identical and lets the build pass.
+ */
+export default function RootPage() {
+  redirect(`/${routing.defaultLocale}`);
 }

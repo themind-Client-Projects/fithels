@@ -19,7 +19,9 @@ export default function Context({ children }) {
   const [totalPrice, setTotalPrice] = useState(0);
   useEffect(() => {
     const subtotal = cartProducts.reduce((accumulator, product) => {
-      return accumulator + product.quantity * product.price;
+      const price = Number(product?.price) || 0;
+      const quantity = Number(product?.quantity) || 0;
+      return accumulator + quantity * price;
     }, 0);
     setTotalPrice(subtotal);
   }, [cartProducts]);
@@ -30,16 +32,31 @@ export default function Context({ children }) {
     }
     return false;
   };
-  const addProductToCart = (id, qty, isModal = true) => {
-    if (!isAddedToCartProducts(id)) {
-      const item = {
-        ...allProducts.filter((elm) => elm.id == id)[0],
-        quantity: qty ? qty : 1,
-      };
-      setCartProducts((pre) => [...pre, item]);
-      if (isModal) {
-        openCartModal();
-      }
+  const addProductToCart = (productOrId, qty, isModal = true) => {
+    // Accepts either a full product object (database-backed pages) or a bare id
+    // (legacy template components that resolve against the static fixture).
+    //
+    // Passing only an id used to be the single code path, but database products
+    // carry a slug as their `id` while the fixture uses numbers — so the lookup
+    // returned `undefined` and `{...undefined}` silently pushed a priceless,
+    // idless `{quantity: 1}` object into the cart (making totalPrice NaN).
+    const isProductObject =
+      productOrId !== null && typeof productOrId === "object";
+    const id = isProductObject ? productOrId.id : productOrId;
+
+    if (isAddedToCartProducts(id)) return;
+
+    const source = isProductObject
+      ? productOrId
+      : allProducts.filter((elm) => elm.id == id)[0];
+
+    // Never add an unresolvable item — a broken entry corrupts the whole cart.
+    if (!source) return;
+
+    const item = { ...source, quantity: qty ? qty : 1 };
+    setCartProducts((pre) => [...pre, item]);
+    if (isModal) {
+      openCartModal();
     }
   };
 
@@ -92,7 +109,15 @@ export default function Context({ children }) {
   useEffect(() => {
     const items = JSON.parse(localStorage.getItem("cartList"));
     if (items?.length) {
-      setCartProducts(items);
+      // Drop entries saved by the older broken add-to-cart path. Those have no
+      // id and no price, and would otherwise keep the subtotal at NaN and crash
+      // the cart page on `<Image src={undefined}>` forever after.
+      const validItems = items.filter(
+        (item) => item && item.id !== undefined && item.price !== undefined
+      );
+      if (validItems.length) {
+        setCartProducts(validItems);
+      }
     }
   }, []);
 

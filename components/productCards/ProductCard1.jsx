@@ -234,7 +234,7 @@ export default function ProductCard1({
           ) : (
             <a
               className="btn-main-product"
-              onClick={() => addProductToCart(product.id)}
+              onClick={() => addProductToCart(product)}
             >
               {isAddedToCartProducts(product.id)
                 ? "Already Added"

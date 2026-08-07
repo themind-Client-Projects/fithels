@@ -1,8 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getAuthUser } from "@/lib/auth-utils";
+
+/**
+ * Allowed image types. The extension is derived from this map rather than from
+ * the client-supplied filename, so a crafted `file.name` cannot influence the
+ * object key or the served content type.
+ */
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(request: NextRequest) {
   try {
+    // This endpoint writes to public storage — admins only.
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -10,19 +35,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const ext = ALLOWED_TYPES[file.type];
+    if (!ext) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Allowed: JPEG, PNG, WebP, GIF, AVIF." },
+        { status: 415 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File is too large. Maximum size is 5MB." },
+        { status: 413 }
+      );
+    }
+
     const bucketId = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "fit";
 
     // Generate unique file name
     const timestamp = Date.now();
-    const ext = file.name.split(".").pop();
     const fileName = `${timestamp}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucketId)
       .upload(fileName, file, {
         cacheControl: "3600",
         upsert: false,
+        contentType: file.type,
       });
 
     if (error) {

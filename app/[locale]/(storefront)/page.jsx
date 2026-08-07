@@ -41,6 +41,9 @@ export default async function HomePage({ params }) {
 
     return {
       id: p.slug,
+      // Real database id — checkout sends this as `productId`. Without it, items
+      // added from the home page reach /api/orders with a slug and get rejected.
+      dbId: p.id,
       title: locale === "ar" ? p.titleAr : p.titleEn,
       price: currentPrice,
       oldPrice: originalPrice,
