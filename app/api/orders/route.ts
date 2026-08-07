@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 
+/**
+ * Raised inside the order transaction when a conditional stock decrement
+ * matches no rows — i.e. another checkout claimed the last units first.
+ * Thrown (rather than returned) so the surrounding transaction rolls back.
+ */
+class InsufficientStockError extends Error {
+  constructor(public readonly productId: string) {
+    super(`Insufficient stock for product ${productId}`)
+    this.name = 'InsufficientStockError'
+  }
+}
+
 // GET /api/orders - List orders (role-based)
 // ADMIN/EMPLOYEE: all orders | CUSTOMER: own orders only
 export async function GET() {
@@ -137,12 +149,22 @@ export async function POST(request: NextRequest) {
 
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Decrement stock for each product
+      // Decrement stock for each product.
+      //
+      // The availability check above runs before the transaction opens, so two
+      // concurrent checkouts on the last unit would both pass it. Guarding the
+      // update on `stock >= quantity` makes the decrement itself atomic: the
+      // loser matches 0 rows and we abort the whole transaction rather than
+      // driving stock negative.
       for (const item of orderItemsData) {
-        await tx.product.update({
-          where: { id: item.productId },
+        const claimed = await tx.product.updateMany({
+          where: { id: item.productId, stock: { gte: item.quantity } },
           data: { stock: { decrement: item.quantity } },
         })
+
+        if (claimed.count === 0) {
+          throw new InsufficientStockError(item.productId)
+        }
       }
 
       // Create the order
@@ -188,6 +210,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
+    // Losing a stock race is a client-visible condition, not a server fault.
+    if (error instanceof InsufficientStockError) {
+      return NextResponse.json(
+        { error: 'One of the items just went out of stock. Please review your cart.' },
+        { status: 409 }
+      )
+    }
+
     console.error('Error creating order:', error)
     return NextResponse.json(
       { error: 'Failed to create order' },

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/auth-utils";
 
 export async function PUT(request, { params }) {
   try {
-    const session = await auth();
-    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "EMPLOYEE")) {
+    const user = await getAuthUser();
+    if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const data = await request.json();
 
     const updatedBanner = await prisma.banner.update({
@@ -35,12 +35,12 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const session = await auth();
-    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "EMPLOYEE")) {
+    const user = await getAuthUser();
+    if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     await prisma.banner.delete({
       where: { id },
     });

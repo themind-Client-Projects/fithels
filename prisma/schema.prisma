@@ -22,6 +22,8 @@ model User {
   sessions      Session[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([role])
 }
 
 model Account {
@@ -41,6 +43,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -49,6 +52,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -80,6 +85,10 @@ model Product {
   orderItems OrderItem[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([createdAt])
 }
 
 model Category {
@@ -112,6 +121,11 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Customer order history is always "my orders, newest first".
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -124,6 +138,9 @@ model OrderItem {
   price     Float
   size      String?
   color     String?
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 enum Role {

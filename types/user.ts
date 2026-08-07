@@ -1,8 +1,8 @@
-export type UserRole = "CUSTOMER" | "ADMIN";
+// Mirrors the `Role` enum in prisma/schema.prisma.
+export type UserRole = "CUSTOMER" | "EMPLOYEE" | "ADMIN";
 
 export interface User {
   id: string;
-  clerkId: string;
   email: string;
   name: string | null;
   phone: string | null;

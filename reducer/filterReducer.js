@@ -1,5 +1,3 @@
-import { productMain } from "@/data/products";
-
 export const initialState = {
   price: [0, 1000],
 

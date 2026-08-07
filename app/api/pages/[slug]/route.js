@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/auth-utils";
 
 export async function GET(request, { params }) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     const page = await prisma.pageContent.findUnique({
       where: { slug },
     });
@@ -20,12 +20,12 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const session = await auth();
-    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "EMPLOYEE")) {
+    const user = await getAuthUser();
+    if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = params;
+    const { slug } = await params;
     const data = await request.json();
 
     const updatedPage = await prisma.pageContent.update({

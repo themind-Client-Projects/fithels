@@ -5095,4 +5095,7 @@ const returnLastid = () => {
   return id;
 };
 
-console.log(returnLastid());
+// Kept for reference when adding fixture products by hand. Previously this was
+// called at module scope, so importing this file printed a stray id during
+// every build and on every client that loaded the bundle.
+export { returnLastid };
