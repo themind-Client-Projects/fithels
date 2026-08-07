@@ -1,0 +1,23 @@
+{
+  "title": "المتجر",
+  "products": "المنتجات",
+  "price": "السعر",
+  "quantity": "الكمية",
+  "total": "المجموع",
+  "subtotal": "المجموع الفرعي",
+  "shoppingCart": "سلة التسوق",
+  "emptyCart": "سلتك فارغة",
+  "emptyCartDesc": "ابدأ بإضافة منتجاتك المفضلة!",
+  "exploreProducts": "تصفح المنتجات",
+  "continueShopping": "مواصلة التسوق",
+  "orContinueShopping": "أو واصل التسوق",
+  "orderSummary": "ملخص الطلب",
+  "paymentMethod": "طريقة الدفع",
+  "cashOnDelivery": "الدفع عند الاستلام",
+  "placeOrder": "تأكيد الطلب",
+  "homepage": "الصفحة الرئيسية",
+  "women": "نسائي",
+  "viewCart": "عرض السلة",
+  "totalPrice": "المجموع الكلي",
+  "remove": "إزالة"
+}

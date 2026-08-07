@@ -1,0 +1,17 @@
+{
+  "home": "Home",
+  "shop": "Shop",
+  "about": "About",
+  "contact": "Contact",
+  "cart": "Cart",
+  "checkout": "Checkout",
+  "login": "Login",
+  "register": "Register",
+  "account": "My Account",
+  "orders": "Orders",
+  "settings": "Settings",
+  "ourStore": "Our Store",
+  "support": "Support",
+  "noAccount": "Don't have an account?",
+  "signOut": "Sign Out"
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Shop",
+  "products": "Products",
+  "price": "Price",
+  "quantity": "Quantity",
+  "total": "Total",
+  "subtotal": "Subtotal",
+  "shoppingCart": "Shopping Cart",
+  "emptyCart": "Your cart is empty",
+  "emptyCartDesc": "Start adding your favorite products!",
+  "exploreProducts": "Explore Products",
+  "continueShopping": "Continue Shopping",
+  "orContinueShopping": "Or continue shopping",
+  "orderSummary": "Order Summary",
+  "paymentMethod": "Payment Method",
+  "cashOnDelivery": "Cash on Delivery",
+  "placeOrder": "Place Order",
+  "homepage": "Homepage",
+  "women": "Women",
+  "viewCart": "View Cart",
+  "totalPrice": "Total Price",
+  "remove": "Remove"
+}

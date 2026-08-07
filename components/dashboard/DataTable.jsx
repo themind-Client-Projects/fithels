@@ -1,0 +1,220 @@
+"use client";
+
+import React, { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
+
+/**
+ * Highly optimized, reusable DataTable component.
+ * Features: Client-side pagination, Global Search, Custom Column Search, Status Filtering.
+ */
+export default function DataTable({ 
+  columns, 
+  data, 
+  searchKey, // the column key to search against, e.g., "id" or "user.name". If not provided, search is hidden.
+  searchPlaceholder = "البحث...",
+  filterKey, // the column key to filter against, e.g., "status"
+  filterOptions, // Array of { label: string, value: string }
+  filterPlaceholder = "تصفية",
+  itemsPerPage = 10,
+  onRowClick, // Function: (row) => void
+}) {
+  const t = useTranslations("Dashboard");
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterValue, setFilterValue] = useState("ALL");
+
+  // Deep object value getter (e.g., "user.name" from { user: { name: "Ahmed" } })
+  const getNestedValue = (obj, path) => {
+    if (!path) return "";
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  };
+
+  // Memoized Filtering and Searching
+  const filteredData = useMemo(() => {
+    let processed = [...data];
+
+    // 1. Apply Search
+    if (searchKey && searchQuery.trim() !== "") {
+      const lowerQuery = searchQuery.toLowerCase();
+      const searchKeys = Array.isArray(searchKey) ? searchKey : [searchKey];
+      processed = processed.filter((item) => {
+        return searchKeys.some((key) => {
+          const val = getNestedValue(item, key);
+          if (typeof val === "string") return val.toLowerCase().includes(lowerQuery);
+          if (typeof val === "number") return val.toString().includes(lowerQuery);
+          return false;
+        });
+      });
+    }
+
+    // 2. Apply Dropdown Filter
+    if (filterKey && filterValue !== "ALL") {
+      processed = processed.filter((item) => {
+        const val = getNestedValue(item, filterKey);
+        return val === filterValue;
+      });
+    }
+
+    return processed;
+  }, [data, searchKey, searchQuery, filterKey, filterValue]);
+
+  // Pagination Logic
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  // Ensure current page is valid after filtering
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(totalPages);
+  }
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredData.slice(startIndex, endIndex);
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      {/* Controls: Search and Filter */}
+      {(searchKey || filterOptions) && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {searchKey && (
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // reset to page 1 on search
+                }}
+                className="pl-3 pr-9"
+                style={{ paddingRight: "2.5rem" }}
+              />
+            </div>
+          )}
+
+          {filterOptions && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground hidden sm:block" />
+              <Select 
+                value={filterValue} 
+                onValueChange={(val) => {
+                  setFilterValue(val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder={filterPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">الكل (ALL)</SelectItem>
+                  {filterOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Table Structure */}
+      <div className="rounded-xl border border-border/60 bg-white overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent">
+                {columns.map((col, index) => (
+                  <TableHead key={index} className="whitespace-nowrap text-sm !px-8 !py-5 text-start font-bold">
+                    {col.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentData.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-32 text-center"
+                  >
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <Search className="h-8 w-8 mb-2 opacity-20" />
+                      <p>{t("noResults")}</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentData.map((row, rowIndex) => (
+                  <TableRow 
+                    key={rowIndex} 
+                    className={`transition-colors hover:bg-muted/40 ${onRowClick ? "cursor-pointer" : ""}`}
+                    onClick={() => onRowClick && onRowClick(row)}
+                  >
+                    {columns.map((col, colIndex) => (
+                      <TableCell key={colIndex} className="whitespace-nowrap !px-8 !py-6 text-start align-middle">
+                        {col.cell ? col.cell({ row }) : getNestedValue(row, col.accessorKey)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-sm text-muted-foreground">
+            إظهار {startIndex + 1} إلى {Math.min(endIndex, totalItems)} من أصل {totalItems} مدخل
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" /> {/* ChevronRight points back in RTL */}
+            </Button>
+            <span className="text-sm font-medium mx-2">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" /> {/* ChevronLeft points forward in RTL */}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

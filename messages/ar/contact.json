@@ -1,0 +1,20 @@
+{
+  "getInTouch": "ابق على تواصل",
+  "getInTouchDesc": "استخدم النموذج أدناه للتواصل مع فريق المبيعات",
+  "successMsg": "لقد قمت بالاشتراك بنجاح.",
+  "errorMsg": "حدث خطأ ما",
+  "namePlaceholder": "الاسم*",
+  "emailPlaceholder": "البريد الإلكتروني*",
+  "messagePlaceholder": "رسالتك*",
+  "submitBtn": "إرسال رسالة",
+  "info": "المعلومات",
+  "phoneTitle": "الهاتف:",
+  "phoneDesc": "+1 666 234 8888",
+  "emailTitle": "البريد الإلكتروني:",
+  "emailDesc": "themesflat@gmail.com",
+  "addressTitle": "العنوان:",
+  "addressDesc": "2163 Phillips Gap Rd, West Jefferson, North Carolina, United States",
+  "openTimeTitle": "أوقات العمل:",
+  "openTimeDesc1": "من الاثنين إلى السبت: 7:30 صباحًا - 8:00 مساءً",
+  "openTimeDesc2": "الأحد: 9:00 صباحًا - 5:00 مساءً"
+}

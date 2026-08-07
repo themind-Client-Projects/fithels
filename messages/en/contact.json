@@ -1,0 +1,20 @@
+{
+  "getInTouch": "Get In Touch",
+  "getInTouchDesc": "Use the form below to get in touch with the sales team",
+  "successMsg": "You have successfully subscribed.",
+  "errorMsg": "Something went wrong",
+  "namePlaceholder": "Your Name*",
+  "emailPlaceholder": "Your Email*",
+  "messagePlaceholder": "Your Message*",
+  "submitBtn": "Send message",
+  "info": "Information",
+  "phoneTitle": "Phone:",
+  "phoneDesc": "+1 666 234 8888",
+  "emailTitle": "Email:",
+  "emailDesc": "themesflat@gmail.com",
+  "addressTitle": "Address:",
+  "addressDesc": "2163 Phillips Gap Rd, West Jefferson, North Carolina, United States",
+  "openTimeTitle": "Open Time:",
+  "openTimeDesc1": "Mon - Sat: 7:30am - 8:00pm PST",
+  "openTimeDesc2": "Sunday: 9:00am - 5:00pm PST"
+}

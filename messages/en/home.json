@@ -1,0 +1,19 @@
+{
+  "showcase": {
+    "subtitle": "EXCLUSIVE",
+    "title": "Step Into Elegance",
+    "btn": "SHOP THE COLLECTION"
+  },
+  "hero": {
+    "slide0": {
+      "subheading": "PREMIUM HEELS",
+      "heading": "Step Into\nElegance",
+      "btnText": "Explore Collection"
+    },
+    "slide1": {
+      "subheading": "LATEST COLLECTION",
+      "heading": "Find Your\nSignature Style",
+      "btnText": "Explore Collection"
+    }
+  }
+}

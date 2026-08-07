@@ -1,0 +1,20 @@
+{
+  "title": "Fit Women Heels",
+  "description": "Premium high heels for women",
+  "home": {
+    "title": "Home || Fit Women Heels",
+    "description": "Fit Women Heels - Premium React Nextjs eCommerce"
+  },
+  "shop": {
+    "title": "Shop || Fit Women Heels",
+    "description": "Browse our collection of premium women heels"
+  },
+  "about": {
+    "title": "About Us || Fit Women Heels",
+    "description": "Learn more about our store and our team"
+  },
+  "contact": {
+    "title": "Contact || Fit Women Heels",
+    "description": "Get in touch with us for any inquiries"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "pending": "Pending",
+  "confirmed": "Confirmed",
+  "processing": "Processing",
+  "inDelivery": "In Delivery",
+  "delivered": "Delivered",
+  "cancelled": "Cancelled"
+}
