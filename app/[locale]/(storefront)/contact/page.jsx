@@ -7,6 +7,7 @@ import React from "react";
 import { getTranslations } from "next-intl/server";
 
 import { prisma } from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -21,8 +22,11 @@ export default async function ContactPage({ params }) {
   const { locale } = await params;
   const tNav = await getTranslations({ locale, namespace: "nav" });
 
-  const dbPage = await prisma.pageContent.findUnique({
-    where: { slug: "contact" },
+  // findFirst, not findUnique, so the isActive filter applies — the dashboard
+  // has an "Active" toggle for pages that previously did nothing at all here,
+  // leaving a deactivated page fully live on the storefront.
+  const dbPage = await prisma.pageContent.findFirst({
+    where: { slug: "contact", isActive: true },
   });
 
   const pageTitle = dbPage 
@@ -76,7 +80,7 @@ export default async function ContactPage({ params }) {
               <div className="col-12">
                 <div 
                   className="prose max-w-none w-full"
-                  dangerouslySetInnerHTML={{ __html: pageContent }} 
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(pageContent) }} 
                 />
               </div>
             </div>

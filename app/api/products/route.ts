@@ -7,6 +7,7 @@ import {
   parseStock,
   PricingValidationError,
 } from '@/lib/products/pricing'
+import { buildProductSlug } from '@/lib/products/slug'
 
 // GET /api/products - List all products (public)
 export async function GET(request: NextRequest) {
@@ -94,8 +95,9 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    // Auto-generate slug from titleEn
-    let baseSlug = titleEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    // Auto-generate slug, transliterating Arabic rather than stripping it —
+    // an Arabic title used to yield an empty slug, then '-1', '-2'.
+    let baseSlug = buildProductSlug(titleEn, titleAr);
     let slug = baseSlug;
     let counter = 1;
 
