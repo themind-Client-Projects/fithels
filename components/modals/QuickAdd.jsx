@@ -23,11 +23,21 @@ export default function QuickAdd() {
   } = useContextElement();
   const [item, setItem] = useState(allProducts[0]);
   useEffect(() => {
-    const filtered = allProducts.filter((el) => el.id == quickAddItem);
-    if (filtered) {
-      setItem(filtered[0]);
+    // Database-backed cards pass the whole product; the legacy template
+    // components still pass a numeric fixture id.
+    if (quickAddItem && typeof quickAddItem === "object") {
+      setItem(quickAddItem);
+      return;
     }
+    const match = allProducts.find((el) => el.id == quickAddItem);
+    // `filter()` returns [] when nothing matches, and [] is truthy — the old
+    // `if (filtered)` therefore set the item to undefined and the render below
+    // threw on `item.imgSrc`, blanking the whole page.
+    if (match) setItem(match);
   }, [quickAddItem]);
+
+  if (!item) return null;
+
   return (
     <div className="modal fade modal-quick-add" id="quickAdd">
       <div className="modal-dialog modal-dialog-centered">
@@ -90,7 +100,7 @@ export default function QuickAdd() {
                   <div className="tf-product-info-by-btn mb_10">
                     <a
                       className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
-                      onClick={() => addProductToCart(item.id, quantity)}
+                      onClick={() => addProductToCart(item, quantity)}
                     >
                       <span>
                         {isAddedToCartProducts(item.id)

@@ -226,7 +226,7 @@ export default function ProductCard1({
             <a
               className="btn-main-product"
               href="#quickAdd"
-              onClick={() => setQuickAddItem(product.id)}
+              onClick={() => setQuickAddItem(product)}
               data-bs-toggle="modal"
             >
               Quick Add
