@@ -215,6 +215,17 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // An admin may have cancelled this order while the payer was on Wayle's
+    // page. Cancelling released its stock, so moving it back to CONFIRMED here
+    // would resurrect an order holding no reservation — the same stock-minting
+    // path that makes CANCELLED terminal elsewhere. Record the payment, leave
+    // the cancellation standing, and flag it for a human.
+    const orderRow = await tx.order.findUnique({
+      where: { id: intent.orderId },
+      select: { status: true },
+    })
+    const wasCancelled = orderRow?.status === 'CANCELLED'
+
     await tx.order.update({
       where: { id: intent.orderId },
       data: {
@@ -222,9 +233,25 @@ export async function POST(request: NextRequest) {
         paidAt: completedAt,
         // Paid orders enter the delivery pipeline as CONFIRMED. Stock was
         // already reserved at link creation, so there is nothing to decrement.
-        status: 'CONFIRMED',
+        ...(wasCancelled ? {} : { status: 'CONFIRMED' }),
       },
     })
+
+    if (wasCancelled) {
+      console.error(
+        'PAYMENT RECEIVED FOR AN ORDER CANCELLED BY STAFF — REFUND OR RE-CREATE MANUALLY',
+        {
+          referenceId: event.referenceId,
+          orderId: intent.orderId,
+          amountIqd: intent.amountIqd,
+          providerPaymentId: event.paymentId,
+        }
+      )
+      await tx.paymentIntent.update({
+        where: { id: intent.id },
+        data: { failureReason: 'PAID_BUT_ORDER_CANCELLED_NEEDS_RECONCILIATION' },
+      })
+    }
   })
 
   return NextResponse.json({ received: true }, { status: 200 })

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,8 +46,12 @@ export default function EditOrderPage() {
   useEffect(() => {
     if (!orderId) return;
     fetch(`/api/orders/${orderId}`)
-      .then((r) => r.json())
+      // Without this check an error body like {error:"Order not found"} is
+      // truthy, passes the `if (!order)` guard below, and the page crashes on
+      // order.id.slice() instead of showing the not-found card.
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
+        if (!data?.id) return;
         setOrder(data);
         setPhone(data.phone || "");
         setLocation(data.location || "");
@@ -67,7 +72,11 @@ export default function EditOrderPage() {
           phone: phone.trim(),
           location: location.trim(),
           notes: notes || null,
-          status,
+          // Only send the status when it was actually changed here. Sending it
+          // on every save meant a tab opened before someone else advanced the
+          // order silently reverted their change — and re-sending DELIVERED
+          // used to rewrite the real delivery date to today.
+          ...(status !== order?.status && { status }),
         }),
       });
 
@@ -189,7 +198,13 @@ export default function EditOrderPage() {
                 onChange={(e) => setStatus(e.target.value)}
                 style={inputStyle}
               >
-                {ORDER_STATUSES.map((s) => (
+                {/* Terminal statuses offer nothing further, so the only
+                    option shown is the current one. */}
+                {ORDER_STATUSES.filter(
+                  (s) =>
+                    s === order?.status ||
+                    allowedNextStatuses(order?.status || "PENDING").includes(s)
+                ).map((s) => (
                   <option key={s} value={s}>{statusLabels[s]}</option>
                 ))}
               </select>

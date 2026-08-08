@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
 import TableSkeleton from "@/components/dashboard/TableSkeleton";
@@ -17,6 +18,8 @@ const StatusSelectCell = ({ order }) => {
   const t = useTranslations("Dashboard");
   const queryClient = useQueryClient();
   const [updating, setUpdating] = React.useState(false);
+  const allowedNext = allowedNextStatuses(order.status);
+  const isTerminal = allowedNext.length === 0;
 
   const ALL_STATUSES = [
     { value: "PENDING", label: t("pending") },
@@ -74,10 +77,15 @@ const StatusSelectCell = ({ order }) => {
       <select
         value={order.status}
         onChange={handleStatusChange}
-        disabled={updating}
+        disabled={updating || isTerminal}
         style={{ width: "100%", appearance: "none", WebkitAppearance: "none", MozAppearance: "none", borderRadius: "9999px", border: `1px solid ${updating ? "#ced4da" : styles.border}`, backgroundColor: updating ? "#f8f9fa" : styles.bg, padding: "0.375rem 0.5rem 0.375rem 1.75rem", fontSize: "0.75rem", outline: "none", color: updating ? "#6c757d" : styles.color, fontWeight: 700, cursor: updating ? "wait" : "pointer", transition: "all 0.2s ease" }}
       >
-        {ALL_STATUSES.map((s) => (
+        {/* Only offer transitions the server will accept. DELIVERED and
+            CANCELLED are terminal, so those rows become read-only rather than
+            presenting options that always fail with a 409. */}
+        {ALL_STATUSES.filter(
+          (s) => s.value === order.status || allowedNext.includes(s.value)
+        ).map((s) => (
           <option key={s.value} value={s.value}>
             {s.label}
           </option>

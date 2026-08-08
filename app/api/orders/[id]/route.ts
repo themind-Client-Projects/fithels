@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
+import { canTransition, isTerminalOrderStatus } from '@/lib/orders/status'
 
 // GET /api/orders/[id] - Get single order (auth required)
 export async function GET(
@@ -91,12 +92,35 @@ export async function PATCH(
       )
     }
 
+    // Enforce the transition graph, not just enum membership. Without this, a
+    // cancelled order could be reopened and cancelled again, crediting its
+    // stock on every pass, and a delivered order could be cancelled to return
+    // goods that already shipped.
+    if (status && !canTransition(existing.status, status)) {
+      return NextResponse.json(
+        {
+          error: isTerminalOrderStatus(existing.status)
+            ? `This order is ${existing.status.toLowerCase()} and can no longer change status.`
+            : `Cannot change an order from ${existing.status} to ${status}.`,
+          reason: isTerminalOrderStatus(existing.status)
+            ? 'ORDER_STATUS_TERMINAL'
+            : 'ORDER_STATUS_TRANSITION_NOT_ALLOWED',
+          from: existing.status,
+          to: status,
+        },
+        { status: 409 }
+      )
+    }
+
     const updateData: Record<string, unknown> = {}
 
     if (status !== undefined) {
       updateData.status = status
-      // Auto-set deliveredAt when status changes to DELIVERED
-      if (status === 'DELIVERED') {
+      // Stamp deliveredAt only on the transition INTO delivered. Setting it
+      // whenever status === 'DELIVERED' meant every later save of an already
+      // delivered order (the edit form re-sends status on every save) silently
+      // rewrote the real delivery date to today.
+      if (status === 'DELIVERED' && existing.status !== 'DELIVERED') {
         updateData.deliveredAt = new Date()
       }
     }
@@ -195,6 +219,7 @@ export async function DELETE(
         {
           error:
             'This order has a payment in progress. Wait for it to settle or cancel the order instead of deleting it.',
+          reason: 'ORDER_HAS_PAYMENT_IN_PROGRESS',
         },
         { status: 409 }
       )
