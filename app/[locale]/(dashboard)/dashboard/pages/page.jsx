@@ -24,7 +24,7 @@ export default function PagesDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPage, setEditingPage] = useState(null);
 
-  const { data: pages = [], isLoading } = useQuery({
+  const { data: pages = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["pages"],
     queryFn: async () => {
       const res = await fetch("/api/pages");
@@ -154,6 +154,8 @@ export default function PagesDashboard() {
 
       <div className="mt-4">
         <DataTable 
+        isError={isError}
+        onRetry={refetch}
           columns={columns} 
           data={pages} 
           searchKey={["titleAr", "titleEn", "slug"]}

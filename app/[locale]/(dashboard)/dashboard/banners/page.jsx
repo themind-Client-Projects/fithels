@@ -29,7 +29,7 @@ export default function BannersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { data: banners = [], isLoading } = useQuery({
+  const { data: banners = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["banners"],
     queryFn: async () => {
       const res = await fetch("/api/banners");
@@ -199,6 +199,8 @@ export default function BannersPage() {
 
       <div className="mt-4">
         <DataTable 
+        isError={isError}
+        onRetry={refetch}
           columns={columns} 
           data={banners} 
           searchKey={["titleAr", "titleEn"]}

@@ -28,7 +28,7 @@ export default function CustomersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
       const res = await fetch("/api/customers");
@@ -193,6 +193,8 @@ export default function CustomersPage() {
     >
       <div className="mt-4">
         <DataTable 
+        isError={isError}
+        onRetry={refetch}
           columns={columns} 
           data={customers} 
           searchKey={["name", "email", "phone"]}

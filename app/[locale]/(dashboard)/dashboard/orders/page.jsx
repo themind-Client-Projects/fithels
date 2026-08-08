@@ -113,7 +113,7 @@ export default function OrdersPage() {
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [deleting, setDeleting] = React.useState(false);
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
       const res = await fetch("/api/orders");
@@ -270,9 +270,11 @@ export default function OrdersPage() {
       }
     >
       <DataTable 
+        isError={isError}
+        onRetry={refetch}
         columns={columns} 
         data={orders} 
-        searchKey={["user.name", "user.email", "phone"]} 
+        searchKey={["id", "user.name", "user.email", "phone", "user.phone"]} 
         searchPlaceholder={t("searchCustomerOrPhone")}
         filterKey="status" 
         filterOptions={ALL_STATUSES}

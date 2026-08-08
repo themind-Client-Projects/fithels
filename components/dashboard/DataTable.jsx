@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { normaliseForSearch, matchesSearch } from "@/lib/search";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, AlertTriangle } from "lucide-react";
 
 /**
  * Highly optimized, reusable DataTable component.
@@ -35,6 +36,8 @@ export default function DataTable({
   filterPlaceholder = "تصفية",
   itemsPerPage = 10,
   onRowClick, // Function: (row) => void
+  isError = false, // distinguishes a failed fetch from a genuinely empty list
+  onRetry,
 }) {
   const t = useTranslations("Dashboard");
   
@@ -53,17 +56,17 @@ export default function DataTable({
     let processed = [...data];
 
     // 1. Apply Search
+    //
+    // The query is normalised the same way the values are: the old code trimmed
+    // only the emptiness check and matched with the raw string, so one pasted
+    // trailing space hid the record. Normalisation also folds Arabic letter
+    // variants, so "احمد" finds "أحمد".
     if (searchKey && searchQuery.trim() !== "") {
-      const lowerQuery = searchQuery.toLowerCase();
+      const query = normaliseForSearch(searchQuery);
       const searchKeys = Array.isArray(searchKey) ? searchKey : [searchKey];
-      processed = processed.filter((item) => {
-        return searchKeys.some((key) => {
-          const val = getNestedValue(item, key);
-          if (typeof val === "string") return val.toLowerCase().includes(lowerQuery);
-          if (typeof val === "number") return val.toString().includes(lowerQuery);
-          return false;
-        });
-      });
+      processed = processed.filter((item) =>
+        searchKeys.some((key) => matchesSearch(getNestedValue(item, key), query))
+      );
     }
 
     // 2. Apply Dropdown Filter
@@ -152,7 +155,25 @@ export default function DataTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentData.length === 0 ? (
+              {isError ? (
+                /* A failed fetch used to fall through to "no results", so an
+                   admin hitting a 500 or a 403 was told the table was empty —
+                   and could reasonably start re-creating records. */
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <AlertTriangle className="h-8 w-8 mb-1 text-amber-500" />
+                      <p className="font-semibold text-foreground">{t("loadFailed")}</p>
+                      <p className="text-sm text-muted-foreground">{t("loadFailedDesc")}</p>
+                      {onRetry && (
+                        <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
+                          {t("retry")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : currentData.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}

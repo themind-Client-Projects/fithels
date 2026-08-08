@@ -29,7 +29,7 @@ export default function ProductsPage() {
   const [deleting, setDeleting] = useState(false);
 
   // React Query for ultra-fast, memory-leak-free data fetching
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       const res = await fetch("/api/products");
@@ -230,9 +230,11 @@ export default function ProductsPage() {
     >
       <div className="mt-4">
         <DataTable 
+        isError={isError}
+        onRetry={refetch}
           columns={columns} 
           data={products} 
-          searchKey="titleAr"
+          searchKey={["titleAr", "titleEn", "slug"]}
           searchPlaceholder="ابحث باسم المنتج..."
           itemsPerPage={10}
         />
