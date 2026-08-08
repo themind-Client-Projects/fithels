@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import {
+  parsePrice,
+  parseSalePrice,
+  parseStock,
+  PricingValidationError,
+} from '@/lib/products/pricing'
 
 // GET /api/products - List all products (public)
 export async function GET(request: NextRequest) {
@@ -59,11 +65,28 @@ export async function POST(request: NextRequest) {
       images,
     } = body
 
-    if (!titleEn || !titleAr || !price || !categoryId) {
+    if (!titleEn || !titleAr || price === undefined || !categoryId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
+    }
+
+    let parsedPrice: number
+    let parsedSalePrice: number | null
+    let parsedStock: number
+    try {
+      parsedPrice = parsePrice(price)
+      parsedSalePrice = parseSalePrice(salePrice, parsedPrice)
+      parsedStock = parseStock(stock)
+    } catch (error) {
+      if (error instanceof PricingValidationError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code, field: error.field },
+          { status: 400 }
+        )
+      }
+      throw error
     }
 
     // Auto-generate slug from titleEn
@@ -84,12 +107,12 @@ export async function POST(request: NextRequest) {
         slug,
         descEn: descEn || null,
         descAr: descAr || null,
-        price: parseFloat(price),
-        salePrice: salePrice ? parseFloat(salePrice) : null,
+        price: parsedPrice,
+        salePrice: parsedSalePrice,
         categoryId,
         sizes: sizes || [],
         colors: colors || [],
-        stock: parseInt(stock, 10) || 0,
+        stock: parsedStock,
         isActive: isActive ?? true,
         images: images || [],
       },

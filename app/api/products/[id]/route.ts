@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import {
+  parsePrice,
+  parseSalePrice,
+  parseStock,
+  PricingValidationError,
+} from '@/lib/products/pricing'
 
 // GET /api/products/[id] - Get single product (public)
 export async function GET(
@@ -63,6 +69,49 @@ export async function PUT(
       images,
     } = body
 
+    // Partial update: a sale price can be edited without touching the price, so
+    // it has to be checked against whatever the price will be after this save.
+    const current = await prisma.product.findUnique({
+      where: { id },
+      select: { price: true, salePrice: true },
+    })
+    if (!current) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    let parsedPrice: number | undefined
+    let parsedSalePrice: number | null | undefined
+    let parsedStock: number | undefined
+    try {
+      if (price !== undefined) parsedPrice = parsePrice(price)
+      if (salePrice !== undefined) {
+        parsedSalePrice = parseSalePrice(salePrice, parsedPrice ?? current.price)
+      }
+      if (stock !== undefined) parsedStock = parseStock(stock)
+
+      // Lowering the price alone could otherwise leave an untouched sale price
+      // sitting at or above it, which bills the customer more than the listing.
+      if (
+        parsedPrice !== undefined &&
+        parsedSalePrice === undefined &&
+        current.salePrice !== null &&
+        current.salePrice >= parsedPrice
+      ) {
+        throw new PricingValidationError(
+          'price',
+          `This product has a sale price of ${current.salePrice}. The regular price must stay above it — update or clear the sale price first.`
+        )
+      }
+    } catch (error) {
+      if (error instanceof PricingValidationError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code, field: error.field },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -70,12 +119,12 @@ export async function PUT(
         ...(titleAr !== undefined && { titleAr }),
         ...(descEn !== undefined && { descEn }),
         ...(descAr !== undefined && { descAr }),
-        ...(price !== undefined && { price: parseFloat(price) }),
-        ...(salePrice !== undefined && { salePrice: salePrice ? parseFloat(salePrice) : null }),
+        ...(parsedPrice !== undefined && { price: parsedPrice }),
+        ...(parsedSalePrice !== undefined && { salePrice: parsedSalePrice }),
         ...(categoryId !== undefined && { categoryId }),
         ...(sizes !== undefined && { sizes }),
         ...(colors !== undefined && { colors }),
-        ...(stock !== undefined && { stock: parseInt(stock) }),
+        ...(parsedStock !== undefined && { stock: parsedStock }),
         ...(isActive !== undefined && { isActive }),
         ...(images !== undefined && { images }),
       },
