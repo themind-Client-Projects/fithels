@@ -1,0 +1,45 @@
+import type { Prisma } from '@prisma/client'
+
+/**
+ * The single place an order's reserved stock is returned to the shelf.
+ *
+ * INVARIANT: stock is held by an order if and only if that order is not
+ * CANCELLED. Every release therefore happens as part of the transition INTO
+ * CANCELLED, and the conditional update below is what makes it exactly-once —
+ * whoever moves the order out of a non-cancelled state does the release, and
+ * everyone else matches 0 rows and does nothing.
+ *
+ * Guarding on the order (rather than on, say, the payment intent) is what stops
+ * an admin cancellation and a failed-payment webhook from both returning the
+ * same units: the second one to arrive finds the order already CANCELLED.
+ *
+ * Must be called inside a transaction so a later failure rolls the release back
+ * with everything else.
+ *
+ * @returns true if this call performed the release, false if it was already done.
+ */
+export async function cancelOrderAndReleaseStock(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<boolean> {
+  const claimed = await tx.order.updateMany({
+    where: { id: orderId, status: { not: 'CANCELLED' } },
+    data: { status: 'CANCELLED' },
+  })
+
+  if (claimed.count === 0) return false
+
+  const items = await tx.orderItem.findMany({
+    where: { orderId },
+    select: { productId: true, quantity: true },
+  })
+
+  for (const item of items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity } },
+    })
+  }
+
+  return true
+}

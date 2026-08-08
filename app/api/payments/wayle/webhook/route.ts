@@ -6,6 +6,7 @@ import {
   WAYLE_SIGNATURE_HEADER,
 } from '@/lib/wayle/signature'
 import { normaliseWebhookPayload, isAcceptedStatus } from '@/lib/wayle/client'
+import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 
 /**
  * Wayle payment webhook.
@@ -123,16 +124,13 @@ export async function POST(request: NextRequest) {
 
       await tx.order.update({
         where: { id: intent.orderId },
-        data: { paymentStatus: 'FAILED', status: 'CANCELLED' },
+        data: { paymentStatus: 'FAILED' },
       })
 
-      // Release the stock reserved when the link was created.
-      for (const item of intent.order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        })
-      }
+      // Cancels and releases the reservation in one guarded step. If an admin
+      // already cancelled this order by hand, the stock is back on the shelf
+      // and this correctly does nothing rather than returning it twice.
+      await cancelOrderAndReleaseStock(tx, intent.orderId)
     })
 
     return NextResponse.json({ received: true }, { status: 200 })
@@ -184,15 +182,10 @@ export async function POST(request: NextRequest) {
 
       await tx.order.update({
         where: { id: intent.orderId },
-        data: { paymentStatus: 'FAILED', status: 'CANCELLED' },
+        data: { paymentStatus: 'FAILED' },
       })
 
-      for (const item of intent.order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        })
-      }
+      await cancelOrderAndReleaseStock(tx, intent.orderId)
     })
 
     return NextResponse.json(

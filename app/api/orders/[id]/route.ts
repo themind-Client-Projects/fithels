@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 
 // GET /api/orders/[id] - Get single order (auth required)
 export async function GET(
@@ -118,31 +119,40 @@ export async function PATCH(
       updateData.location = location
     }
 
-    const order = await prisma.order.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
+    const order = await prisma.$transaction(async (tx) => {
+      // Cancelling returns the reserved units to the shelf. Before this, the
+      // most common admin action silently destroyed inventory: nothing in this
+      // file wrote to Product at all.
+      if (status === 'CANCELLED') {
+        await cancelOrderAndReleaseStock(tx, id)
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
           },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                titleEn: true,
-                titleAr: true,
-                images: true,
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  titleEn: true,
+                  titleAr: true,
+                  images: true,
+                },
               },
             },
           },
         },
-      },
+      })
     })
 
     return NextResponse.json(order)
@@ -168,13 +178,39 @@ export async function DELETE(
 
     const { id } = await params
 
-    const existing = await prisma.order.findUnique({ where: { id } })
+    const existing = await prisma.order.findUnique({
+      where: { id },
+      include: { paymentIntent: { select: { status: true } } },
+    })
     if (!existing) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // OrderItems are auto-deleted via onDelete: Cascade
-    await prisma.order.delete({ where: { id } })
+    // Deleting an order whose payment is still in flight destroys the
+    // PaymentIntent too (it cascades), so the webhook would later arrive with a
+    // reference that resolves to nothing — the customer gets charged and no
+    // record survives. Make the admin settle it first.
+    if (existing.paymentIntent?.status === 'PENDING') {
+      return NextResponse.json(
+        {
+          error:
+            'This order has a payment in progress. Wait for it to settle or cancel the order instead of deleting it.',
+        },
+        { status: 409 }
+      )
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Return the reservation BEFORE deleting. The OrderItem rows carry the
+      // quantities and are cascade-deleted with the order, so releasing
+      // afterwards is impossible — this was previously an unrecoverable leak.
+      // A cancelled order has already had its stock returned, so this correctly
+      // does nothing in that case.
+      await cancelOrderAndReleaseStock(tx, id)
+
+      // OrderItems and PaymentIntent are auto-deleted via onDelete: Cascade
+      await tx.order.delete({ where: { id } })
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

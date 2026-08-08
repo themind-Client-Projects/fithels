@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 
 /** How long an unpaid Wayle link may hold reserved stock. */
 export const PAYMENT_INTENT_TTL_MINUTES = 30
@@ -39,17 +40,12 @@ export async function releaseExpiredIntents(): Promise<number> {
 
         await tx.order.update({
           where: { id: intent.orderId },
-          data: { paymentStatus: 'EXPIRED', status: 'CANCELLED' },
+          data: { paymentStatus: 'EXPIRED' },
         })
 
-        for (const item of intent.order.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { increment: item.quantity } },
-          })
+        if (await cancelOrderAndReleaseStock(tx, intent.orderId)) {
+          released += 1
         }
-
-        released += 1
       })
     } catch (error) {
       // One bad row must not block the checkout that triggered this sweep.

@@ -13,6 +13,7 @@ import {
 } from '@/lib/wayle/amounts'
 import { createPaymentLink, generateReferenceId } from '@/lib/wayle/client'
 import { releaseExpiredIntents } from '@/lib/wayle/expire'
+import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 
 /**
  * Raised inside the order transaction when a conditional stock decrement
@@ -348,16 +349,11 @@ export async function POST(request: NextRequest) {
         .$transaction(async (tx) => {
           const voided = await tx.order.updateMany({
             where: { id: order.id, paymentStatus: 'PENDING' },
-            data: { paymentStatus: 'FAILED', status: 'CANCELLED' },
+            data: { paymentStatus: 'FAILED' },
           })
           if (voided.count === 0) return
 
-          for (const item of orderItemsData) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stock: { increment: item.quantity } },
-            })
-          }
+          await cancelOrderAndReleaseStock(tx, order.id)
 
           await tx.paymentIntent.updateMany({
             where: { referenceId },
