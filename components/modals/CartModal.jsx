@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
-import { products41 } from "@/data/products";
+import { useLocale } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function CartModal() {
   const {
@@ -13,12 +13,39 @@ export default function CartModal() {
     addProductToCart,
     isAddedToCartProducts,
   } = useContextElement();
+  const locale = useLocale();
 
   const removeItem = (id) => {
     setCartProducts((pre) => [...pre.filter((elm) => elm.id != id)]);
   };
 
   const [currentOpenPopup, setCurrentOpenPopup] = useState("");
+
+  // These recommendations used to come from the static template fixture, whose
+  // ids exist nowhere in the database. Adding one poisoned the cart and made
+  // every later checkout fail, so they are read from the catalogue instead.
+  const [recommendations, setRecommendations] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((products) => {
+        if (cancelled || !Array.isArray(products)) return;
+        setRecommendations(
+          products.slice(0, 6).map((p) => ({
+            id: p.slug,
+            dbId: p.id,
+            title: locale === "ar" ? p.titleAr : p.titleEn,
+            price: p.salePrice ?? p.price,
+            imgSrc: p.images?.[0] || "/images/products/womens/women-1.jpg",
+          }))
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
   return (
     <div className="modal fullRight fade modal-shopping-cart" id="shoppingCart">
@@ -28,13 +55,13 @@ export default function CartModal() {
             <h6 className="title">You May Also Like</h6>
             <div className="wrap-recommendations">
               <div className="list-cart">
-                {products41.map((product, index) => (
-                  <div className="list-cart-item" key={index}>
+                {recommendations.map((product) => (
+                  <div className="list-cart-item" key={product.dbId}>
                     <div className="image">
                       <Image
                         className="lazyload"
                         data-src={product.imgSrc}
-                        alt={product.alt}
+                        alt={product.title}
                         src={product.imgSrc}
                         width={600}
                         height={800}
@@ -44,7 +71,7 @@ export default function CartModal() {
                       <div className="name">
                         <Link
                           className="link text-line-clamp-1"
-                          href="/product-detail"
+                          href={`/${locale}/product-detail/${product.id}`}
                         >
                           {product.title}
                         </Link>
@@ -55,7 +82,7 @@ export default function CartModal() {
                         </div>
                         <a
                           className="link text-button"
-                          onClick={() => addProductToCart(product.id, 1, false)}
+                          onClick={() => addProductToCart(product, 1, false)}
                         >
                           {isAddedToCartProducts(product.id)
                             ? "Already Added"

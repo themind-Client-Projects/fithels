@@ -53,11 +53,25 @@ export default function Context({ children }) {
     // Never add an unresolvable item — a broken entry corrupts the whole cart.
     if (!source) return;
 
+    // Only real catalogue products can be ordered. Several template leftovers
+    // (the search and cart drawers) still render fixture products whose ids
+    // exist nowhere in the database; adding one used to sit in the cart looking
+    // legitimate and then fail the WHOLE order at checkout with "Product not
+    // found", permanently, because the cart is persisted to localStorage.
+    if (!source.dbId) {
+      console.warn(
+        "Ignoring add-to-cart for a product that is not in the catalogue:",
+        source.title ?? source.id
+      );
+      return false;
+    }
+
     const item = { ...source, quantity: qty ? qty : 1 };
     setCartProducts((pre) => [...pre, item]);
     if (isModal) {
       openCartModal();
     }
+    return true;
   };
 
   const updateQuantity = (id, qty) => {
@@ -113,7 +127,13 @@ export default function Context({ children }) {
       // id and no price, and would otherwise keep the subtotal at NaN and crash
       // the cart page on `<Image src={undefined}>` forever after.
       const validItems = items.filter(
-        (item) => item && item.id !== undefined && item.price !== undefined
+        (item) =>
+          item &&
+          item.id !== undefined &&
+          item.price !== undefined &&
+          // Drop fixture items saved before add-to-cart required a catalogue
+          // product. One of these left in storage made every checkout fail.
+          item.dbId
       );
       if (validItems.length) {
         setCartProducts(validItems);
