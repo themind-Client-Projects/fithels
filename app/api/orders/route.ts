@@ -63,6 +63,8 @@ export async function GET() {
             },
           },
         },
+        // Lets the dashboard flag payments that need manual reconciliation.
+        paymentIntent: { select: { status: true, failureReason: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -182,13 +184,20 @@ export async function POST(request: NextRequest) {
     let lineItemAmountsIqd: number[] = []
     const usdToIqdRate = getUsdToIqdRate()
 
-    if (paymentMethod === 'WAYLE') {
-      // Reclaim stock from checkouts that were started and abandoned, before we
-      // reserve any more of it.
-      await releaseExpiredIntents().catch((error) => {
-        console.error('Expiry sweep failed (continuing)', error)
-      })
+    // Reclaim stock from checkouts that were started and abandoned. This runs
+    // for COD orders too: hanging it off the WAYLE branch alone meant a shop
+    // that mostly takes cash never swept, so one abandoned online checkout
+    // could hold its stock indefinitely. A scheduler can also call
+    // POST /api/payments/expire so quiet periods still get swept.
+    const releasedCount = await releaseExpiredIntents().catch((error) => {
+      console.error('Expiry sweep failed (continuing)', error)
+      return 0
+    })
+    if (releasedCount > 0) {
+      console.info(`Released ${releasedCount} abandoned payment reservation(s)`)
+    }
 
+    if (paymentMethod === 'WAYLE') {
       // Round each line item FIRST, then sum, so the amounts Wayle receives add
       // up to the total exactly. Rounding the USD total separately would drift
       // by a dinar against the summed line items at any rate that does not

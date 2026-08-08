@@ -141,5 +141,20 @@
     "UNSUPPORTED_TYPE": "نوع الملف غير مدعوم. الصيغ المسموحة: JPEG، PNG، WebP، GIF، AVIF.",
     "UNAUTHORIZED": "لا تملك صلاحية رفع الصور.",
     "GENERIC": "تعذّر رفع الصورة. حاول مرة أخرى."
-  }
+  },
+  "paymentMethod": "طريقة الدفع",
+  "paymentStatus": "حالة الدفع",
+  "cashOnDelivery": "الدفع عند الاستلام",
+  "onlinePayment": "الدفع الإلكتروني",
+  "payUnpaid": "غير مدفوع",
+  "payPending": "بانتظار الدفع",
+  "payProcessing": "قيد المعالجة",
+  "payPaid": "مدفوع",
+  "payFailed": "فشل الدفع",
+  "payExpired": "انتهت مهلة الدفع",
+  "needsReconciliation": "يحتاج مراجعة",
+  "needsReconciliationDesc": "تم استلام دفعة لطلب ملغى أو منتهي. راجعها يدويًا.",
+  "loadFailed": "تعذّر تحميل البيانات",
+  "loadFailedDesc": "حدث خطأ أثناء جلب البيانات. تحقّق من الاتصال ثم أعد المحاولة.",
+  "retry": "إعادة المحاولة"
 }

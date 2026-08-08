@@ -33,6 +33,9 @@ export async function GET(
             product: true,
           },
         },
+        paymentIntent: {
+          select: { status: true, failureReason: true, amountIqd: true },
+        },
       },
     })
 
@@ -121,7 +124,17 @@ export async function PATCH(
       // delivered order (the edit form re-sends status on every save) silently
       // rewrote the real delivery date to today.
       if (status === 'DELIVERED' && existing.status !== 'DELIVERED') {
-        updateData.deliveredAt = new Date()
+        const deliveredAt = new Date()
+        updateData.deliveredAt = deliveredAt
+
+        // Cash on delivery is collected at the door, so delivery IS payment.
+        // Without this a delivered cash order stayed UNPAID forever, which the
+        // customer saw as "awaiting payment" and made any payment-based
+        // reporting treat every COD sale as uncollected.
+        if (existing.paymentMethod === 'COD' && existing.paymentStatus !== 'PAID') {
+          updateData.paymentStatus = 'PAID'
+          updateData.paidAt = deliveredAt
+        }
       }
     }
 

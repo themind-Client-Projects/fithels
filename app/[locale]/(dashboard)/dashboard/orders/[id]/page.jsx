@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import PaymentBadge from "@/components/dashboard/PaymentBadge";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -249,7 +251,9 @@ export default function OrderDetailPage() {
                   disabled={updating}
                   style={{ width: "100%", appearance: "none", WebkitAppearance: "none", MozAppearance: "none", borderRadius: "0.5rem", border: `1px solid ${updating ? "#ced4da" : getStatusStyles(order.status).border}`, backgroundColor: updating ? "#f8f9fa" : getStatusStyles(order.status).bg, padding: "0.75rem 1rem 0.75rem 2.5rem", fontSize: "0.875rem", outline: "none", color: updating ? "#6c757d" : getStatusStyles(order.status).color, fontWeight: 700, cursor: updating ? "wait" : "pointer", transition: "all 0.2s ease" }}
                 >
-                  {ORDER_STATUSES.map((s) => (
+                  {ORDER_STATUSES.filter(
+                  (s) => s === order.status || allowedNextStatuses(order.status).includes(s)
+                ).map((s) => (
                     <option key={s} value={s}>
                       {statusLabels[s] || s}
                     </option>
@@ -295,6 +299,10 @@ export default function OrderDetailPage() {
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("items")}</span>
               <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700 }}>{order.items?.length || 0}</span>
+            </div>
+            <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("paymentStatus")}</span>
+              <PaymentBadge order={order} />
             </div>
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f3f5", backgroundColor: "#f8f9fa", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700 }}>{t("total")}</span>

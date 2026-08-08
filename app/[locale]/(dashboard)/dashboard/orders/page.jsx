@@ -8,6 +8,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
 import TableSkeleton from "@/components/dashboard/TableSkeleton";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
+import PaymentBadge from "@/components/dashboard/PaymentBadge";
 import ConfirmDialog from "@/components/dashboard/ConfirmDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,11 @@ export default function OrdersPage() {
       cell: ({ row }) => (
         <span className="font-bold text-foreground">{formatCurrency(row.total)}</span>
       ),
+    },
+    {
+      header: t("paymentStatus"),
+      accessorKey: "paymentStatus",
+      cell: ({ row }) => <PaymentBadge order={row} />,
     },
     {
       header: t("status"),

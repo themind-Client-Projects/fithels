@@ -21,11 +21,26 @@ export const PAYMENT_INTENT_TTL_MINUTES = 30
 export async function releaseExpiredIntents(): Promise<number> {
   const cutoff = new Date(Date.now() - PAYMENT_INTENT_TTL_MINUTES * 60_000)
 
+  const BATCH_SIZE = 20 // keep the checkout path cheap
+
   const stale = await prisma.paymentIntent.findMany({
     where: { status: 'PENDING', createdAt: { lt: cutoff } },
     include: { order: { include: { items: true } } },
-    take: 20, // keep the checkout path cheap
+    take: BATCH_SIZE,
   })
+
+  // A full batch means there is probably more waiting. Say so rather than
+  // silently draining 20 at a time and looking like the sweep is keeping up.
+  if (stale.length === BATCH_SIZE) {
+    const remaining = await prisma.paymentIntent.count({
+      where: { status: 'PENDING', createdAt: { lt: cutoff } },
+    })
+    if (remaining > BATCH_SIZE) {
+      console.warn(
+        `Payment expiry backlog: ${remaining} abandoned reservations pending, releasing ${BATCH_SIZE} this pass. Consider scheduling POST /api/payments/expire.`
+      )
+    }
+  }
 
   let released = 0
 

@@ -141,5 +141,20 @@
     "UNSUPPORTED_TYPE": "Unsupported file type. Allowed: JPEG, PNG, WebP, GIF, AVIF.",
     "UNAUTHORIZED": "You do not have permission to upload images.",
     "GENERIC": "Could not upload the image. Please try again."
-  }
+  },
+  "paymentMethod": "Payment Method",
+  "paymentStatus": "Payment Status",
+  "cashOnDelivery": "Cash on Delivery",
+  "onlinePayment": "Online Payment",
+  "payUnpaid": "Unpaid",
+  "payPending": "Awaiting payment",
+  "payProcessing": "Processing",
+  "payPaid": "Paid",
+  "payFailed": "Payment failed",
+  "payExpired": "Payment expired",
+  "needsReconciliation": "Needs review",
+  "needsReconciliationDesc": "A payment arrived for a cancelled or expired order. Reconcile it by hand.",
+  "loadFailed": "Could not load data",
+  "loadFailedDesc": "Something went wrong fetching this data. Check your connection and try again.",
+  "retry": "Retry"
 }
