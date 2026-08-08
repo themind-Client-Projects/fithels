@@ -114,14 +114,26 @@ export default function OrdersPage() {
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [deleting, setDeleting] = React.useState(false);
 
-  const { data: orders = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["orders"],
+  // Server-side paging and filtering. The list used to pull every order, with
+  // all its line items and product payloads, to render ten rows.
+  const [page, setPage] = React.useState(1);
+  const [statusFilter, setStatusFilter] = React.useState("ALL");
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["orders", page, statusFilter],
     queryFn: async () => {
-      const res = await fetch("/api/orders");
+      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      const res = await fetch(`/api/orders?${params}`);
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
+    placeholderData: (previous) => previous,
   });
+
+  const orders = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalOrders = data?.total ?? 0;
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

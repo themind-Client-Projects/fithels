@@ -38,12 +38,27 @@ export default function DataTable({
   onRowClick, // Function: (row) => void
   isError = false, // distinguishes a failed fetch from a genuinely empty list
   onRetry,
+  // Server-driven paging/filtering. When `serverPage` is given the component
+  // renders the rows it was handed instead of slicing locally, because the
+  // server already returned exactly one page.
+  serverPage,
+  serverTotalPages,
+  serverTotal,
+  onServerPageChange,
+  filterValue: controlledFilterValue,
+  onFilterChange,
 }) {
   const t = useTranslations("Dashboard");
   
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterValue, setFilterValue] = useState("ALL");
+  const [localFilterValue, setLocalFilterValue] = useState("ALL");
+  const isServerPaged = serverPage !== undefined;
+  const filterValue = controlledFilterValue ?? localFilterValue;
+  const setFilterValue = (val) => {
+    setLocalFilterValue(val);
+    onFilterChange?.(val);
+  };
 
   // Deep object value getter (e.g., "user.name" from { user: { name: "Ahmed" } })
   const getNestedValue = (obj, path) => {
@@ -69,8 +84,8 @@ export default function DataTable({
       );
     }
 
-    // 2. Apply Dropdown Filter
-    if (filterKey && filterValue !== "ALL") {
+    // 2. Apply Dropdown Filter (skipped when the server already filtered)
+    if (!isServerPaged && filterKey && filterValue !== "ALL") {
       processed = processed.filter((item) => {
         const val = getNestedValue(item, filterKey);
         return val === filterValue;
@@ -78,20 +93,26 @@ export default function DataTable({
     }
 
     return processed;
-  }, [data, searchKey, searchQuery, filterKey, filterValue]);
+  }, [data, searchKey, searchQuery, filterKey, filterValue, isServerPaged]);
 
   // Pagination Logic
-  const totalItems = filteredData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  
-  // Ensure current page is valid after filtering
-  if (currentPage > totalPages && totalPages > 0) {
+  const totalItems = isServerPaged ? serverTotal ?? filteredData.length : filteredData.length;
+  const totalPages = isServerPaged
+    ? serverTotalPages ?? 1
+    : Math.ceil(totalItems / itemsPerPage) || 1;
+  const activePage = isServerPaged ? serverPage : currentPage;
+
+  // Ensure current page is valid after filtering (client-paged mode only)
+  if (!isServerPaged && currentPage > totalPages && totalPages > 0) {
     setCurrentPage(totalPages);
   }
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const startIndex = (activePage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
+  // In server mode `data` is already exactly one page.
+  const currentData = isServerPaged ? filteredData : filteredData.slice(startIndex, endIndex);
+  const goToPage = (next) =>
+    isServerPaged ? onServerPageChange?.(next) : setCurrentPage(next);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -209,14 +230,14 @@ export default function DataTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-2">
           <div className="text-sm text-muted-foreground">
-            إظهار {startIndex + 1} إلى {Math.min(endIndex, totalItems)} من أصل {totalItems} مدخل
+            إظهار {totalItems === 0 ? 0 : startIndex + 1} إلى {Math.min(endIndex, totalItems)} من أصل {totalItems} مدخل
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              onClick={() => goToPage(Math.max(1, activePage - 1))}
+              disabled={activePage === 1}
               className="h-8 w-8 p-0"
             >
               <ChevronRight className="h-4 w-4" /> {/* ChevronRight points back in RTL */}
@@ -227,8 +248,8 @@ export default function DataTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => goToPage(Math.min(totalPages, activePage + 1))}
+              disabled={activePage === totalPages}
               className="h-8 w-8 p-0"
             >
               <ChevronLeft className="h-4 w-4" /> {/* ChevronLeft points forward in RTL */}

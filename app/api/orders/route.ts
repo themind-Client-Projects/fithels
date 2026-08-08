@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { OrderStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -27,9 +28,17 @@ class InsufficientStockError extends Error {
   }
 }
 
+/** Hard ceiling so a caller cannot ask for the whole table in one request. */
+const MAX_ORDER_PAGE_SIZE = 100
+const DEFAULT_ORDER_PAGE_SIZE = 20
+
 // GET /api/orders - List orders (role-based)
 // ADMIN/EMPLOYEE: all orders | CUSTOMER: own orders only
-export async function GET() {
+//
+// Paginated. This previously returned EVERY order, each with all line items and
+// the full product payload behind them, to render ten dashboard rows — tens of
+// megabytes of JSON parsed on the main thread once a store had real history.
+export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -38,8 +47,40 @@ export async function GET() {
 
     const isStaff = user.role === 'ADMIN' || user.role === 'EMPLOYEE'
 
+    const { searchParams } = new URL(request.url)
+
+    const requestedLimit = Number(searchParams.get('limit'))
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, MAX_ORDER_PAGE_SIZE)
+      : DEFAULT_ORDER_PAGE_SIZE
+
+    const requestedPage = Number(searchParams.get('page'))
+    const page = Number.isFinite(requestedPage) && requestedPage > 0
+      ? Math.floor(requestedPage)
+      : 1
+
+    // `status` was accepted by the client hooks all along but never read here,
+    // so a filtered request silently returned everything.
+    const statusParam = searchParams.get('status')
+    const VALID: OrderStatus[] = [
+      'PENDING', 'CONFIRMED', 'PROCESSING', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED',
+    ]
+    const statusFilter =
+      statusParam && VALID.includes(statusParam as OrderStatus)
+        ? { status: statusParam as OrderStatus }
+        : {}
+
+    const where = {
+      ...(isStaff ? {} : { userId: user.id }),
+      ...statusFilter,
+    }
+
+    const total = await prisma.order.count({ where })
+
     const orders = await prisma.order.findMany({
-      where: isStaff ? {} : { userId: user.id },
+      where,
+      take: limit,
+      skip: (page - 1) * limit,
       include: {
         user: {
           select: {
@@ -69,7 +110,15 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(orders)
+    // Matches the PaginatedResponse contract already declared in types/api.ts,
+    // which the client hooks assumed but no endpoint ever honoured.
+    return NextResponse.json({
+      data: orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    })
   } catch (error) {
     console.error('Error fetching orders:', error)
     return NextResponse.json(

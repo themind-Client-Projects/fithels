@@ -32,10 +32,13 @@ export default function MyOrdersList() {
 
     async function fetchOrders() {
       try {
-        const res = await fetch("/api/orders");
+        // Ask for a generous page: this list has no paging UI of its own, and
+        // the endpoint now caps the response instead of returning everything.
+        const res = await fetch("/api/orders?limit=100");
         if (res.ok) {
-          const data = await res.json();
-          setOrders(Array.isArray(data) ? data : []);
+          const payload = await res.json();
+          const list = Array.isArray(payload) ? payload : payload?.data;
+          setOrders(Array.isArray(list) ? list : []);
         }
       } catch (err) {
         console.error("Failed to fetch orders:", err);
