@@ -174,6 +174,7 @@ export async function POST(request: NextRequest) {
     // For online payment, convert and enforce Wayle's floor BEFORE creating
     // anything — so a below-minimum order never becomes a half-built record.
     let amountIqd = 0
+    let lineItemAmountsIqd: number[] = []
     const usdToIqdRate = getUsdToIqdRate()
 
     if (paymentMethod === 'WAYLE') {
@@ -183,7 +184,14 @@ export async function POST(request: NextRequest) {
         console.error('Expiry sweep failed (continuing)', error)
       })
 
-      amountIqd = usdToIqd(total, usdToIqdRate)
+      // Round each line item FIRST, then sum, so the amounts Wayle receives add
+      // up to the total exactly. Rounding the USD total separately would drift
+      // by a dinar against the summed line items at any rate that does not
+      // divide 2-decimal prices evenly (1500 happens to; 1310 does not).
+      lineItemAmountsIqd = lineItemSources.map((source) =>
+        usdToIqd(source.amountUsd, usdToIqdRate)
+      )
+      amountIqd = lineItemAmountsIqd.reduce((sum, amount) => sum + amount, 0)
       try {
         assertAboveWayleMinimum(amountIqd)
       } catch (error) {
@@ -298,9 +306,11 @@ export async function POST(request: NextRequest) {
       const link = await createPaymentLink({
         referenceId,
         totalIqd: amountIqd,
-        lineItems: lineItemSources.map((source) => ({
+        lineItems: lineItemSources.map((source, index) => ({
           label: source.label,
-          amount: usdToIqd(source.amountUsd, usdToIqdRate),
+          // Reuse the exact figures summed into amountIqd above — never
+          // recompute, or the parts stop matching the whole.
+          amount: lineItemAmountsIqd[index],
           type: 'increase' as const,
           // Wayle rejects line items without an image URL, so fall back to the
           // site logo when a product has no image of its own.

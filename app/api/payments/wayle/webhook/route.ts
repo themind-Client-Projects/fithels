@@ -73,6 +73,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true }, { status: 200 })
   }
 
+  // Paid after we gave up on it. The expiry sweep already cancelled the order
+  // and released the stock, so we cannot silently swallow this: the customer
+  // has been charged for an order that no longer exists. Record it loudly and
+  // leave it for a human — auto-reinstating could oversell stock that has since
+  // been sold to someone else.
+  if (intent.status === 'EXPIRED') {
+    if (isAcceptedStatus(event.status)) {
+      console.error(
+        'PAYMENT RECEIVED AFTER EXPIRY — REFUND OR REINSTATE MANUALLY',
+        {
+          referenceId: event.referenceId,
+          orderId: intent.orderId,
+          userId: intent.userId,
+          amountIqd: intent.amountIqd,
+          providerPaymentId: event.paymentId,
+        }
+      )
+      await prisma.paymentIntent.updateMany({
+        where: { id: intent.id, status: 'EXPIRED' },
+        data: {
+          failureReason: 'PAID_AFTER_EXPIRY_NEEDS_RECONCILIATION',
+          providerPaymentId: event.paymentId ?? intent.providerPaymentId,
+          completedAt: event.completedAt ? new Date(event.completedAt) : new Date(),
+        },
+      })
+    }
+    return NextResponse.json({ received: true }, { status: 200 })
+  }
+
   // ── Payment did not complete ────────────────────────────────────────────
   if (!isAcceptedStatus(event.status)) {
     await prisma.$transaction(async (tx) => {
