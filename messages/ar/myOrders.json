@@ -24,5 +24,10 @@
   "color": "اللون",
   "each": "للقطعة",
   "total": "المجموع",
-  "notes": "ملاحظات"
+  "notes": "ملاحظات",
+  "onlinePayment": "الدفع الإلكتروني",
+  "paymentStatus": "حالة الدفع",
+  "paid": "مدفوع",
+  "awaitingPayment": "بانتظار الدفع",
+  "itemsCount": "{count, plural, zero {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}"
 }

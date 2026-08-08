@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import {
+  getUsdToIqdRate,
+  getSiteUrl,
+  WAYLE_MIN_AMOUNT_IQD,
+} from '@/lib/wayle/config'
+import {
+  usdToIqd,
+  assertAboveWayleMinimum,
+  WayleMinimumAmountError,
+} from '@/lib/wayle/amounts'
+import { createPaymentLink, generateReferenceId } from '@/lib/wayle/client'
+import { releaseExpiredIntents } from '@/lib/wayle/expire'
 
 /**
  * Raised inside the order transaction when a conditional stock decrement
@@ -75,6 +87,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, notes, phone, location, userId: targetUserId } = body
 
+    // Payment method is the only payment-related field accepted from the client.
+    // Amounts are always derived server-side from the database below.
+    const paymentMethod: 'COD' | 'WAYLE' =
+      body.paymentMethod === 'WAYLE' ? 'WAYLE' : 'COD'
+
     if (!phone?.trim()) {
       return NextResponse.json(
         { error: 'Phone number is required' },
@@ -99,6 +116,7 @@ export async function POST(request: NextRequest) {
     // Validate items and calculate total
     let total = 0
     const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
+    const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
 
     for (const item of items) {
       const { productId, quantity, size, color } = item
@@ -145,6 +163,43 @@ export async function POST(request: NextRequest) {
         size: size || null,
         color: color || null,
       })
+
+      lineItemSources.push({
+        label: product.titleAr || product.titleEn,
+        amountUsd: itemPrice * quantity,
+        image: product.images?.[0] ?? null,
+      })
+    }
+
+    // For online payment, convert and enforce Wayle's floor BEFORE creating
+    // anything — so a below-minimum order never becomes a half-built record.
+    let amountIqd = 0
+    const usdToIqdRate = getUsdToIqdRate()
+
+    if (paymentMethod === 'WAYLE') {
+      // Reclaim stock from checkouts that were started and abandoned, before we
+      // reserve any more of it.
+      await releaseExpiredIntents().catch((error) => {
+        console.error('Expiry sweep failed (continuing)', error)
+      })
+
+      amountIqd = usdToIqd(total, usdToIqdRate)
+      try {
+        assertAboveWayleMinimum(amountIqd)
+      } catch (error) {
+        if (error instanceof WayleMinimumAmountError) {
+          return NextResponse.json(
+            {
+              error: 'Order total is below the online payment minimum.',
+              code: error.code,
+              minimumIqd: WAYLE_MIN_AMOUNT_IQD,
+              amountIqd: error.amountIQD,
+            },
+            { status: 400 }
+          )
+        }
+        throw error
+      }
     }
 
     // Create order with items in a transaction
@@ -187,6 +242,10 @@ export async function POST(request: NextRequest) {
           notes: notes || null,
           phone: phone.trim(),
           location: location.trim(),
+          paymentMethod,
+          // Stock is reserved at this point for both methods. COD collects on
+          // delivery; WAYLE waits for the webhook to flip this to PAID.
+          paymentStatus: paymentMethod === 'WAYLE' ? 'PENDING' : 'UNPAID',
           items: {
             create: orderItemsData,
           },
@@ -208,7 +267,96 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    return NextResponse.json(order, { status: 201 })
+    // Cash on delivery is complete once the order exists.
+    if (paymentMethod === 'COD') {
+      return NextResponse.json(order, { status: 201 })
+    }
+
+    // Online payment: issue the hosted Wayle link.
+    //
+    // Deliberately outside the transaction above — holding a database
+    // transaction open across an external HTTP call would pin a connection for
+    // the duration of Wayle's response time. If the call fails we compensate
+    // explicitly instead, releasing the stock we just reserved.
+    const referenceId = generateReferenceId()
+
+    try {
+      const siteUrl = getSiteUrl()
+
+      const intent = await prisma.paymentIntent.create({
+        data: {
+          referenceId,
+          orderId: order.id,
+          userId: order.userId,
+          amountIqd,
+          amountUsd: total,
+          rateUsdToIqd: usdToIqdRate,
+          status: 'PENDING',
+        },
+      })
+
+      const link = await createPaymentLink({
+        referenceId,
+        totalIqd: amountIqd,
+        lineItems: lineItemSources.map((source) => ({
+          label: source.label,
+          amount: usdToIqd(source.amountUsd, usdToIqdRate),
+          type: 'increase' as const,
+          // Wayle rejects line items without an image URL, so fall back to the
+          // site logo when a product has no image of its own.
+          image: source.image
+            ? source.image.startsWith('http')
+              ? source.image
+              : `${siteUrl}${source.image}`
+            : `${siteUrl}/images/logo/logo.svg`,
+        })),
+        webhookUrl: `${siteUrl}/api/payments/wayle/webhook`,
+        redirectionUrl: `${siteUrl}/checkout/return`,
+      })
+
+      await prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: { providerPaymentId: link.id, paymentUrl: link.url },
+      })
+
+      return NextResponse.json(
+        { ...order, referenceId, paymentUrl: link.url },
+        { status: 201 }
+      )
+    } catch (error) {
+      // Could not take payment — release the reserved stock and void the order
+      // rather than leaving an unpayable record behind.
+      console.error('Wayle link creation failed, rolling back order', error)
+
+      await prisma
+        .$transaction(async (tx) => {
+          const voided = await tx.order.updateMany({
+            where: { id: order.id, paymentStatus: 'PENDING' },
+            data: { paymentStatus: 'FAILED', status: 'CANCELLED' },
+          })
+          if (voided.count === 0) return
+
+          for (const item of orderItemsData) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            })
+          }
+
+          await tx.paymentIntent.updateMany({
+            where: { referenceId },
+            data: { status: 'FAILED', failureReason: 'LINK_CREATION_FAILED' },
+          })
+        })
+        .catch((rollbackError) => {
+          console.error('Order rollback failed', rollbackError)
+        })
+
+      return NextResponse.json(
+        { error: 'Could not start the online payment. Please try again or choose cash on delivery.' },
+        { status: 502 }
+      )
+    }
   } catch (error) {
     // Losing a stock race is a client-visible condition, not a server fault.
     if (error instanceof InsufficientStockError) {

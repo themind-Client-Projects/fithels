@@ -25,6 +25,8 @@ function CheckoutContent() {
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [errors, setErrors] = useState({});
+  // "COD" (cash on delivery) or "WAYLE" (online payment link).
+  const [paymentMethod, setPaymentMethod] = useState("COD");
   
   const router = useRouter();
   const params = useParams();
@@ -110,23 +112,41 @@ function CheckoutContent() {
           notes: note || undefined,
           phone: phone.trim(),
           location: location.trim(),
+          paymentMethod,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        // Wayle's 1000 IQD floor is a product rule, not a gateway error —
+        // show a localized message pointing at cash on delivery instead.
+        if (err.code === "WAYLE_MIN_AMOUNT") {
+          throw new Error(t("paymentBelowMinimum"));
+        }
         throw new Error(err.error || "Order failed");
       }
 
       const order = await res.json();
 
-      setOrderId(order.id);
-      setOrderPlaced(true);
-      
+      // Clear the cart before leaving the site, so returning from the payment
+      // page cannot re-submit the same items.
       if (!isSingleProduct) {
         setCartProducts([]);
         localStorage.removeItem("cartList");
       }
+
+      if (paymentMethod === "WAYLE") {
+        if (!order.paymentUrl) {
+          throw new Error(t("paymentFailedStart"));
+        }
+        // Hand off to Wayle's hosted page. The webhook confirms the payment
+        // separately; /checkout/return polls for that.
+        window.location.href = order.paymentUrl;
+        return;
+      }
+
+      setOrderId(order.id);
+      setOrderPlaced(true);
     } catch (error) {
       console.error("Order error:", error);
       alert(error.message || "فشل في تأكيد الطلب. حاول مرة أخرى.");
@@ -344,9 +364,58 @@ function CheckoutContent() {
                   <span>{tShop("subtotal")}</span>
                   <span>${displayTotal.toFixed(2)}</span>
                 </div>
-                <div className="d-flex justify-content-between align-items-center text-button" style={{ marginBottom: "10px" }}>
-                  <span>{tShop("paymentMethod")}</span>
-                  <span style={{ color: "#28a745" }}>💵 {tShop("cashOnDelivery")}</span>
+                <div className="text-button" style={{ marginBottom: "10px" }}>
+                  <span style={{ display: "block", marginBottom: "10px" }}>
+                    {tShop("paymentMethod")}
+                  </span>
+
+                  {[
+                    {
+                      value: "COD",
+                      icon: "💵",
+                      label: tShop("cashOnDelivery"),
+                      desc: t("cashOnDeliveryDesc"),
+                    },
+                    {
+                      value: "WAYLE",
+                      icon: "💳",
+                      label: t("onlinePayment"),
+                      desc: t("onlinePaymentDesc"),
+                    },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "12px",
+                        marginBottom: "8px",
+                        border: `1px solid ${paymentMethod === option.value ? "#28a745" : "#ddd"}`,
+                        borderRadius: "8px",
+                        background: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={option.value}
+                        checked={paymentMethod === option.value}
+                        onChange={() => setPaymentMethod(option.value)}
+                        style={{ accentColor: "#28a745", cursor: "pointer" }}
+                      />
+                      <span aria-hidden="true">{option.icon}</span>
+                      <span style={{ flex: 1 }}>
+                        <span style={{ display: "block", fontWeight: 600 }}>
+                          {option.label}
+                        </span>
+                        <span style={{ display: "block", fontSize: "12px", opacity: 0.7 }}>
+                          {option.desc}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
                 <hr style={{ margin: "12px 0", borderColor: "#ddd" }} />
                 <div className="d-flex justify-content-between align-items-center">

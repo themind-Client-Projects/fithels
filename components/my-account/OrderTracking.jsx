@@ -310,8 +310,27 @@ export default function OrderTracking({ orderId }) {
               <h6 style={{ marginBottom: "16px" }}>{t("orderSummary")}</h6>
               <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
                 <span className="text-secondary">{t("paymentMethod")}</span>
-                <span style={{ color: "#28a745", fontWeight: 600 }}>💵 {t("cashOnDelivery")}</span>
+                {/* Read the order's actual method — this used to always claim
+                    cash on delivery, which is wrong for orders paid online. */}
+                <span style={{ color: "#28a745", fontWeight: 600 }}>
+                  {order.paymentMethod === "WAYLE"
+                    ? `💳 ${t("onlinePayment")}`
+                    : `💵 ${t("cashOnDelivery")}`}
+                </span>
               </div>
+              {order.paymentMethod === "WAYLE" && (
+                <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
+                  <span className="text-secondary">{t("paymentStatus")}</span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: order.paymentStatus === "PAID" ? "#28a745" : "#b45309",
+                    }}
+                  >
+                    {order.paymentStatus === "PAID" ? t("paid") : t("awaitingPayment")}
+                  </span>
+                </div>
+              )}
               {order.notes && (
                 <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
                   <span className="text-secondary">{t("notes")}</span>

@@ -24,5 +24,10 @@
   "color": "Color",
   "each": "each",
   "total": "Total",
-  "notes": "Notes"
+  "notes": "Notes",
+  "onlinePayment": "Online Payment",
+  "paymentStatus": "Payment Status",
+  "paid": "Paid",
+  "awaitingPayment": "Awaiting payment",
+  "itemsCount": "{count, plural, one {# item} other {# items}}"
 }

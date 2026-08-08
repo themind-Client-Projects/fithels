@@ -39,7 +39,7 @@
   "deleteCategory": "Delete Category",
   "confirmDeleteProduct": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
   "confirmDeleteCategory": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
-  "cannotDeleteCategory": "Cannot delete \"{name}\" — it has {count} products. Remove them first.",
+  "cannotDeleteCategory": "Cannot delete \"{name}\" — it has {count, plural, one {# product} other {# products}}. Remove them first.",
   "delete": "Delete",
   "cancel": "Cancel",
   "deleting": "Deleting...",

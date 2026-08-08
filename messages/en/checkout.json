@@ -29,5 +29,19 @@
   "locationRequired": "Delivery address is required",
   "orderItems": "Order Items",
   "deliveryInfo": "Delivery Information",
-  "orderPhone": "Order Phone Number"
+  "orderPhone": "Order Phone Number",
+  "onlinePayment": "Pay online",
+  "onlinePaymentDesc": "Pay now securely with your card",
+  "cashOnDeliveryDesc": "Pay in cash when your order arrives",
+  "redirectingToPayment": "Redirecting you to the payment page…",
+  "paymentBelowMinimum": "The minimum for online payment is 1,000 IQD. Please choose cash on delivery.",
+  "paymentFailedStart": "Could not start the payment. Please try again or choose cash on delivery.",
+  "verifyingPayment": "Confirming your payment…",
+  "verifyingPaymentDesc": "Please keep this page open. This can take a few seconds.",
+  "paymentConfirmed": "Payment confirmed",
+  "paymentFailed": "Payment did not complete",
+  "paymentFailedDesc": "You have not been charged. You can try again.",
+  "paymentPendingTitle": "Processing your payment",
+  "paymentPendingDesc": "We received your payment and it is being processed. Your money is safe and we will confirm your order shortly.",
+  "backToOrders": "View my orders"
 }

@@ -111,6 +111,13 @@ model Order {
   phone    String?
   location String?
 
+  // Payment. `status` above is the DELIVERY lifecycle and must never be used to
+  // track money; these two carry the payment state instead.
+  paymentMethod PaymentMethod  @default(COD)
+  paymentStatus PaymentStatus  @default(UNPAID)
+  paidAt        DateTime?
+  paymentIntent PaymentIntent?
+
   // Delivery tracking (admin-controlled)
   estimatedDelivery DateTime?
   deliveredAt       DateTime?
@@ -126,6 +133,51 @@ model Order {
   @@index([userId, createdAt])
   @@index([status])
   @@index([createdAt])
+}
+
+/// One attempt to collect money for an order through a payment provider.
+///
+/// This table — not `Order` — carries the idempotency claim. Wayle delivers
+/// webhooks at-least-once, so fulfilment claims `status` atomically
+/// (PENDING -> PROCESSING) with a conditional updateMany inside a transaction;
+/// a second delivery matches 0 rows and stops.
+model PaymentIntent {
+  id String @id @default(cuid())
+
+  /// Opaque key we generate and send to Wayle as `referenceId`. Carries no
+  /// encoded data on purpose — everything lives in this row instead.
+  referenceId String @unique
+
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String @unique
+
+  /// Denormalised so the polling endpoint can do an ownership check without
+  /// joining through Order.
+  userId String
+
+  /// The exact integer IQD figure sent to Wayle. Fulfilment validates the
+  /// webhook against THIS, never against a recomputed price.
+  amountIqd    Int
+  /// USD subtotal and the rate used, kept for reconciliation.
+  amountUsd    Float
+  rateUsdToIqd Float
+  currency     String @default("IQD")
+
+  status   PaymentStatus @default(PENDING)
+  provider String        @default("WAYLE")
+
+  /// Wayle's own id for the link, and the hosted URL we redirect the payer to.
+  providerPaymentId String?
+  paymentUrl        String?
+  paymentMethodUsed String?
+
+  failureReason String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -147,6 +199,20 @@ enum Role {
   CUSTOMER
   EMPLOYEE
   ADMIN
+}
+
+enum PaymentMethod {
+  COD // Cash on delivery — الدفع عند الاستلام
+  WAYLE // Online payment via the Wayle hosted link
+}
+
+enum PaymentStatus {
+  UNPAID // COD orders: nothing to collect online
+  PENDING // Wayle link issued, waiting for the webhook
+  PROCESSING // Claimed by a webhook delivery (idempotency lock)
+  PAID
+  FAILED
+  EXPIRED
 }
 
 enum OrderStatus {

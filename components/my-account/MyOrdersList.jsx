@@ -156,7 +156,7 @@ export default function MyOrdersList() {
 
                   <div className="d-flex justify-content-between align-items-center" style={{ marginTop: "12px" }}>
                     <span className="text-secondary" style={{ fontSize: "13px" }}>
-                      {order.items?.length || 0} {t("items")}
+                      {t("itemsCount", { count: order.items?.length || 0 })}
                     </span>
                     <Link
                       href={`/${locale}/my-orders/${order.id}`}
