@@ -132,12 +132,28 @@ export interface NormalisedWebhook {
 }
 
 /** The webhook body is not perfectly consistent — normalise defensively. */
+/**
+ * Wayle sends amounts as strings, and formatted ones ("15,000") are realistic.
+ * A bare Number() turns those into NaN, which downstream is indistinguishable
+ * from "the amount is wrong" — and failing a payment that actually succeeded is
+ * far worse than the formatting quirk itself.
+ */
+export function parseProviderAmount(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return NaN;
+
+  const cleaned = value.trim().replace(/[\s,_]/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return NaN;
+
+  return Number(cleaned);
+}
+
 export function normaliseWebhookPayload(payload: any): NormalisedWebhook {
   return {
     referenceId: payload?.referenceId,
     paymentId: payload?.id,
     status: payload?.paymentStatus ?? payload?.status,
-    amount: Number(payload?.total ?? payload?.amount),
+    amount: parseProviderAmount(payload?.total ?? payload?.amount),
     currency: payload?.currency ?? "IQD",
     completedAt: payload?.completedAt ?? null,
     paymentMethod: payload?.paymentMethod,

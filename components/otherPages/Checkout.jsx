@@ -113,6 +113,8 @@ function CheckoutContent() {
           phone: phone.trim(),
           location: location.trim(),
           paymentMethod,
+          // So Wayle returns the payer to their own language.
+          locale,
         }),
       });
 

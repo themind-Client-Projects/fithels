@@ -68,38 +68,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true }, { status: 200 })
   }
 
-  // Already settled — idempotent no-op.
-  if (intent.status === 'PAID' || intent.status === 'FAILED') {
-    return NextResponse.json({ received: true, duplicate: true }, { status: 200 })
-  }
+  // ── Terminal states ─────────────────────────────────────────────────────
+  //
+  // PAID is a plain duplicate. FAILED and EXPIRED are not: we gave up on those
+  // orders, cancelled them and released their stock. A COMPLETED event arriving
+  // for one of them means the customer WAS charged for an order that no longer
+  // exists — most commonly when a card is declined (we mark FAILED) and the
+  // payer immediately retries on the same Wayle link with a different card.
+  //
+  // Swallowing that silently loses the customer's money with no trace, so it is
+  // recorded for reconciliation. It deliberately does NOT auto-reinstate: the
+  // released stock may since have been sold to someone else.
+  const TERMINAL_STATUSES = ['PAID', 'FAILED', 'EXPIRED'] as const
 
-  // Paid after we gave up on it. The expiry sweep already cancelled the order
-  // and released the stock, so we cannot silently swallow this: the customer
-  // has been charged for an order that no longer exists. Record it loudly and
-  // leave it for a human — auto-reinstating could oversell stock that has since
-  // been sold to someone else.
-  if (intent.status === 'EXPIRED') {
-    if (isAcceptedStatus(event.status)) {
+  if ((TERMINAL_STATUSES as readonly string[]).includes(intent.status)) {
+    const wasAbandonedByUs = intent.status !== 'PAID'
+
+    if (wasAbandonedByUs && isAcceptedStatus(event.status)) {
       console.error(
-        'PAYMENT RECEIVED AFTER EXPIRY — REFUND OR REINSTATE MANUALLY',
+        `PAYMENT RECEIVED AFTER ORDER WAS ${intent.status} — REFUND OR REINSTATE MANUALLY`,
         {
           referenceId: event.referenceId,
           orderId: intent.orderId,
           userId: intent.userId,
           amountIqd: intent.amountIqd,
           providerPaymentId: event.paymentId,
+          previousFailureReason: intent.failureReason,
         }
       )
       await prisma.paymentIntent.updateMany({
-        where: { id: intent.id, status: 'EXPIRED' },
+        where: { id: intent.id, status: intent.status },
         data: {
-          failureReason: 'PAID_AFTER_EXPIRY_NEEDS_RECONCILIATION',
+          failureReason: `PAID_AFTER_${intent.status}_NEEDS_RECONCILIATION`,
           providerPaymentId: event.paymentId ?? intent.providerPaymentId,
           completedAt: event.completedAt ? new Date(event.completedAt) : new Date(),
         },
       })
     }
-    return NextResponse.json({ received: true }, { status: 200 })
+
+    return NextResponse.json({ received: true, duplicate: true }, { status: 200 })
   }
 
   // ── Payment did not complete ────────────────────────────────────────────
@@ -132,7 +139,28 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Payment completed — validate the amount before fulfilling ───────────
-  if (!Number.isFinite(event.amount) || event.amount !== intent.amountIqd) {
+  // An amount we cannot parse is NOT the same as an amount that is wrong.
+  // Cancelling here would void an order the customer has already paid for, on
+  // nothing more than a formatting quirk. Leave the intent PENDING so a
+  // corrected redelivery can still fulfil it, and flag it for a human.
+  if (!Number.isFinite(event.amount)) {
+    console.error(
+      'Wayle webhook has an unparseable amount — NOT fulfilling, NOT cancelling, NEEDS REVIEW',
+      {
+        referenceId: event.referenceId,
+        orderId: intent.orderId,
+        expected: intent.amountIqd,
+        rawStatus: event.status,
+      }
+    )
+    await prisma.paymentIntent.updateMany({
+      where: { id: intent.id, status: 'PENDING' },
+      data: { failureReason: 'AMOUNT_UNVERIFIABLE_NEEDS_REVIEW' },
+    })
+    return NextResponse.json({ received: true }, { status: 200 })
+  }
+
+  if (event.amount !== intent.amountIqd) {
     // NEEDS MANUAL RECONCILIATION: the signature was valid, so money may have
     // genuinely moved for a different amount than we asked for. We refuse to
     // fulfil, but we must still release the stock we reserved — otherwise it

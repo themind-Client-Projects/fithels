@@ -59,6 +59,12 @@ export default function PaymentReturn() {
             setState("paid");
             return;
           }
+          // Charged, but for an order we had already cancelled. Never show this
+          // person a failure — their money did move and a human has to settle it.
+          if (data.needsReview) {
+            setState("timeout");
+            return;
+          }
           if (data.status === "FAILED" || data.status === "EXPIRED") {
             setState("failed");
             return;

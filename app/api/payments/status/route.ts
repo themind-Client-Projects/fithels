@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       orderId: true,
       amountIqd: true,
       completedAt: true,
+      failureReason: true,
     },
   })
 
@@ -38,12 +39,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  // Money reached us for an order we had already given up on. The intent stays
+  // FAILED/EXPIRED for accounting, but the payer must not be told their payment
+  // failed — they have been charged.
+  const needsReview = (intent.failureReason ?? '').includes('NEEDS_REVIEW')
+    || (intent.failureReason ?? '').includes('NEEDS_RECONCILIATION')
+
   return NextResponse.json({
     referenceId,
     status: intent.status,
     orderId: intent.orderId,
     amountIqd: intent.amountIqd,
     completedAt: intent.completedAt,
-    settled: intent.status === 'PAID' || intent.status === 'FAILED',
+    needsReview,
+    // EXPIRED is terminal too — omitting it left a poller spinning forever.
+    settled:
+      intent.status === 'PAID' ||
+      intent.status === 'FAILED' ||
+      intent.status === 'EXPIRED',
   })
 }

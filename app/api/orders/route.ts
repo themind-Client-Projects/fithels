@@ -92,6 +92,10 @@ export async function POST(request: NextRequest) {
     const paymentMethod: 'COD' | 'WAYLE' =
       body.paymentMethod === 'WAYLE' ? 'WAYLE' : 'COD'
 
+    // Validated against the known locales rather than interpolated raw — this
+    // value ends up inside a URL handed to the payment provider.
+    const returnLocale = body.locale === 'en' ? 'en' : 'ar'
+
     if (!phone?.trim()) {
       return NextResponse.json(
         { error: 'Phone number is required' },
@@ -321,7 +325,9 @@ export async function POST(request: NextRequest) {
             : `${siteUrl}/images/logo/logo.svg`,
         })),
         webhookUrl: `${siteUrl}/api/payments/wayle/webhook`,
-        redirectionUrl: `${siteUrl}/checkout/return`,
+        // Locale-prefixed on purpose: the return page lives under /[locale],
+        // so an unprefixed URL bounces every payer onto the default locale.
+        redirectionUrl: `${siteUrl}/${returnLocale}/checkout/return`,
       })
 
       await prisma.paymentIntent.update({
