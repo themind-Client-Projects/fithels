@@ -12,11 +12,34 @@ const sizes = [
   { id: "size-41", value: "41", price: 89.99, disabled: false },
 ];
 
-export default function SizeSelect() {
-  const [selectedSize, setSelectedSize] = useState("38"); // Default value
+/**
+ * Optionally controlled. The selection used to live purely in local state and
+ * was never read by anything, so the size a shopper picked was thrown away and
+ * the order recorded no size at all. Callers that need the value pass
+ * `selectedSize`/`onSelect`; the uncontrolled form is kept for the legacy
+ * template components.
+ */
+export default function SizeSelect({
+  sizes: sizeOptions,
+  selectedSize: controlledSize,
+  onSelect,
+}) {
+  const [localSize, setLocalSize] = useState("38"); // Default value
+  const selectedSize = controlledSize ?? localSize;
+
+  // A product's own sizes when supplied, otherwise the template's list.
+  const options =
+    sizeOptions?.length
+      ? sizeOptions.map((value) => ({
+          id: `size-${value}`,
+          value: String(value),
+          disabled: false,
+        }))
+      : sizes;
 
   const handleChange = (value) => {
-    setSelectedSize(value);
+    setLocalSize(value);
+    onSelect?.(value);
   };
   return (
     <div className="variant-picker-item">
@@ -36,7 +59,7 @@ export default function SizeSelect() {
         </a>
       </div>
       <div className="variant-picker-values gap12">
-        {sizes.map(({ id, value, price, disabled }) => (
+        {options.map(({ id, value, price, disabled }) => (
           <div key={id} onClick={() => handleChange(value)}>
             <input
               type="radio"

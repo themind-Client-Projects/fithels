@@ -26,13 +26,21 @@ export default function Context({ children }) {
     setTotalPrice(subtotal);
   }, [cartProducts]);
 
+  // A cart line is a product AND its chosen variant. Keying on the product id
+  // alone meant "Shirt / M" and "Shirt / L" collapsed into one line — adding the
+  // second silently did nothing at all, with no error and no modal.
+  const cartLineKey = (id, size, color) =>
+    `${id}::${size ?? ""}::${color ?? ""}`;
+
+  /** True when ANY variant of this product is in the cart (drives "Already Added"). */
   const isAddedToCartProducts = (id) => {
     if (cartProducts.filter((elm) => elm.id == id)[0]) {
       return true;
     }
     return false;
   };
-  const addProductToCart = (productOrId, qty, isModal = true) => {
+
+  const addProductToCart = (productOrId, qty, isModal = true, variant = {}) => {
     // Accepts either a full product object (database-backed pages) or a bare id
     // (legacy template components that resolve against the static fixture).
     //
@@ -44,7 +52,18 @@ export default function Context({ children }) {
       productOrId !== null && typeof productOrId === "object";
     const id = isProductObject ? productOrId.id : productOrId;
 
-    if (isAddedToCartProducts(id)) return;
+    // Fall back to the product's only option when there is exactly one, so a
+    // single-size product still records what was bought.
+    const source0 = isProductObject ? productOrId : null;
+    const size =
+      variant.size ??
+      (source0?.sizes?.length === 1 ? source0.sizes[0] : undefined);
+    const color =
+      variant.color ??
+      (source0?.filterColor?.length === 1 ? source0.filterColor[0] : undefined);
+
+    const lineKey = cartLineKey(id, size, color);
+    if (cartProducts.some((elm) => elm.lineKey === lineKey)) return false;
 
     const source = isProductObject
       ? productOrId
@@ -66,7 +85,16 @@ export default function Context({ children }) {
       return false;
     }
 
-    const item = { ...source, quantity: qty ? qty : 1 };
+    const item = {
+      ...source,
+      quantity: qty ? qty : 1,
+      // Checkout reads these; nothing ever wrote them before, so every cart
+      // order reached the server with size and colour null and the warehouse
+      // shipped an arbitrary variant.
+      selectedSize: size ?? null,
+      selectedColor: color ?? null,
+      lineKey,
+    };
     setCartProducts((pre) => [...pre, item]);
     if (isModal) {
       openCartModal();
@@ -74,16 +102,20 @@ export default function Context({ children }) {
     return true;
   };
 
-  const updateQuantity = (id, qty) => {
-    if (isAddedToCartProducts(id)) {
-      let item = cartProducts.filter((elm) => elm.id == id)[0];
-      let items = [...cartProducts];
-      const itemIndex = items.indexOf(item);
+  const updateQuantity = (idOrKey, qty) => {
+    // Immutable update. The old version mutated the item object held in state
+    // and then reassigned it into a copied array, so the item's identity never
+    // changed — memoised rows would not re-render, and it wrote through the
+    // previous state snapshot, which is unsafe under concurrent rendering.
+    const quantity = Math.max(1, Number(qty) || 1);
 
-      item.quantity = qty / 1;
-      items[itemIndex] = item;
-      setCartProducts(items);
-    }
+    setCartProducts((pre) =>
+      pre.map((item) =>
+        item.lineKey === idOrKey || item.id == idOrKey
+          ? { ...item, quantity }
+          : item
+      )
+    );
   };
 
   const addToWishlist = (id) => {

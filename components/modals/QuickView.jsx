@@ -9,6 +9,8 @@ import QuantitySelect from "../productDetails/QuantitySelect";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function QuickView() {
   const [activeColor, setActiveColor] = useState("gray");
+  // Lifted so the chosen variant reaches the cart instead of being discarded.
+  const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1); // Initial quantity is 1
   const {
     quickViewItem,
@@ -120,7 +122,11 @@ export default function QuickView() {
                   activeColor={activeColor}
                   setActiveColor={setActiveColor}
                 />
-                <SizeSelect />
+                <SizeSelect
+                  sizes={quickViewItem?.sizes}
+                  selectedSize={selectedSize}
+                  onSelect={setSelectedSize}
+                />
                 <div className="tf-product-info-quantity">
                   <div className="title mb_12">Quantity:</div>
                   <QuantitySelect
@@ -145,7 +151,10 @@ export default function QuickView() {
                     <a
                       className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
                       onClick={() =>
-                        addProductToCart(quickViewItem, quantity)
+                        addProductToCart(quickViewItem, quantity, true, {
+                          size: selectedSize,
+                          color: activeColor,
+                        })
                       }
                     >
                       <span>

@@ -15,8 +15,14 @@ export default function CartModal() {
   } = useContextElement();
   const locale = useLocale();
 
-  const removeItem = (id) => {
-    setCartProducts((pre) => [...pre.filter((elm) => elm.id != id)]);
+  // Remove the specific variant line. Filtering by product id alone would drop
+  // every size/colour of that product from the cart at once.
+  const removeItem = (item) => {
+    setCartProducts((pre) =>
+      pre.filter((elm) =>
+        item.lineKey ? elm.lineKey !== item.lineKey : elm.id != item.id
+      )
+    );
   };
 
   const [currentOpenPopup, setCurrentOpenPopup] = useState("");
@@ -149,16 +155,20 @@ export default function CartModal() {
                                 </div>
                                 <div
                                   className="text-button tf-btn-remove remove"
-                                  onClick={() => removeItem(product.id)}
+                                  onClick={() => removeItem(product)}
                                 >
                                   Remove
                                 </div>
                               </div>
                               <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
-                                <div className="text-secondary-2">XL/Blue</div>
+                                <div className="text-secondary-2">
+                                  {[product.selectedSize, product.selectedColor]
+                                    .filter(Boolean)
+                                    .join(" / ")}
+                                </div>
                                 <div className="text-button">
-                                  {product.quantity} X $
-                                  {product.price.toFixed(2)}
+                                  {product.quantity} X{" "}
+                                  <CurrencyFormatter price={product.price} />
                                 </div>
                               </div>
                             </div>

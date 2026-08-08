@@ -58,7 +58,11 @@ export default function Wishlist() {
                               </div>
                             </div>
                             <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
-                              <div className="text-secondary-2">XL/Blue</div>
+                              <div className="text-secondary-2">
+                                {[elm.selectedSize, elm.selectedColor]
+                                  .filter(Boolean)
+                                  .join(" / ")}
+                              </div>
                               <div className="text-button">
                                 <CurrencyFormatter price={elm.price} />
                               </div>
