@@ -58,8 +58,11 @@ export default function CustomersPage() {
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
       } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete customer");
+        const data = await res.json().catch(() => ({}));
+        // Server sends a stable reason so the Arabic dashboard can translate it.
+        alert(
+          data.reason ? t("deleteBlockedCustomer") : data.error || "Failed to delete customer"
+        );
       }
     } catch (error) {
       console.error("Failed to delete customer:", error);

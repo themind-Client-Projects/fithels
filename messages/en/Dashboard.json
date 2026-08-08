@@ -156,5 +156,11 @@
   "needsReconciliationDesc": "A payment arrived for a cancelled or expired order. Reconcile it by hand.",
   "loadFailed": "Could not load data",
   "loadFailedDesc": "Something went wrong fetching this data. Check your connection and try again.",
-  "retry": "Retry"
+  "retry": "Retry",
+  "requiredEnTitle": "The English title is required.",
+  "requiredArTitle": "The Arabic title is required.",
+  "requiredEnName": "The English name is required.",
+  "requiredArName": "The Arabic name is required.",
+  "deleteBlockedProduct": "This product appears in existing orders and cannot be deleted. Deactivate it instead.",
+  "deleteBlockedCustomer": "This customer has existing orders and cannot be deleted."
 }

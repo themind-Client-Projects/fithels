@@ -22,6 +22,8 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
 
   const [nameEn, setNameEn] = useState(category?.nameEn || "");
   const [nameAr, setNameAr] = useState(category?.nameAr || "");
+  // Controlled so validation can reveal the tab with the missing field.
+  const [activeTab, setActiveTab] = useState("en");
   const [slug, setSlug] = useState(category?.slug || "");
   const [autoSlug, setAutoSlug] = useState(!isEditing);
   const [loading, setLoading] = useState(false);
@@ -35,6 +37,10 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Inactive tab panels unmount, so `required` on nameAr never reaches the
+    // DOM. Validate both languages here instead of relying on the browser.
+    if (!nameEn.trim()) { setActiveTab('en'); setError(t('requiredEnName')); return; }
+    if (!nameAr.trim()) { setActiveTab('ar'); setError(t('requiredArName')); return; }
     setError("");
     setLoading(true);
 
@@ -75,7 +81,7 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
         </div>
       )}
 
-      <Tabs defaultValue="en">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="en">English</TabsTrigger>
           <TabsTrigger value="ar">العربية</TabsTrigger>

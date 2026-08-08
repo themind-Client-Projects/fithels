@@ -30,6 +30,8 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  // Controlled so validation can switch to the tab holding the missing field.
+  const [activeTab, setActiveTab] = useState("en");
 
   useEffect(() => {
     async function fetchCategories() {
@@ -102,6 +104,23 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // The language tabs unmount when inactive, so `required` on the Arabic
+    // fields is not in the DOM and the browser never enforces it. An admin who
+    // filled only the English tab got a server-side "Missing required fields"
+    // naming nothing, for a field on a tab they could not see. Validate both
+    // languages here and switch to the offending tab.
+    if (!titleEn.trim()) {
+      setActiveTab("en");
+      setError(t("requiredEnTitle"));
+      return;
+    }
+    if (!titleAr.trim()) {
+      setActiveTab("ar");
+      setError(t("requiredArTitle"));
+      return;
+    }
+
     setLoading(true);
 
     const body = {
@@ -162,7 +181,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </div>
       )}
 
-      <Tabs defaultValue="en">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 p-1.5 bg-muted/40 rounded-xl h-14 mb-2">
           <TabsTrigger value="en" className="rounded-lg font-semibold text-sm py-2">English</TabsTrigger>
           <TabsTrigger value="ar" className="rounded-lg font-semibold text-sm py-2">العربية</TabsTrigger>

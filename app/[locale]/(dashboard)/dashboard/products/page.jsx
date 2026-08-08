@@ -64,8 +64,11 @@ export default function ProductsPage() {
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["products"] });
       } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete product");
+        const data = await res.json().catch(() => ({}));
+        // Server sends a stable reason so the Arabic dashboard can translate it.
+        alert(
+          data.reason ? t("deleteBlockedProduct") : data.error || "Failed to delete product"
+        );
       }
     } catch (error) {
       console.error("Failed to delete product:", error);

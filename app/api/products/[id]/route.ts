@@ -154,9 +154,27 @@ export async function DELETE(
 
     const { id } = await params
 
-    const existing = await prisma.product.findUnique({ where: { id } })
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      include: { _count: { select: { orderItems: true } } },
+    })
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    // OrderItem.product is a required relation with the default Restrict, so
+    // deleting a product that was ever ordered raised a foreign-key error and
+    // surfaced as a bare "Failed to delete product" — indistinguishable from a
+    // database outage. Say what is actually blocking it.
+    if (existing._count.orderItems > 0) {
+      return NextResponse.json(
+        {
+          error: `This product appears in ${existing._count.orderItems} order(s) and cannot be deleted. Deactivate it instead.`,
+          reason: 'PRODUCT_REFERENCED_BY_ORDERS',
+          orderCount: existing._count.orderItems,
+        },
+        { status: 409 }
+      )
     }
 
     await prisma.product.delete({ where: { id } })

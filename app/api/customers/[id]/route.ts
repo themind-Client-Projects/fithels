@@ -63,6 +63,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'You cannot delete your own admin account' }, { status: 400 })
     }
 
+    // Order.user is a required relation defaulting to Restrict, so deleting a
+    // customer with orders threw a foreign-key error that surfaced as a generic
+    // "Failed to delete customer". The list even shows their order count next
+    // to a delete button that could never work.
+    const orderCount = await prisma.order.count({ where: { userId: id } })
+    if (orderCount > 0) {
+      return NextResponse.json(
+        {
+          error: `This customer has ${orderCount} order(s) and cannot be deleted.`,
+          reason: 'CUSTOMER_HAS_ORDERS',
+          orderCount,
+        },
+        { status: 409 }
+      )
+    }
+
     await prisma.user.delete({
       where: { id },
     })
