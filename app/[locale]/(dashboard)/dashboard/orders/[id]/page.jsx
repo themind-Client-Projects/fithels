@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { formatMoney } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import PaymentBadge from "@/components/dashboard/PaymentBadge";
@@ -129,12 +130,10 @@ export default function OrderDetailPage() {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return `$${Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
+  // Shared formatter — these four files each had their own copy that
+  // hardcoded $ and en-US, so the dashboard showed a different figure
+  // than the storefront for the same order.
+  const formatCurrency = (amount) => formatMoney(amount, "USD");
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";

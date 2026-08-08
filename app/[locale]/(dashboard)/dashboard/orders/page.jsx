@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { formatMoney } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
@@ -152,12 +153,10 @@ export default function OrdersPage() {
     { value: "CANCELLED", label: t("cancelled") },
   ];
 
-  const formatCurrency = (amount) => {
-    return `$${Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
+  // Shared formatter — these four files each had their own copy that
+  // hardcoded $ and en-US, so the dashboard showed a different figure
+  // than the storefront for the same order.
+  const formatCurrency = (amount) => formatMoney(amount, "USD");
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("ar-SA", {
