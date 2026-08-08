@@ -71,13 +71,7 @@ export async function PUT(
 
     // Partial update: a sale price can be edited without touching the price, so
     // it has to be checked against whatever the price will be after this save.
-    const current = await prisma.product.findUnique({
-      where: { id },
-      select: { price: true, salePrice: true },
-    })
-    if (!current) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-    }
+    const current = existing
 
     let parsedPrice: number | undefined
     let parsedSalePrice: number | null | undefined
@@ -99,13 +93,19 @@ export async function PUT(
       ) {
         throw new PricingValidationError(
           'price',
+          'PRICE_BELOW_EXISTING_SALE_PRICE',
           `This product has a sale price of ${current.salePrice}. The regular price must stay above it — update or clear the sale price first.`
         )
       }
     } catch (error) {
       if (error instanceof PricingValidationError) {
         return NextResponse.json(
-          { error: error.message, code: error.code, field: error.field },
+          {
+            error: error.message,
+            code: error.code,
+            reason: error.reason,
+            field: error.field,
+          },
           { status: 400 }
         )
       }

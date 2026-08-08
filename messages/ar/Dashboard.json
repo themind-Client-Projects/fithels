@@ -127,5 +127,19 @@
   "orderPhone": "هاتف الطلب",
   "deliveryLocation": "عنوان التوصيل",
   "noLocation": "لم يتم تحديد عنوان",
-  "searchCustomerOrPhone": "ابحث باسم العميل أو رقم الهاتف..."
+  "searchCustomerOrPhone": "ابحث باسم العميل أو رقم الهاتف...",
+  "pricingError": {
+    "NOT_A_NUMBER": "الرجاء إدخال رقم صحيح.",
+    "PRICE_NOT_POSITIVE": "يجب أن يكون السعر أكبر من صفر.",
+    "SALE_PRICE_NOT_POSITIVE": "يجب أن يكون سعر التخفيض أكبر من صفر. اتركه فارغًا لإلغاء التخفيض.",
+    "SALE_PRICE_NOT_A_DISCOUNT": "يجب أن يكون سعر التخفيض أقل من السعر الأصلي.",
+    "PRICE_BELOW_EXISTING_SALE_PRICE": "لا يمكن أن يكون السعر أقل من سعر التخفيض الحالي. عدّل سعر التخفيض أو احذفه أولاً.",
+    "STOCK_NOT_A_WHOLE_NUMBER": "يجب أن يكون المخزون رقمًا صحيحًا لا يقل عن صفر."
+  },
+  "uploadError": {
+    "TOO_LARGE": "حجم الصورة كبير جدًا. الحد الأقصى 5 ميغابايت.",
+    "UNSUPPORTED_TYPE": "نوع الملف غير مدعوم. الصيغ المسموحة: JPEG، PNG، WebP، GIF، AVIF.",
+    "UNAUTHORIZED": "لا تملك صلاحية رفع الصور.",
+    "GENERIC": "تعذّر رفع الصورة. حاول مرة أخرى."
+  }
 }

@@ -9,11 +9,25 @@
  * consumed. Negative values and `"abc"` (→ NaN) got through the same way.
  */
 
+/**
+ * Stable machine-readable reasons. The dashboard is Arabic-first, so the client
+ * translates these rather than displaying the English `message`, which exists
+ * only as a fallback for API consumers.
+ */
+export type PricingErrorReason =
+  | 'NOT_A_NUMBER'
+  | 'PRICE_NOT_POSITIVE'
+  | 'SALE_PRICE_NOT_POSITIVE'
+  | 'SALE_PRICE_NOT_A_DISCOUNT'
+  | 'PRICE_BELOW_EXISTING_SALE_PRICE'
+  | 'STOCK_NOT_A_WHOLE_NUMBER'
+
 export class PricingValidationError extends Error {
   readonly code = 'INVALID_PRICING' as const
 
   constructor(
     readonly field: string,
+    readonly reason: PricingErrorReason,
     message: string
   ) {
     super(message)
@@ -35,7 +49,7 @@ function toNumber(value: unknown, field: string): number {
   const parsed = typeof value === 'number' ? value : Number(String(value).trim())
 
   if (!Number.isFinite(parsed)) {
-    throw new PricingValidationError(field, `${field} must be a number.`)
+    throw new PricingValidationError(field, 'NOT_A_NUMBER', `${field} must be a number.`)
   }
   return parsed
 }
@@ -43,7 +57,7 @@ function toNumber(value: unknown, field: string): number {
 export function parsePrice(value: unknown): number {
   const price = toNumber(value, 'price')
   if (price <= 0) {
-    throw new PricingValidationError('price', 'Price must be greater than zero.')
+    throw new PricingValidationError('price', 'PRICE_NOT_POSITIVE', 'Price must be greater than zero.')
   }
   return price
 }
@@ -65,6 +79,7 @@ export function parseSalePrice(
   if (salePrice <= 0) {
     throw new PricingValidationError(
       'salePrice',
+      'SALE_PRICE_NOT_POSITIVE',
       'Sale price must be greater than zero. Leave it empty to remove the discount.'
     )
   }
@@ -72,6 +87,7 @@ export function parseSalePrice(
   if (salePrice >= effectivePrice) {
     throw new PricingValidationError(
       'salePrice',
+      'SALE_PRICE_NOT_A_DISCOUNT',
       'Sale price must be lower than the regular price.'
     )
   }
@@ -86,6 +102,7 @@ export function parseStock(value: unknown): number {
   if (!Number.isInteger(stock) || stock < 0) {
     throw new PricingValidationError(
       'stock',
+      'STOCK_NOT_A_WHOLE_NUMBER',
       'Stock must be a whole number of zero or more.'
     )
   }

@@ -127,5 +127,19 @@
   "orderPhone": "Order Phone",
   "deliveryLocation": "Delivery Address",
   "noLocation": "No address provided",
-  "searchCustomerOrPhone": "Search by name or phone..."
+  "searchCustomerOrPhone": "Search by name or phone...",
+  "pricingError": {
+    "NOT_A_NUMBER": "Please enter a valid number.",
+    "PRICE_NOT_POSITIVE": "Price must be greater than zero.",
+    "SALE_PRICE_NOT_POSITIVE": "Sale price must be greater than zero. Leave it empty to remove the discount.",
+    "SALE_PRICE_NOT_A_DISCOUNT": "Sale price must be lower than the regular price.",
+    "PRICE_BELOW_EXISTING_SALE_PRICE": "Price cannot be below the current sale price. Update or clear the sale price first.",
+    "STOCK_NOT_A_WHOLE_NUMBER": "Stock must be a whole number of zero or more."
+  },
+  "uploadError": {
+    "TOO_LARGE": "That image is too large. The maximum size is 5MB.",
+    "UNSUPPORTED_TYPE": "Unsupported file type. Allowed: JPEG, PNG, WebP, GIF, AVIF.",
+    "UNAUTHORIZED": "You do not have permission to upload images.",
+    "GENERIC": "Could not upload the image. Please try again."
+  }
 }

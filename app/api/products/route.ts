@@ -82,7 +82,12 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (error instanceof PricingValidationError) {
         return NextResponse.json(
-          { error: error.message, code: error.code, field: error.field },
+          {
+            error: error.message,
+            code: error.code,
+            reason: error.reason,
+            field: error.field,
+          },
           { status: 400 }
         )
       }

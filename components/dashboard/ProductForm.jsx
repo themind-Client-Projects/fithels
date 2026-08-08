@@ -53,8 +53,8 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     setUploading(true);
     setError("");
 
+    const newImages = [...images];
     try {
-      const newImages = [...images];
       for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
@@ -65,18 +65,33 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to upload image");
+          // Say what actually went wrong. This used to blame Supabase config
+          // for every failure, sending admins to debug the wrong thing when the
+          // real answer was "too large" or "not an image".
+          const reason =
+            res.status === 413
+              ? "TOO_LARGE"
+              : res.status === 415
+                ? "UNSUPPORTED_TYPE"
+                : res.status === 401 || res.status === 403
+                  ? "UNAUTHORIZED"
+                  : "GENERIC";
+          throw new Error(t(`uploadError.${reason}`));
         }
 
         const data = await res.json();
         newImages.push(data.url);
       }
-      setImages(newImages);
     } catch (err) {
       console.error(err);
-      setError("Failed to upload images. Please check Supabase configuration.");
+      setError(err?.message || t("uploadError.GENERIC"));
     } finally {
+      // Keep whatever uploaded before the failure — those files are already in
+      // storage, and dropping them here orphaned them and lost the admin's work.
+      setImages(newImages);
       setUploading(false);
+      // Allow re-selecting the same file after a failure.
+      e.target.value = "";
     }
   };
 
@@ -119,8 +134,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Something went wrong");
+        const data = await res.json().catch(() => ({}));
+        // Server sends a stable `reason` so this Arabic-first dashboard can show
+        // a translated message instead of the English fallback.
+        setError(
+          data.reason
+            ? t(`pricingError.${data.reason}`)
+            : data.error || t("uploadError.GENERIC")
+        );
         return;
       }
 
