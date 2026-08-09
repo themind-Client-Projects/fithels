@@ -4,7 +4,25 @@ import { getAuthUser } from "@/lib/auth-utils";
 
 export async function GET(request) {
   try {
-    const pages = await prisma.pageContent.findMany();
+    // Unpublished pages are drafts. Without this filter anyone could read them
+    // with a plain curl, so the dashboard's "Active" toggle hid a page from the
+    // storefront while its full content stayed public here.
+    const wantsInactive =
+      new URL(request.url).searchParams.get("includeInactive") === "true";
+
+    if (wantsInactive) {
+      const user = await getAuthUser();
+      if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    const pages = await prisma.pageContent.findMany({
+      where: wantsInactive ? {} : { isActive: true },
+      // Heap order meant a row jumped position on every edit, which reads as
+      // data corruption to an admin.
+      orderBy: { slug: "asc" },
+    });
     return NextResponse.json(pages);
   } catch (error) {
     console.error("Error fetching pages:", error);
@@ -16,7 +34,7 @@ export async function POST(request) {
   try {
     const user = await getAuthUser();
     if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const data = await request.json();

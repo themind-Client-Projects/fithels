@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { releaseExpiredIntents } from '@/lib/wayle/expire'
 import { getAuthUser } from '@/lib/auth-utils'
+import crypto from 'crypto'
+
+/** Constant-time compare so the secret cannot be recovered a byte at a time. */
+function secretMatches(provided: string | null, expected: string): boolean {
+  if (!provided) return false
+  const a = Buffer.from(provided)
+  const b = Buffer.from(`Bearer ${expected}`)
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
 
 /**
  * Releases stock held by abandoned online checkouts.
@@ -17,8 +27,9 @@ export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const provided = request.headers.get('authorization')
 
-  const authorisedByCron =
-    !!cronSecret && provided === `Bearer ${cronSecret}`
+  // The codebase already uses timingSafeEqual for the Wayle signature; the
+  // same treatment belongs here. Fails closed when CRON_SECRET is unset.
+  const authorisedByCron = !!cronSecret && secretMatches(provided, cronSecret)
 
   if (!authorisedByCron) {
     const user = await getAuthUser()

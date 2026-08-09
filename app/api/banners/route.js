@@ -29,7 +29,7 @@ export async function POST(request) {
   try {
     const user = await getAuthUser();
     if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const data = await request.json();
