@@ -30,6 +30,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = React.useRef(null);
   // Controlled so validation can switch to the tab holding the missing field.
   const [activeTab, setActiveTab] = useState("en");
 
@@ -48,6 +49,15 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     fetchCategories();
   }, []);
 
+  // The dialog scrolls, and the banner is its first child — an admin who
+  // scrolled down to reach Save never saw the message they had just triggered.
+  React.useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      errorRef.current?.focus?.();
+    }
+  }, [error]);
+
   const handleFileUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -55,7 +65,6 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     setUploading(true);
     setError("");
 
-    const newImages = [...images];
     try {
       for (const file of files) {
         const formData = new FormData();
@@ -82,15 +91,19 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         }
 
         const data = await res.json();
-        newImages.push(data.url);
+        if (typeof data?.url !== "string" || !data.url) {
+          throw new Error(t("uploadError.GENERIC"));
+        }
+
+        // Append as each file lands, using the functional form. Committing a
+        // snapshot taken before the loop instead meant an image the admin
+        // removed WHILE an upload was running came back when it finished.
+        setImages((prev) => [...prev, data.url]);
       }
     } catch (err) {
       console.error(err);
       setError(err?.message || t("uploadError.GENERIC"));
     } finally {
-      // Keep whatever uploaded before the failure — those files are already in
-      // storage, and dropping them here orphaned them and lost the admin's work.
-      setImages(newImages);
       setUploading(false);
       // Allow re-selecting the same file after a failure.
       e.target.value = "";
@@ -156,8 +169,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         const data = await res.json().catch(() => ({}));
         // Server sends a stable `reason` so this Arabic-first dashboard can show
         // a translated message instead of the English fallback.
+        // t() throws on a missing key, so only translate reasons we ship.
+        const known = [
+          "NOT_A_NUMBER", "PRICE_NOT_POSITIVE", "SALE_PRICE_NOT_POSITIVE",
+          "SALE_PRICE_NOT_A_DISCOUNT", "PRICE_BELOW_EXISTING_SALE_PRICE",
+          "STOCK_NOT_A_WHOLE_NUMBER",
+        ];
         setError(
-          data.reason
+          known.includes(data.reason)
             ? t(`pricingError.${data.reason}`)
             : data.error || t("uploadError.GENERIC")
         );
@@ -166,7 +185,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
 
       onSuccess?.();
     } catch (err) {
-      setError("Failed to save product");
+      setError(t("uploadError.GENERIC"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -176,7 +195,12 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 py-4">
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 font-medium text-start">
+        <div
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"
+          className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 font-medium text-start"
+        >
           {error}
         </div>
       )}
@@ -373,7 +397,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
             إلغاء
           </Button>
         )}
-        <Button type="submit" disabled={loading} className="h-11 !px-10 rounded-xl font-bold shadow-sm !w-auto">
+        <Button type="submit" disabled={loading || uploading} className="h-11 !px-10 rounded-xl font-bold shadow-sm !w-auto">
           {loading
             ? "جاري الحفظ..."
             : isEditing

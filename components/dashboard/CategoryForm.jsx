@@ -6,15 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+// Shared with products: the local version used \w, which is ASCII-only, so an
+// Arabic name produced an empty slug and the required field blocked the save.
+import { slugify } from "@/lib/products/slug";
 
-function slugify(text) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-");
-}
 
 export default function CategoryForm({ category, onSuccess, onCancel }) {
   const isEditing = !!category;
@@ -66,7 +61,7 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
 
       onSuccess?.();
     } catch (err) {
-      setError("Failed to save category");
+      setError(t("uploadError.GENERIC"));
       console.error(err);
     } finally {
       setLoading(false);

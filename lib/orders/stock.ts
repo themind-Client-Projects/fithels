@@ -29,6 +29,21 @@ export async function cancelOrderAndReleaseStock(
 
   if (claimed.count === 0) return false
 
+  await releaseOrderStock(tx, orderId)
+  return true
+}
+
+/**
+ * Returns an order's units to the shelf WITHOUT claiming the transition.
+ *
+ * Only call this when the caller has already won the move into CANCELLED — for
+ * example via its own conditional update — otherwise the exactly-once guarantee
+ * above is lost and stock gets credited twice.
+ */
+export async function releaseOrderStock(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<void> {
   const items = await tx.orderItem.findMany({
     where: { orderId },
     select: { productId: true, quantity: true },
@@ -40,6 +55,4 @@ export async function cancelOrderAndReleaseStock(
       data: { stock: { increment: item.quantity } },
     })
   }
-
-  return true
 }

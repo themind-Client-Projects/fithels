@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 export default function PageContentForm({ page, onSuccess, onCancel }) {
   const t = useTranslations("Dashboard");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     slug: "",
     titleEn: "",
@@ -54,6 +55,9 @@ export default function PageContentForm({ page, onSuccess, onCancel }) {
       }
     } catch (error) {
       console.error("Error saving page content:", error);
+      // Was console-only: a network fault during save showed the admin
+      // nothing at all — the button simply re-enabled.
+      setError(t("loadFailedDesc"));
     } finally {
       setLoading(false);
     }
@@ -61,6 +65,11 @@ export default function PageContentForm({ page, onSuccess, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 font-medium text-start">
+          {error}
+        </div>
+      )}
       <div className="grid gap-5">
         <div className="grid gap-2">
           <Label htmlFor="slug" className="text-start text-sm font-semibold text-muted-foreground">الرابط الدائم (Slug)</Label>

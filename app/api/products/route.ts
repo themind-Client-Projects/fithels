@@ -15,16 +15,37 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
 
-    const where = search
-      ? {
-          OR: [
-            { titleEn: { contains: search, mode: 'insensitive' as const } },
-            { titleAr: { contains: search, mode: 'insensitive' as const } },
-            { descEn: { contains: search, mode: 'insensitive' as const } },
-            { descAr: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {}
+    // Deactivated products must not be public. This endpoint had no isActive
+    // filter at all, so "deactivating" a product only delisted it from the
+    // storefront pages while it stayed fully readable here — prices, images and
+    // all — and the cart drawer served it as a recommendation.
+    //
+    // The dashboard genuinely needs the inactive ones, so it asks for them
+    // explicitly and must be staff to get them.
+    const wantsInactive = searchParams.get('includeInactive') === 'true'
+    let includeInactive = false
+
+    if (wantsInactive) {
+      const user = await getAuthUser()
+      if (!user || (user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      includeInactive = true
+    }
+
+    const where = {
+      ...(includeInactive ? {} : { isActive: true }),
+      ...(search
+        ? {
+            OR: [
+              { titleEn: { contains: search, mode: 'insensitive' as const } },
+              { titleAr: { contains: search, mode: 'insensitive' as const } },
+              { descEn: { contains: search, mode: 'insensitive' as const } },
+              { descAr: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    }
 
     const products = await prisma.product.findMany({
       where,

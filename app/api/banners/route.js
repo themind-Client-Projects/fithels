@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-utils";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const wantsInactive =
+      new URL(request.url).searchParams.get("includeInactive") === "true";
+
+    if (wantsInactive) {
+      const user = await getAuthUser();
+      if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     const banners = await prisma.banner.findMany({
+      where: wantsInactive ? {} : { isActive: true },
       orderBy: { order: "asc" },
     });
     return NextResponse.json(banners);

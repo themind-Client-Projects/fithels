@@ -243,7 +243,7 @@ export default function DataTable({
               <ChevronRight className="h-4 w-4" /> {/* ChevronRight points back in RTL */}
             </Button>
             <span className="text-sm font-medium mx-2">
-              {currentPage} / {totalPages}
+              {activePage} / {totalPages}
             </span>
             <Button
               variant="outline"

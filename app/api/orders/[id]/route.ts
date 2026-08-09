@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
-import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
+import { cancelOrderAndReleaseStock, releaseOrderStock } from '@/lib/orders/stock'
 import { canTransition, isTerminalOrderStatus } from '@/lib/orders/status'
+
+/** Raised when another update changed the order's status first. */
+class OrderConcurrencyError extends Error {
+  constructor() {
+    super('Order was modified by someone else')
+    this.name = 'OrderConcurrencyError'
+  }
+}
 
 // GET /api/orders/[id] - Get single order (auth required)
 export async function GET(
@@ -157,16 +165,34 @@ export async function PATCH(
     }
 
     const order = await prisma.$transaction(async (tx) => {
-      // Cancelling returns the reserved units to the shelf. Before this, the
-      // most common admin action silently destroyed inventory: nothing in this
-      // file wrote to Product at all.
-      if (status === 'CANCELLED') {
-        await cancelOrderAndReleaseStock(tx, id)
+      // Optimistic concurrency. `existing` was read outside this transaction, so
+      // two staff acting at the same instant both passed the transition check.
+      // Applying the write only while the status is still what we validated
+      // means the loser changes nothing and gets a 409.
+      //
+      // Without this, a simultaneous CANCELLED and DELIVERED both committed:
+      // the cancel released the stock, then the delivery overwrote the status
+      // unconditionally, leaving a DELIVERED order whose units had been put
+      // back on the shelf — which is exactly the invariant lib/orders/stock.ts
+      // exists to hold.
+      const applied = await tx.order.updateMany({
+        where: { id, status: existing.status },
+        data: updateData,
+      })
+
+      if (applied.count === 0) {
+        throw new OrderConcurrencyError()
       }
 
-      return tx.order.update({
+      // Having won the transition, return the reserved units. Before any of
+      // this, cancelling silently destroyed inventory — nothing in this file
+      // wrote to Product at all.
+      if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+        await releaseOrderStock(tx, id)
+      }
+
+      return tx.order.findUnique({
         where: { id },
-        data: updateData,
         include: {
           user: {
             select: {
@@ -188,12 +214,26 @@ export async function PATCH(
               },
             },
           },
+          // The detail page replaces its order state with this response, so
+          // omitting the intent made the "needs reconciliation" warning vanish
+          // the moment staff changed the status — hiding exactly the case the
+          // badge exists to surface.
+          paymentIntent: { select: { status: true, failureReason: true } },
         },
       })
     })
 
     return NextResponse.json(order)
   } catch (error) {
+    if (error instanceof OrderConcurrencyError) {
+      return NextResponse.json(
+        {
+          error: 'This order was changed by someone else. Reload and try again.',
+          reason: 'ORDER_MODIFIED_CONCURRENTLY',
+        },
+        { status: 409 }
+      )
+    }
     console.error('Error updating order:', error)
     return NextResponse.json(
       { error: 'Failed to update order' },

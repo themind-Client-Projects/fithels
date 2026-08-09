@@ -32,7 +32,7 @@ export default function BannersPage() {
   const { data: banners = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["banners"],
     queryFn: async () => {
-      const res = await fetch("/api/banners");
+      const res = await fetch("/api/banners?includeInactive=true");
       if (!res.ok) throw new Error("Failed to fetch banners");
       return res.json();
     },

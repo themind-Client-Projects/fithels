@@ -287,10 +287,19 @@ export default function OrdersPage() {
         data={orders} 
         searchKey={["id", "user.name", "user.email", "phone", "user.phone"]} 
         searchPlaceholder={t("searchCustomerOrPhone")}
-        filterKey="status" 
+        filterKey="status"
         filterOptions={ALL_STATUSES}
         filterPlaceholder={t("filterByStatus") || "تصفية حسب الحالة"}
-        itemsPerPage={10}
+        itemsPerPage={20}
+        serverPage={page}
+        serverTotalPages={totalPages}
+        serverTotal={totalOrders}
+        onServerPageChange={setPage}
+        filterValue={statusFilter}
+        onFilterChange={(val) => {
+          setStatusFilter(val);
+          setPage(1);
+        }}
         onRowClick={(row) => router.push(`/${locale}/dashboard/orders/${row.id}`)}
       />
 

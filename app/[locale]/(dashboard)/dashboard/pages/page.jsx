@@ -27,7 +27,7 @@ export default function PagesDashboard() {
   const { data: pages = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["pages"],
     queryFn: async () => {
-      const res = await fetch("/api/pages");
+      const res = await fetch("/api/pages?includeInactive=true");
       if (!res.ok) throw new Error("Failed to fetch pages");
       return res.json();
     },

@@ -33,7 +33,7 @@ export default function ProductsPage() {
   const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/products?includeInactive=true");
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },

@@ -16,6 +16,7 @@ import {
 export default function CustomerForm({ customer, onSuccess, onCancel }) {
   const t = useTranslations("Dashboard");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -52,6 +53,9 @@ export default function CustomerForm({ customer, onSuccess, onCancel }) {
       }
     } catch (error) {
       console.error("Error updating customer:", error);
+      // Was console-only: a network fault during save showed the admin
+      // nothing at all — the button simply re-enabled.
+      setError(t("loadFailedDesc"));
     } finally {
       setLoading(false);
     }
@@ -59,6 +63,11 @@ export default function CustomerForm({ customer, onSuccess, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4 font-medium text-start">
+          {error}
+        </div>
+      )}
       <div className="grid gap-5">
         {/* Name */}
         <div className="grid gap-2">

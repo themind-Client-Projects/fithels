@@ -27,16 +27,20 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const fetchCategories = useCallback(async () => {
+    // A silent catch here meant a failed load rendered as "no categories" —
+    // the last list still missing the error state the other five now have.
+    setLoadError(false);
     try {
       const res = await fetch("/api/categories");
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-      }
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      const data = await res.json();
+      setCategories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch categories:", error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -176,7 +180,12 @@ export default function CategoriesPage() {
     >
       <Card>
         <CardContent className="p-0 sm:p-0">
-          <DataTable columns={columns} data={categories} />
+          <DataTable
+            columns={columns}
+            data={categories}
+            isError={loadError}
+            onRetry={fetchCategories}
+          />
         </CardContent>
       </Card>
 

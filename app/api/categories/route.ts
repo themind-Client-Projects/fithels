@@ -11,7 +11,8 @@ export async function GET() {
           select: { products: true },
         },
       },
-      orderBy: { nameEn: 'asc' },
+      // Sorted by the Arabic name, which is what the dashboard displays.
+      orderBy: { nameAr: 'asc' },
     })
 
     return NextResponse.json(categories)
