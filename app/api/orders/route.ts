@@ -231,7 +231,10 @@ export async function POST(request: NextRequest) {
     // anything — so a below-minimum order never becomes a half-built record.
     let amountIqd = 0
     let lineItemAmountsIqd: number[] = []
-    const usdToIqdRate = getUsdToIqdRate()
+    // Resolved lazily inside the online-payment branch only. Hoisting this out
+    // meant a malformed USD_TO_IQD_RATE threw for CASH orders too, 500-ing
+    // every checkout in a shop that may not even take online payment.
+    let usdToIqdRate = 0
 
     // Reclaim stock from checkouts that were started and abandoned. This runs
     // for COD orders too: hanging it off the WAYLE branch alone meant a shop
@@ -247,6 +250,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (paymentMethod === 'WAYLE') {
+      usdToIqdRate = getUsdToIqdRate()
+
       // Round each line item FIRST, then sum, so the amounts Wayle receives add
       // up to the total exactly. Rounding the USD total separately would drift
       // by a dinar against the summed line items at any rate that does not

@@ -29,5 +29,6 @@
   "paymentStatus": "حالة الدفع",
   "paid": "مدفوع",
   "awaitingPayment": "بانتظار الدفع",
-  "itemsCount": "{count, plural, zero {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}"
+  "itemsCount": "{count, plural, zero {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}",
+  "unknownProduct": "منتج غير معروف"
 }

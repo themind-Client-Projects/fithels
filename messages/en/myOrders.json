@@ -29,5 +29,6 @@
   "paymentStatus": "Payment Status",
   "paid": "Paid",
   "awaitingPayment": "Awaiting payment",
-  "itemsCount": "{count, plural, one {# item} other {# items}}"
+  "itemsCount": "{count, plural, one {# item} other {# items}}",
+  "unknownProduct": "Unknown product"
 }

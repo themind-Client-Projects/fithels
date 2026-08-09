@@ -304,6 +304,12 @@ async function main() {
         userId: adminUser.id,
         total: products[0].price + products[1].price,
         status: 'DELIVERED',
+        // A delivered cash order has been paid — money changes hands at the
+        // door. Leaving it UNPAID produced a fixture state the payment logic
+        // should never see, and made the seeded data contradict the dashboard.
+        paymentMethod: 'COD',
+        paymentStatus: 'PAID',
+        paidAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         notes: 'Please leave at the front door.',
         phone: '+966501234567',
         location: 'الرياض، حي النخيل، شارع الأمير سلطان، مبنى رقم 12',

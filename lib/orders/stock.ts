@@ -22,8 +22,13 @@ export async function cancelOrderAndReleaseStock(
   tx: Prisma.TransactionClient,
   orderId: string
 ): Promise<boolean> {
+  // DELIVERED is excluded as well as CANCELLED. Guarding only on CANCELLED let
+  // the delete path release stock for goods that had already shipped: PATCH
+  // correctly refuses DELIVERED -> CANCELLED via the transition graph, but
+  // DELETE called straight through here and bypassed it, crediting inventory
+  // that physically left the building.
   const claimed = await tx.order.updateMany({
-    where: { id: orderId, status: { not: 'CANCELLED' } },
+    where: { id: orderId, status: { notIn: ['CANCELLED', 'DELIVERED'] } },
     data: { status: 'CANCELLED' },
   })
 

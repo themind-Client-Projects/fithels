@@ -5,8 +5,21 @@ import { getAuthUser } from "@/lib/auth-utils";
 export async function GET(request, { params }) {
   try {
     const { slug } = await params;
-    const page = await prisma.pageContent.findUnique({
-      where: { slug },
+    // Drafts must not be public. The list endpoint was gated but this sibling
+    // was missed, so an unpublished page's full title and HTML body stayed
+    // readable with a plain curl.
+    const wantsInactive =
+      new URL(request.url).searchParams.get("includeInactive") === "true";
+
+    if (wantsInactive) {
+      const user = await getAuthUser();
+      if (!user || (user.role !== "ADMIN" && user.role !== "EMPLOYEE")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    const page = await prisma.pageContent.findFirst({
+      where: wantsInactive ? { slug } : { slug, isActive: true },
     });
     if (!page) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });

@@ -131,7 +131,13 @@ model Order {
 
   // Customer order history is always "my orders, newest first".
   @@index([userId, createdAt])
-  @@index([status])
+  // The dashboard list filters by status and sorts by createdAt in one query;
+  // an index on status alone cannot serve the sort, so Postgres sorted the
+  // whole matching set on every page.
+  @@index([status, createdAt])
+  // Same query for a customer: their own orders, optionally filtered by status.
+  // Subsumes [userId, createdAt] above, which is kept for clarity.
+  @@index([userId, status, createdAt])
   @@index([createdAt])
 }
 

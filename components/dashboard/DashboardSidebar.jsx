@@ -216,7 +216,7 @@ export default function DashboardSidebar() {
                     ) : (
                       <LogOut className="me-3 size-4" />
                     )}
-                    {isSigningOut ? t("signingOut", { fallback: "جاري الخروج..." }) : t("signOut")}
+                    {isSigningOut ? t("signingOut") : t("signOut")}
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>

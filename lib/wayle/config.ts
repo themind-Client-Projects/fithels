@@ -13,6 +13,8 @@
  * building the app without payment credentials still works.
  */
 
+import { getDisplayRate } from '@/lib/currency'
+
 export interface WayleConfig {
   apiKey: string;
   webhookSecret: string;
@@ -47,20 +49,16 @@ export function getWayleConfig(): WayleConfig {
 }
 
 /**
- * USD -> IQD rate. Money-critical: this is the figure Wayle actually charges,
- * so the rate used is stored on every PaymentIntent for reconciliation.
+ * USD -> IQD rate used to bill the customer.
+ *
+ * Delegates to lib/currency so the figure Wayle charges is by construction the
+ * same one the storefront and dashboard display. This used to read only
+ * USD_TO_IQD_RATE with its own private default, so setting the money-critical
+ * variable without the public one made the displayed and charged amounts
+ * diverge silently — the exact drift the shared module was introduced to end.
  */
 export function getUsdToIqdRate(): number {
-  const raw = process.env.USD_TO_IQD_RATE;
-  if (!raw) return DEFAULT_USD_TO_IQD_RATE;
-
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(
-      `USD_TO_IQD_RATE must be a positive number, received "${raw}".`
-    );
-  }
-  return parsed;
+  return getDisplayRate()
 }
 
 /** Public origin used to build webhook and redirect URLs. */

@@ -109,13 +109,17 @@ export default function Context({ children }) {
     // previous state snapshot, which is unsafe under concurrent rendering.
     const quantity = Math.max(1, Number(qty) || 1);
 
-    setCartProducts((pre) =>
-      pre.map((item) =>
-        item.lineKey === idOrKey || item.id == idOrKey
-          ? { ...item, quantity }
-          : item
-      )
-    );
+    // Match ONE line. The old `|| item.id ==` fallback had no early exit, so a
+    // caller passing a product id rewrote every size and colour of that product
+    // to the same quantity. Prefer an exact lineKey; otherwise change only the
+    // first line for that product.
+    setCartProducts((pre) => {
+      const exact = pre.findIndex((item) => item.lineKey === idOrKey);
+      const index =
+        exact !== -1 ? exact : pre.findIndex((item) => item.id == idOrKey);
+      if (index === -1) return pre;
+      return pre.map((item, i) => (i === index ? { ...item, quantity } : item));
+    });
   };
 
   const addToWishlist = (id) => {

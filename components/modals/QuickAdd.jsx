@@ -10,6 +10,11 @@ import QuantitySelect from "../productDetails/QuantitySelect";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function QuickAdd() {
   const [quantity, setQuantity] = useState(1);
+  // Lifted so the chosen variant reaches the cart. QuickView got this treatment;
+  // QuickAdd was missed, so this — the add-to-cart path on every product card —
+  // still recorded null size and colour and shipped an arbitrary variant.
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [activeColor, setActiveColor] = useState(null);
   const {
     quickAddItem,
     addProductToCart,
@@ -76,8 +81,12 @@ export default function QuickAdd() {
                 </div>
               </div>
               <div className="tf-product-info-choose-option">
-                <ColorSelect />
-                <SizeSelect />
+                <ColorSelect activeColor={activeColor} setActiveColor={setActiveColor} />
+                <SizeSelect
+                    sizes={item?.sizes}
+                    selectedSize={selectedSize}
+                    onSelect={setSelectedSize}
+                  />
                 <div className="tf-product-info-quantity">
                   <div className="title mb_12">Quantity:</div>
                   <QuantitySelect
@@ -100,7 +109,10 @@ export default function QuickAdd() {
                   <div className="tf-product-info-by-btn mb_10">
                     <a
                       className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
-                      onClick={() => addProductToCart(item, quantity)}
+                      onClick={() => addProductToCart(item, quantity, true, {
+                        size: selectedSize,
+                        color: activeColor,
+                      })}
                     >
                       <span>
                         {isAddedToCartProducts(item.id)

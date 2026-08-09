@@ -61,7 +61,11 @@ export default function CustomersPage() {
         const data = await res.json().catch(() => ({}));
         // Server sends a stable reason so the Arabic dashboard can translate it.
         alert(
-          data.reason ? t("deleteBlockedCustomer") : data.error || "Failed to delete customer"
+          data.reason === "CUSTOMER_HAS_ORDERS"
+                    ? t("deleteBlockedCustomer")
+                    : data.reason === "LAST_ADMIN"
+                      ? t("lastAdmin")
+                      : data.error || "Failed to delete customer"
         );
       }
     } catch (error) {

@@ -162,5 +162,7 @@
   "requiredEnName": "The English name is required.",
   "requiredArName": "The Arabic name is required.",
   "deleteBlockedProduct": "This product appears in existing orders and cannot be deleted. Deactivate it instead.",
-  "deleteBlockedCustomer": "This customer has existing orders and cannot be deleted."
+  "deleteBlockedCustomer": "This customer has existing orders and cannot be deleted.",
+  "signingOut": "Signing out...",
+  "lastAdmin": "This is the only administrator and cannot be removed. Promote someone else first."
 }
