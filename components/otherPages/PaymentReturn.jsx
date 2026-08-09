@@ -37,7 +37,11 @@ export default function PaymentReturn() {
     }
 
     if (!reference) {
-      setState("timeout");
+      // NOT "timeout" — that state tells the visitor their payment was received
+      // and their money is safe. Anyone who opens this URL directly, or reloads
+      // after the reference was stripped, never paid at all, and reassuring them
+      // about a payment that does not exist is worse than saying nothing.
+      setState("none");
       return;
     }
 
@@ -116,6 +120,13 @@ export default function PaymentReturn() {
       color: "#6c757d",
       title: t("paymentPendingTitle"),
       desc: t("paymentPendingDesc"),
+    },
+    // Reached this page without a payment reference — say so plainly.
+    none: {
+      icon: "🔎",
+      color: "#6c757d",
+      title: t("noPaymentFound"),
+      desc: t("noPaymentFoundDesc"),
     },
   }[state];
 

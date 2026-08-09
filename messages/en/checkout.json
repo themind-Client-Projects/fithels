@@ -43,5 +43,7 @@
   "paymentFailedDesc": "You have not been charged. You can try again.",
   "paymentPendingTitle": "Processing your payment",
   "paymentPendingDesc": "We received your payment and it is being processed. Your money is safe and we will confirm your order shortly.",
-  "backToOrders": "View my orders"
+  "backToOrders": "View my orders",
+  "noPaymentFound": "No payment in progress",
+  "noPaymentFoundDesc": "We could not find a payment linked to this page. If you completed one, your order will appear under My Orders."
 }

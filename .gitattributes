@@ -1,0 +1,28 @@
+# Normalise line endings.
+#
+# The repo currently has mixed endings: most files are CRLF, but any file edited
+# on macOS/Linux tooling becomes LF, which turns a two-line change into a
+# whole-file diff and makes review painful.
+#
+# This declares LF as canonical in the repository. Existing files are NOT
+# rewritten until someone runs a one-off renormalisation:
+#
+#   git add --renormalize . && git commit -m "chore: normalise line endings"
+#
+# That is deliberately left as a separate, reviewable commit because it touches
+# every file.
+* text=auto eol=lf
+
+# Binary assets must never be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
