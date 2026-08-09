@@ -8,19 +8,25 @@ import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function ShopCart() {
   const { cartProducts, setCartProducts, totalPrice } = useContextElement();
 
-  const setQuantity = (id, quantity) => {
-    if (quantity >= 1) {
-      const item = cartProducts.filter((elm) => elm.id == id)[0];
-      const items = [...cartProducts];
-      const itemIndex = items.indexOf(item);
-      item.quantity = quantity;
-      items[itemIndex] = item;
-      setCartProducts(items);
-    }
+  // Cart lines are identified by product AND variant. Matching on the product
+  // id alone meant pressing + on the "L" row incremented the "M" row, and
+  // removing one size deleted every size and colour of that product at once.
+  const lineIdOf = (item) => item.lineKey ?? item.id;
+
+  const setQuantity = (item, quantity) => {
+    if (quantity < 1) return;
+    const target = lineIdOf(item);
+    // Immutable: the previous version mutated the object held in state.
+    setCartProducts((pre) =>
+      pre.map((elm) =>
+        lineIdOf(elm) === target ? { ...elm, quantity } : elm
+      )
+    );
   };
 
-  const removeItem = (id) => {
-    setCartProducts((pre) => [...pre.filter((elm) => elm.id != id)]);
+  const removeItem = (item) => {
+    const target = lineIdOf(item);
+    setCartProducts((pre) => pre.filter((elm) => lineIdOf(elm) !== target));
   };
 
   return (
@@ -63,6 +69,13 @@ export default function ShopCart() {
                               >
                                 {elm.title}
                               </Link>
+                              {(elm.selectedSize || elm.selectedColor) && (
+                                <div className="text-secondary-2">
+                                  {[elm.selectedSize, elm.selectedColor]
+                                    .filter(Boolean)
+                                    .join(" / ")}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td
@@ -81,7 +94,7 @@ export default function ShopCart() {
                               <span
                                 className="btn-quantity btn-decrease"
                                 onClick={() =>
-                                  setQuantity(elm.id, elm.quantity - 1)
+                                  setQuantity(elm, elm.quantity - 1)
                                 }
                               >
                                 -
@@ -96,7 +109,7 @@ export default function ShopCart() {
                               <span
                                 className="btn-quantity btn-increase"
                                 onClick={() =>
-                                  setQuantity(elm.id, elm.quantity + 1)
+                                  setQuantity(elm, elm.quantity + 1)
                                 }
                               >
                                 +
@@ -108,13 +121,13 @@ export default function ShopCart() {
                             className="tf-cart-item_total text-center"
                           >
                             <div className="cart-total text-button total-price">
-                              ${(elm.price * elm.quantity).toFixed(2)}
+                              <CurrencyFormatter price={elm.price * elm.quantity} />
                             </div>
                           </td>
                           <td
                             data-cart-title="Remove"
                             className="remove-cart"
-                            onClick={() => removeItem(elm.id)}
+                            onClick={() => removeItem(elm)}
                           >
                             <span className="remove icon icon-close" />
                           </td>
@@ -139,10 +152,6 @@ export default function ShopCart() {
                   <div className="subtotal text-button d-flex justify-content-between align-items-center">
                     <span>Subtotal</span>
                     <span className="total"><CurrencyFormatter price={totalPrice} /></span>
-                  </div>
-                  <div className="subtotal text-button d-flex justify-content-between align-items-center" style={{ marginTop: "10px" }}>
-                    <span>Payment Method</span>
-                    <span className="total" style={{ color: "#28a745" }}>Cash on Delivery</span>
                   </div>
                   <h5 className="total-order d-flex justify-content-between align-items-center">
                     <span>Total</span>

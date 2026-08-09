@@ -9,8 +9,11 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const product = await prisma.product.findUnique({
-      where: { slug },
+    // Public endpoint, so deactivated products must not be served. The list
+    // endpoint was hardened for this; by-slug was missed, which left every
+    // delisted product with a live, fully-priced, add-to-cart-able page.
+    const product = await prisma.product.findFirst({
+      where: { slug, isActive: true },
       include: { category: true },
     })
 

@@ -4,26 +4,40 @@ import Topbar from "@/components/headers/Topbar";
 import DynamicDetails from "@/components/productDetails/details/DynamicDetails";
 import React from "react";
 import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * Read the product straight from the database.
+ *
+ * Both of these used to fetch this app's own API over HTTP with a
+ * `|| 'http://localhost:3000'` fallback. With NEXT_PUBLIC_SITE_URL unset in a
+ * deployment, every render dialled localhost inside its own sandbox, the catch
+ * swallowed ECONNREFUSED, and EVERY product page rendered "Product not found"
+ * with HTTP 200 — invisible to error monitoring, while the home page and shop
+ * grid (which query Prisma directly) looked perfectly healthy.
+ *
+ * Filtering on isActive also matters: the list endpoint was hardened for this
+ * but by-slug was not, so a delisted product kept a live, indexable page with a
+ * working Buy It Now that the order API only rejected at the final step.
+ */
+async function getActiveProduct(slug) {
+  return prisma.product.findFirst({
+    where: { slug, isActive: true },
+    include: { category: true },
+  });
+}
 
 export async function generateMetadata({ params }) {
   const { slug, locale } = await params;
   
-  try {
-    // We would normally fetch the product here to get the real title for metadata
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/products/by-slug/${slug}`, {
-      next: { revalidate: 60 }
-    });
-    
-    if (res.ok) {
-      const product = await res.json();
-      const title = locale === 'ar' ? product.titleAr : product.titleEn;
-      return {
-        title: `${title} | Fit`,
-        description: locale === 'ar' ? product.descAr : product.descEn,
-      };
-    }
-  } catch (error) {
-    console.error("Failed to generate metadata for product", error);
+  const product = await getActiveProduct(slug);
+  if (product) {
+    const title = locale === "ar" ? product.titleAr : product.titleEn;
+    return {
+      title: `${title} | Fit`,
+      description: locale === "ar" ? product.descAr : product.descEn,
+    };
   }
 
   return {
@@ -36,16 +50,12 @@ export default async function ProductDetailPage({ params }) {
   const { slug, locale } = await params;
   const t = await getTranslations({ locale, namespace: "shop" });
 
-  let product = null;
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/products/by-slug/${slug}`, {
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      product = await res.json();
-    }
-  } catch (error) {
-    console.error("Failed to fetch product", error);
+  const product = await getActiveProduct(slug);
+
+  // A missing product is a real 404, not a 200 that says "not found" — the old
+  // behaviour told search engines the page was fine.
+  if (!product) {
+    notFound();
   }
 
   if (!product) {

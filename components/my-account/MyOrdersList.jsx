@@ -24,31 +24,44 @@ export default function MyOrdersList() {
   const locale = params?.locale || "ar";
   const t = useTranslations("myOrders");
   const tStatus = useTranslations("status");
+  const tCommon = useTranslations("common");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded) return;
+    // Signed-out visitors previously never cleared `loading`, so the render
+    // guard above the "please sign in" branch spun forever — a bookmarked or
+    // expired-session visit showed an endless spinner with no way forward.
+    if (!isSignedIn) {
+      setLoading(false);
+      return;
+    }
 
     async function fetchOrders() {
       try {
         // Ask for a generous page: this list has no paging UI of its own, and
         // the endpoint now caps the response instead of returning everything.
         const res = await fetch("/api/orders?limit=100");
-        if (res.ok) {
-          const payload = await res.json();
-          const list = Array.isArray(payload) ? payload : payload?.data;
-          setOrders(Array.isArray(list) ? list : []);
-        }
+        if (!res.ok) throw new Error("Failed to load orders");
+        const payload = await res.json();
+        const list = Array.isArray(payload) ? payload : payload?.data;
+        setOrders(Array.isArray(list) ? list : []);
+        setLoadError(false);
       } catch (err) {
         console.error("Failed to fetch orders:", err);
+        // A failed load used to fall through to "you have no orders", telling a
+        // customer with a dozen orders that they had none.
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     }
 
     fetchOrders();
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, reloadToken]);
 
   const getStatusLabel = (status) => {
     const map = {
@@ -77,6 +90,38 @@ export default function MyOrdersList() {
       <section className="flat-spacing">
         <div className="container text-center py-5">
           <p>يرجى تسجيل الدخول لعرض طلباتك</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Distinct from "no orders": telling a customer with a dozen orders that they
+  // have none is worse than admitting the list failed to load.
+  if (loadError) {
+    return (
+      <section className="flat-spacing">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-xl-6 text-center" style={{ padding: "60px 20px" }}>
+              <div style={{ fontSize: "64px", marginBottom: "20px" }}>⚠️</div>
+              <h4 style={{ marginBottom: "12px" }}>{tCommon("error")}</h4>
+              <p className="text-secondary" style={{ marginBottom: "30px" }}>
+                {tCommon("retry")}
+              </p>
+              <button
+                className="tf-btn btn-reset"
+                onClick={() => {
+                  setLoading(true);
+                  setLoadError(false);
+                  setOrders([]);
+                  // re-runs the effect via the state change below
+                  setReloadToken((n) => n + 1);
+                }}
+              >
+                {tCommon("retry")}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     );

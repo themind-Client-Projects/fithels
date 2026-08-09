@@ -23,7 +23,14 @@ export default function OrderTracking({ orderId }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !orderId) return;
+    if (!isLoaded) return;
+    // Without this a signed-out visitor spun forever: `loading` was never
+    // cleared and this component has no signed-out branch of its own.
+    if (!isSignedIn || !orderId) {
+      setError("unauthenticated");
+      setLoading(false);
+      return;
+    }
 
     async function fetchOrder() {
       try {
