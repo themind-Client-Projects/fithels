@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { cancelOrderAndReleaseStock, releaseOrderStock } from '@/lib/orders/stock'
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const user = await getAuthUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
@@ -48,19 +49,19 @@ export async function GET(
     })
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      return noStoreJson({ error: 'Order not found' }, { status: 404 })
     }
 
     // Customers can only view their own orders
     const isStaff = user.role === 'ADMIN' || user.role === 'EMPLOYEE'
     if (!isStaff && order.userId !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    return NextResponse.json(order)
+    return noStoreJson(order)
   } catch (error) {
     console.error('Error fetching order:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to fetch order' },
       { status: 500 }
     )
@@ -75,7 +76,7 @@ export async function PATCH(
   try {
     const user = await getAuthUser()
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const { id } = await params
@@ -84,7 +85,7 @@ export async function PATCH(
 
     const existing = await prisma.order.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      return noStoreJson({ error: 'Order not found' }, { status: 404 })
     }
 
     const validStatuses = [
@@ -97,7 +98,7 @@ export async function PATCH(
     ]
 
     if (status && !validStatuses.includes(status)) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
         { status: 400 }
       )
@@ -108,7 +109,7 @@ export async function PATCH(
     // stock on every pass, and a delivered order could be cancelled to return
     // goods that already shipped.
     if (status && !canTransition(existing.status, status)) {
-      return NextResponse.json(
+      return noStoreJson(
         {
           error: isTerminalOrderStatus(existing.status)
             ? `This order is ${existing.status.toLowerCase()} and can no longer change status.`
@@ -223,10 +224,10 @@ export async function PATCH(
       })
     })
 
-    return NextResponse.json(order)
+    return noStoreJson(order)
   } catch (error) {
     if (error instanceof OrderConcurrencyError) {
-      return NextResponse.json(
+      return noStoreJson(
         {
           error: 'This order was changed by someone else. Reload and try again.',
           reason: 'ORDER_MODIFIED_CONCURRENTLY',
@@ -235,7 +236,7 @@ export async function PATCH(
       )
     }
     console.error('Error updating order:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to update order' },
       { status: 500 }
     )
@@ -250,7 +251,7 @@ export async function DELETE(
   try {
     const user = await getAuthUser()
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized — only admins can delete orders' }, { status: 403 })
+      return noStoreJson({ error: 'Unauthorized — only admins can delete orders' }, { status: 403 })
     }
 
     const { id } = await params
@@ -260,7 +261,7 @@ export async function DELETE(
       include: { paymentIntent: { select: { status: true } } },
     })
     if (!existing) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      return noStoreJson({ error: 'Order not found' }, { status: 404 })
     }
 
     // Deleting an order whose payment is still in flight destroys the
@@ -268,7 +269,7 @@ export async function DELETE(
     // reference that resolves to nothing — the customer gets charged and no
     // record survives. Make the admin settle it first.
     if (existing.paymentIntent?.status === 'PENDING') {
-      return NextResponse.json(
+      return noStoreJson(
         {
           error:
             'This order has a payment in progress. Wait for it to settle or cancel the order instead of deleting it.',
@@ -290,10 +291,10 @@ export async function DELETE(
       await tx.order.delete({ where: { id } })
     })
 
-    return NextResponse.json({ success: true })
+    return noStoreJson({ success: true })
   } catch (error) {
     console.error('Error deleting order:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to delete order' },
       { status: 500 }
     )

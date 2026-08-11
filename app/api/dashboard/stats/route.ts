@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 
@@ -7,7 +8,7 @@ export async function GET() {
   try {
     const user = await getAuthUser()
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const [totalOrders, totalRevenue, activeProducts, totalCustomers, recentOrders] =
@@ -49,7 +50,7 @@ export async function GET() {
         }),
       ])
 
-    return NextResponse.json({
+    return noStoreJson({
       totalOrders,
       totalRevenue: totalRevenue._sum.total || 0,
       activeProducts,
@@ -58,7 +59,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to fetch dashboard stats' },
       { status: 500 }
     )

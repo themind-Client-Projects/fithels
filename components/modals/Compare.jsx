@@ -129,14 +129,11 @@ export default function Compare() {
                   )}
                   <div className="tf-compare-buttons">
                     <div className="tf-compare-buttons-wrap">
-                      <Link
-                        href={`/compare-products`}
-                        className="tf-btn w-100 btn-fill radius-4"
-                      >
+                      <span className="tf-btn w-100 btn-fill radius-4">
                         <span className="text text-btn-uppercase">
                           Compare Products
                         </span>
-                      </Link>
+                      </span>
                       <div
                         onClick={() => setCompareItem([])}
                         className="tf-compapre-button-clear-all clear-file-delete tf-btn w-100 btn-white radius-4 has-border"

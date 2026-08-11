@@ -44,7 +44,7 @@ export default function MyOrdersList() {
       try {
         // Ask for a generous page: this list has no paging UI of its own, and
         // the endpoint now caps the response instead of returning everything.
-        const res = await fetch("/api/orders?limit=100");
+        const res = await fetch("/api/orders?limit=100", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load orders");
         const payload = await res.json();
         const list = Array.isArray(payload) ? payload : payload?.data;

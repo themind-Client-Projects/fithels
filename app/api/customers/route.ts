@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 
@@ -7,7 +8,7 @@ export async function GET() {
   try {
     const user = await getAuthUser()
     if (!user || (user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const customers = await prisma.user.findMany({
@@ -25,10 +26,10 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(customers)
+    return noStoreJson(customers)
   } catch (error) {
     console.error('Error fetching customers:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to fetch customers' },
       { status: 500 }
     )

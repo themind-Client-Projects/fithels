@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api-response'
 import type { OrderStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const isStaff = user.role === 'ADMIN' || user.role === 'EMPLOYEE'
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     // Matches the PaginatedResponse contract already declared in types/api.ts,
     // which the client hooks assumed but no endpoint ever honoured.
-    return NextResponse.json({
+    return noStoreJson({
       data: orders,
       total,
       page,
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching orders:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to fetch orders' },
       { status: 500 }
     )
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -149,21 +150,21 @@ export async function POST(request: NextRequest) {
     const returnLocale = body.locale === 'en' ? 'en' : 'ar'
 
     if (!phone?.trim()) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: 'Phone number is required' },
         { status: 400 }
       )
     }
 
     if (!location?.trim()) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: 'Delivery location is required' },
         { status: 400 }
       )
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: 'Order must contain at least one item' },
         { status: 400 }
       )
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
       const { productId, quantity, size, color } = item
 
       if (!productId || !quantity || quantity < 1) {
-        return NextResponse.json(
+        return noStoreJson(
           { error: 'Each item must have a valid productId and quantity' },
           { status: 400 }
         )
@@ -189,21 +190,21 @@ export async function POST(request: NextRequest) {
       })
 
       if (!product) {
-        return NextResponse.json(
+        return noStoreJson(
           { error: `Product not found: ${productId}` },
           { status: 404 }
         )
       }
 
       if (!product.isActive) {
-        return NextResponse.json(
+        return noStoreJson(
           { error: `Product is not available: ${product.titleEn}` },
           { status: 400 }
         )
       }
 
       if (product.stock < quantity) {
-        return NextResponse.json(
+        return noStoreJson(
           { error: `Insufficient stock for ${product.titleEn}. Available: ${product.stock}` },
           { status: 400 }
         )
@@ -264,7 +265,7 @@ export async function POST(request: NextRequest) {
         assertAboveWayleMinimum(amountIqd)
       } catch (error) {
         if (error instanceof WayleMinimumAmountError) {
-          return NextResponse.json(
+          return noStoreJson(
             {
               error: 'Order total is below the online payment minimum.',
               code: error.code,
@@ -345,7 +346,7 @@ export async function POST(request: NextRequest) {
 
     // Cash on delivery is complete once the order exists.
     if (paymentMethod === 'COD') {
-      return NextResponse.json(order, { status: 201 })
+      return noStoreJson(order, { status: 201 })
     }
 
     // Online payment: issue the hosted Wayle link.
@@ -399,7 +400,7 @@ export async function POST(request: NextRequest) {
         data: { providerPaymentId: link.id, paymentUrl: link.url },
       })
 
-      return NextResponse.json(
+      return noStoreJson(
         { ...order, referenceId, paymentUrl: link.url },
         { status: 201 }
       )
@@ -427,7 +428,7 @@ export async function POST(request: NextRequest) {
           console.error('Order rollback failed', rollbackError)
         })
 
-      return NextResponse.json(
+      return noStoreJson(
         { error: 'Could not start the online payment. Please try again or choose cash on delivery.' },
         { status: 502 }
       )
@@ -435,14 +436,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Losing a stock race is a client-visible condition, not a server fault.
     if (error instanceof InsufficientStockError) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: 'One of the items just went out of stock. Please review your cart.' },
         { status: 409 }
       )
     }
 
     console.error('Error creating order:', error)
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Failed to create order' },
       { status: 500 }
     )

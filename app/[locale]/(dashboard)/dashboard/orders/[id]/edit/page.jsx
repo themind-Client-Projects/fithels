@@ -158,7 +158,7 @@ export default function EditOrderPage() {
                 dir="ltr"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+966..."
+                placeholder="+964 7XX XXX XXXX"
                 style={inputStyle}
               />
             </div>

@@ -4,7 +4,11 @@ import Link from "next/link";
 import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
 import { usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 export default function MobileMenu() {
+  const tNav = useTranslations("nav");
+  const tContact = useTranslations("contact");
+  const locale = useLocale();
   const pathname = usePathname();
   return (
     <div className="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
@@ -55,41 +59,41 @@ export default function MobileMenu() {
             <ul className="nav-ul-mb" id="wrapper-menu-navigation">
               <li className="nav-mb-item">
                 <Link
-                  href="/"
+                  href={`/${locale}`}
                   className={`mb-menu-link ${pathname === "/" ? "active" : ""}`}
                 >
-                  Home
+                  {tNav('home')}
                 </Link>
               </li>
               <li className="nav-mb-item">
                 <Link
-                  href="/shop-default-grid"
+                  href={`/${locale}/shop-default-grid`}
                   className={`mb-menu-link ${pathname.startsWith("/shop") ? "active" : ""}`}
                 >
-                  Shop
+                  {tNav('shop')}
                 </Link>
               </li>
               <li className="nav-mb-item">
                 <Link
-                  href="/about-us"
+                  href={`/${locale}/about-us`}
                   className={`mb-menu-link ${pathname.startsWith("/about") ? "active" : ""}`}
                 >
-                  About
+                  {tNav('about')}
                 </Link>
               </li>
               <li className="nav-mb-item">
                 <Link
-                  href="/contact"
+                  href={`/${locale}/contact`}
                   className={`mb-menu-link ${pathname.startsWith("/contact") ? "active" : ""}`}
                 >
-                  Contact
+                  {tNav('contact')}
                 </Link>
               </li>
             </ul>
           </div>
           <div className="mb-other-content">
             <div className="group-icon">
-              <Link href={`/wish-list`} className="site-nav-icon">
+              <a href="#shopWishlist" data-bs-toggle="offcanvas" aria-controls="shopWishlist" className="site-nav-icon" role="button">
                 <svg
                   className="icon"
                   width={18}
@@ -106,9 +110,9 @@ export default function MobileMenu() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                Wishlist
-              </Link>
-              <Link href={`/login`} className="site-nav-icon">
+                {tNav('wishlist')}
+              </a>
+              <Link href={`/`} className="site-nav-icon">
                 <svg
                   className="icon"
                   width={18}
@@ -132,34 +136,34 @@ export default function MobileMenu() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                Login
+                {tNav('login')}
               </Link>
             </div>
             <div className="mb-notice">
               <Link href={`/contact`} className="text-need">
-                Need Help?
+                {tNav('needHelp')}
               </Link>
             </div>
             <div className="mb-contact">
               <p className="text-caption-1">
-                549 Oak St.Crystal Lake, IL 60014
+                {tContact('addressDesc')}
               </p>
               <Link
                 href={`/contact`}
                 className="tf-btn-default text-btn-uppercase"
               >
-                GET DIRECTION
+                {tNav('getDirection')}
                 <i className="icon-arrowUpRight" />
               </Link>
             </div>
             <ul className="mb-info">
               <li>
                 <i className="icon icon-mail" />
-                <p>themesflat@gmail.com</p>
+                <p>{tContact('emailDesc')}</p>
               </li>
               <li>
                 <i className="icon icon-phone" />
-                <p>315-666-6688</p>
+                <p>{tContact('phoneDesc')}</p>
               </li>
             </ul>
           </div>

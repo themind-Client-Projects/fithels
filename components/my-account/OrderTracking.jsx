@@ -34,7 +34,7 @@ export default function OrderTracking({ orderId }) {
 
     async function fetchOrder() {
       try {
-        const res = await fetch(`/api/orders/${orderId}`);
+        const res = await fetch(`/api/orders/${orderId}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setOrder(data);

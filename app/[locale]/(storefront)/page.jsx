@@ -74,7 +74,7 @@ export default async function HomePage({ params }) {
     <>
       <Topbar />
       <Header1 />
-      <Hero />
+      <Hero banners={banners} />
       <Catalog />
       <Catalog
         leftImage="/images/banner/catalog2-left.png"

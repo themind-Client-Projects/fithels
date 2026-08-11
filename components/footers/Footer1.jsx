@@ -247,7 +247,7 @@ export default function Footer1({
                             htmlFor="footer-Form_agree"
                           >
                             By clicking subcribe, you agree to the{" "}
-                            <Link className="fw-6 link" href={`/term-of-use`}>
+                            <Link className="fw-6 link" href={`/contact`}>
                               Terms of Service
                             </Link>{" "}
                             and{" "}

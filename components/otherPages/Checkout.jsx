@@ -330,7 +330,7 @@ function CheckoutContent() {
                   dir="ltr"
                   value={phone}
                   onChange={(e) => { setPhone(e.target.value); if(errors.phone) setErrors(p => ({...p, phone: false}))}}
-                  placeholder="+966..."
+                  placeholder={t("phonePlaceholder")}
                   style={{ width: "100%", padding: "12px 16px", borderRadius: "8px", border: `1px solid ${errors.phone ? "#dc2626" : "#ddd"}`, fontSize: "15px", outline: "none", fontFamily: "inherit" }}
                 />
                 {errors.phone && <span style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", display: "block" }}>{t("orderPhone")}</span>}

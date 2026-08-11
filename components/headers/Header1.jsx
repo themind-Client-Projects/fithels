@@ -6,9 +6,10 @@ import { Link } from "@/i18n/navigation";
 import CartLength from "../common/CartLength";
 import { useUIStore } from "@/stores/useUIStore";
 import { useSession, signOut } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function Header1({ fullWidth = false }) {
+  const locale = useLocale();
   const { openAuth } = useUIStore();
   const { data: session, status } = useSession();
   const [isSigningOut, setIsSigningOut] = React.useState(false);
@@ -231,7 +232,7 @@ export default function Header1({ fullWidth = false }) {
                             Dashboard
                           </a>
                         )}
-                        <Link href={`/account`} className="profile-dropdown-link" style={{
+                        <Link href={`/${locale}/account`} className="profile-dropdown-link" style={{
                           display: "flex",
                           alignItems: "center",
                           gap: "10px",
@@ -296,7 +297,7 @@ export default function Header1({ fullWidth = false }) {
                 </div>
               </li>
               <li className="nav-wishlist">
-                <Link href={`/wish-list`} className="nav-icon-item">
+                <a href="#shopWishlist" data-bs-toggle="offcanvas" aria-controls="shopWishlist" className="nav-icon-item" role="button">
                   <svg
                     className="icon"
                     width={24}
@@ -313,7 +314,7 @@ export default function Header1({ fullWidth = false }) {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </Link>
+                </a>
               </li>
               <li className="nav-cart">
                 <a

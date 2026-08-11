@@ -320,7 +320,7 @@ export default function CartModal() {
                       </div>
                       <label htmlFor="CartDrawer-Form_agree">
                         I agree with
-                        <Link href={`/term-of-use`} title="Terms of Service">
+                        <Link href={`/${locale}/contact`} title="Terms of Service">
                           Terms &amp; Conditions
                         </Link>
                       </label>

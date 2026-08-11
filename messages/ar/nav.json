@@ -13,5 +13,8 @@
   "ourStore": "متجرنا",
   "support": "الدعم",
   "noAccount": "ليس لديك حساب؟",
-  "signOut": "تسجيل الخروج"
+  "signOut": "تسجيل الخروج",
+  "needHelp": "تحتاج مساعدة؟",
+  "getDirection": "احصل على الاتجاهات",
+  "wishlist": "المفضلة"
 }

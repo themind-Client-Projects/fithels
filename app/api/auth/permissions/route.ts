@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api-response'
 import { getAuthUser } from '@/lib/auth-utils'
 
 /**
@@ -12,16 +13,16 @@ export async function GET() {
     const user = await getAuthUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return noStoreJson({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return NextResponse.json({
+    return noStoreJson({
       permissions: user.permissions,
       role: user.role,
       userId: user.id,
     })
   } catch (error: any) {
     console.error('Error in /api/auth/permissions:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return noStoreJson({ error: error.message }, { status: 500 })
   }
 }

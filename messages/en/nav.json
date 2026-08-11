@@ -13,5 +13,8 @@
   "ourStore": "Our Store",
   "support": "Support",
   "noAccount": "Don't have an account?",
-  "signOut": "Sign Out"
+  "signOut": "Sign Out",
+  "needHelp": "Need Help?",
+  "getDirection": "Get direction",
+  "wishlist": "Wishlist"
 }

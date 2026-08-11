@@ -22,7 +22,7 @@
   "trackOrder": "Track Your Order",
   "orderNumber": "Order Number",
   "phoneNumber": "Phone Number",
-  "phonePlaceholder": "Enter your phone number",
+  "phonePlaceholder": "+964 7XX XXX XXXX",
   "deliveryLocation": "Delivery Address",
   "locationPlaceholder": "Enter your full address (city, neighborhood, street...)",
   "phoneRequired": "Phone number is required",

@@ -344,7 +344,7 @@ export default function CreateOrderPage() {
                   dir="ltr"
                   value={phone}
                   onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => ({ ...p, phone: false })); }}
-                  placeholder="+966..."
+                  placeholder="+964 7XX XXX XXXX"
                   style={inputStyle(errors.phone)}
                 />
                 {errors.phone && <span style={{ color: "#dc2626", fontSize: "0.75rem" }}>{t("orderPhone")}</span>}
