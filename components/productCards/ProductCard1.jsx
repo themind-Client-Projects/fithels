@@ -47,6 +47,9 @@ export default function ProductCard1({
             alt={product.title}
             width={600}
             height={800}
+            // Grid is 4-up on desktop, 2-up on tablet, 1-up on phones. Without
+            // this the optimiser assumes full width and ships the largest file.
+            sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 25vw"
           />
 
           <Image
@@ -55,6 +58,7 @@ export default function ProductCard1({
             alt={product.title}
             width={600}
             height={800}
+            sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 25vw"
           />
         </Link>
         {product.hotSale && (

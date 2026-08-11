@@ -1,6 +1,5 @@
 "use client";
 import { useContextElement } from "@/context/Context";
-import { allProducts } from "@/data/products";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -26,19 +25,14 @@ export default function QuickAdd() {
     cartProducts,
     updateQuantity,
   } = useContextElement();
-  const [item, setItem] = useState(allProducts[0]);
+  const [item, setItem] = useState(null);
   useEffect(() => {
-    // Database-backed cards pass the whole product; the legacy template
-    // components still pass a numeric fixture id.
+    // Product cards hand over the whole product. The old branch resolved a bare
+    // id against the static fixture, which pulled 133KB of demo data into the
+    // bundle for a lookup whose result add-to-cart would refuse anyway.
     if (quickAddItem && typeof quickAddItem === "object") {
       setItem(quickAddItem);
-      return;
     }
-    const match = allProducts.find((el) => el.id == quickAddItem);
-    // `filter()` returns [] when nothing matches, and [] is truthy — the old
-    // `if (filtered)` therefore set the item to undefined and the render below
-    // threw on `item.imgSrc`, blanking the whole page.
-    if (match) setItem(match);
   }, [quickAddItem]);
 
   if (!item) return null;

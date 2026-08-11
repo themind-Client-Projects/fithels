@@ -6,6 +6,12 @@ import type { NextAuthConfig } from "next-auth"
  * Contains ONLY providers and callbacks — NO PrismaAdapter, NO database imports.
  */
 export default {
+  // Auth.js refuses to serve /api/auth/* unless it trusts the incoming Host.
+  // On Vercel it infers this; anywhere else (self-hosted, docker, `next start`)
+  // it throws UntrustedHost, which surfaces as a 500 on every session lookup —
+  // i.e. sign-in silently broken in production. AUTH_TRUST_HOST lets an
+  // operator opt out if the app ever sits behind an untrusted proxy.
+  trustHost: process.env.AUTH_TRUST_HOST !== "false",
   providers: [
     Google({
       allowDangerousEmailAccountLinking: true,

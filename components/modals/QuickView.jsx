@@ -43,6 +43,10 @@ export default function QuickView() {
       lastBackdrop.style.zIndex = "1057";
     }
   };
+  // The default was the first fixture product; it is null now that the fixture
+  // is no longer bundled, so render nothing until a card supplies a product.
+  if (!quickViewItem) return null;
+
   return (
     <div className="modal fullRight fade modal-quick-view" id="quickView">
       <div className="modal-dialog">

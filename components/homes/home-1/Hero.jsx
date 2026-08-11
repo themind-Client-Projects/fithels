@@ -34,7 +34,11 @@ export default function Hero() {
                 width={1920}
                 height={600}
                 style={{ maxHeight: "800px", objectFit: "cover", width: "100%", height: "100%" }}
+                // Full-bleed hero and the LCP element: priority preloads it,
+                // sizes stops the optimiser serving a 1920px file to a phone.
+                sizes="100vw"
                 priority
+                fetchPriority="high"
               />
               <div className="box-content">
                 <div className="content-slider">

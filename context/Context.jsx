@@ -1,5 +1,4 @@
 "use client";
-import { allProducts } from "@/data/products";
 import { openCartModal } from "@/utlis/openCartModal";
 import { openWistlistModal } from "@/utlis/openWishlist";
 
@@ -14,7 +13,7 @@ export default function Context({ children }) {
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([1, 2, 3]);
   const [compareItem, setCompareItem] = useState([1, 2, 3]);
-  const [quickViewItem, setQuickViewItem] = useState(allProducts[0]);
+  const [quickViewItem, setQuickViewItem] = useState(null);
   const [quickAddItem, setQuickAddItem] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
   useEffect(() => {
@@ -48,13 +47,27 @@ export default function Context({ children }) {
     // carry a slug as their `id` while the fixture uses numbers — so the lookup
     // returned `undefined` and `{...undefined}` silently pushed a priceless,
     // idless `{quantity: 1}` object into the cart (making totalPrice NaN).
+    // Only a real catalogue product can be ordered. The old id form resolved
+    // against the 133KB static fixture, which this provider imported on EVERY
+    // page — and every fixture product was then rejected by the dbId guard
+    // below anyway, so the lookup existed only to fail. Dropping it removes the
+    // fixture from the client bundle entirely.
     const isProductObject =
       productOrId !== null && typeof productOrId === "object";
-    const id = isProductObject ? productOrId.id : productOrId;
+
+    if (!isProductObject) {
+      console.warn(
+        "Ignoring add-to-cart called with a bare id — pass the product object.",
+        productOrId
+      );
+      return false;
+    }
+
+    const id = productOrId.id;
 
     // Fall back to the product's only option when there is exactly one, so a
     // single-size product still records what was bought.
-    const source0 = isProductObject ? productOrId : null;
+    const source0 = productOrId;
     const size =
       variant.size ??
       (source0?.sizes?.length === 1 ? source0.sizes[0] : undefined);
@@ -65,12 +78,10 @@ export default function Context({ children }) {
     const lineKey = cartLineKey(id, size, color);
     if (cartProducts.some((elm) => elm.lineKey === lineKey)) return false;
 
-    const source = isProductObject
-      ? productOrId
-      : allProducts.filter((elm) => elm.id == id)[0];
+    const source = productOrId;
 
     // Never add an unresolvable item — a broken entry corrupts the whole cart.
-    if (!source) return;
+    if (!source) return false;
 
     // Only real catalogue products can be ordered. Several template leftovers
     // (the search and cart drawers) still render fixture products whose ids
