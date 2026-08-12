@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { resolveColor } from "@/lib/products/colors";
 
 export default function DynamicDetails({ product, locale = "ar" }) {
   const router = useRouter();
@@ -116,7 +117,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
 
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
                 <span style={{ fontSize: "24px", fontWeight: "700", color: hasDiscount ? "#dc2626" : "#1a1a2e" }}>
-                  ${(product.salePrice || product.price).toFixed(2)}
+                  <CurrencyFormatter price={product.salePrice || product.price} />
                 </span>
                 {hasDiscount && (
                   <span style={{ fontSize: "18px", color: "#6c757d", textDecoration: "line-through" }}>
@@ -145,25 +146,48 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                     {locale === "ar" ? "اللون:" : "Color:"} <span style={{ color: "#6c757d", fontWeight: "normal" }}>{activeColor}</span>
                   </div>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    {product.colors.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setActiveColor(color)}
-                        style={{
-                          padding: "8px 16px",
-                          border: activeColor === color ? "2px solid #111" : "1px solid #ced4da",
-                          borderRadius: "40px",
-                          background: activeColor === color ? "#f8f9fa" : "#fff",
-                          color: "#111",
-                          fontSize: "14px",
-                          fontWeight: activeColor === color ? "600" : "400",
-                          cursor: "pointer",
-                          transition: "all 0.2s"
-                        }}
-                      >
-                        {color}
-                      </button>
-                    ))}
+                    {product.colors.map(color => {
+                      // The name alone left the shopper guessing what "بيج" or
+                      // "وردي داكن" actually looks like; the dot answers that.
+                      const swatch = resolveColor(color);
+                      const isActive = activeColor === color;
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => setActiveColor(color)}
+                          aria-pressed={isActive}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 16px",
+                            border: isActive ? "2px solid #111" : "1px solid #ced4da",
+                            borderRadius: "40px",
+                            background: isActive ? "#f8f9fa" : "#fff",
+                            color: "#111",
+                            fontSize: "14px",
+                            fontWeight: isActive ? "600" : "400",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              width: "16px",
+                              height: "16px",
+                              borderRadius: "50%",
+                              backgroundColor: swatch.hex,
+                              // Pale swatches need their own outline or they
+                              // vanish against the white pill.
+                              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.18)",
+                              flexShrink: 0,
+                            }}
+                          />
+                          {color}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -277,7 +301,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
         }}
       >
         <div style={{ flexShrink: 0, fontWeight: "700", fontSize: "18px", color: hasDiscount ? "#dc2626" : "#1a1a2e" }}>
-          ${(product.salePrice || product.price).toFixed(2)}
+          <CurrencyFormatter price={product.salePrice || product.price} />
         </div>
         <button
           onClick={handleBuyNow}

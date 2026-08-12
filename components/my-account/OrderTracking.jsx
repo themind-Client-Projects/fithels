@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { Clock, CheckCircle2, Package, Truck, Home, Check } from "lucide-react";
 
 const STATUS_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
 
@@ -64,15 +65,15 @@ export default function OrderTracking({ orderId }) {
     return map[status] || status;
   };
 
-  const getStatusIcon = (status) => {
-    const map = {
-      PENDING: "⏳",
-      CONFIRMED: "✅",
-      PROCESSING: "🔄",
-      IN_DELIVERY: "🚚",
-      DELIVERED: "📦",
-    };
-    return map[status] || "⬜";
+  // Real icons rather than emoji: emoji render differently on every platform,
+  // do not inherit currentColor, and sat next to a plain grey box for the steps
+  // that had not happened yet.
+  const STEP_ICONS = {
+    PENDING: Clock,
+    CONFIRMED: CheckCircle2,
+    PROCESSING: Package,
+    IN_DELIVERY: Truck,
+    DELIVERED: Home,
   };
 
   if (!isLoaded || loading) {
@@ -195,13 +196,21 @@ export default function OrderTracking({ orderId }) {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              fontSize: isCurrent ? "20px" : "16px",
-                              background: isCompleted ? (isCurrent ? "#3b82f6" : "#e0f2fe") : "#f1f5f9",
-                              border: isCurrent ? "3px solid #93c5fd" : "2px solid transparent",
-                              transition: "all 0.3s ease",
+                              background: isCompleted ? (isCurrent ? "#2563eb" : "#dbeafe") : "#f1f5f9",
+                              border: isCurrent ? "3px solid #bfdbfe" : "2px solid #e2e8f0",
+                              color: isCurrent ? "#fff" : isCompleted ? "#2563eb" : "#cbd5e1",
+                              boxShadow: isCurrent ? "0 0 0 4px rgba(37,99,235,0.12)" : "none",
+                              transition: "all 0.25s ease",
+                              flexShrink: 0,
                             }}
                           >
-                            {isCompleted ? getStatusIcon(step) : "⬜"}
+                            {(() => {
+                              const Icon = STEP_ICONS[step] || Clock;
+                              // A completed step that is behind the current one
+                              // reads better as a tick than as its own glyph.
+                              const Glyph = isCompleted && !isCurrent ? Check : Icon;
+                              return <Glyph size={isCurrent ? 20 : 16} strokeWidth={2.5} aria-hidden="true" />;
+                            })()}
                           </div>
                           {!isLast && (
                             <div
@@ -227,7 +236,7 @@ export default function OrderTracking({ orderId }) {
                           </span>
                           {isCurrent && (
                             <span style={{ display: "block", fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
-                              الحالة الحالية
+                              {t("currentStatus")}
                             </span>
                           )}
                         </div>
@@ -298,7 +307,7 @@ export default function OrderTracking({ orderId }) {
                     </div>
                   </div>
                   <div style={{ fontWeight: 600 }}>
-                    ${(item.price * item.quantity).toFixed(2)}
+                    <CurrencyFormatter price={item.price * item.quantity} />
                   </div>
                 </div>
               ))}
@@ -343,6 +352,24 @@ export default function OrderTracking({ orderId }) {
                   <span className="text-secondary">{t("notes")}</span>
                   <span>{order.notes}</span>
                 </div>
+              )}
+              {/* Show the arithmetic whenever a coupon was used, so the total
+                  is not just a smaller number with no explanation. Orders
+                  placed before coupons existed carry discount 0 and skip it. */}
+              {order.discount > 0 && (
+                <>
+                  <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
+                    <span className="text-secondary">{t("subtotal")}</span>
+                    <span><CurrencyFormatter price={order.subtotal} /></span>
+                  </div>
+                  <div className="d-flex justify-content-between" style={{ marginBottom: "8px", color: "#059669" }}>
+                    <span>
+                      {t("discount")}
+                      {order.couponCode ? ` (${order.couponCode})` : ""}
+                    </span>
+                    <span>− <CurrencyFormatter price={order.discount} /></span>
+                  </div>
+                </>
               )}
               <hr style={{ margin: "12px 0", borderColor: "#f1f5f9" }} />
               <div className="d-flex justify-content-between">

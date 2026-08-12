@@ -40,6 +40,7 @@ import {
   ChevronsUpDown,
   Store,
   Sparkles,
+  TicketPercent,
 } from "lucide-react";
 
 export default function DashboardSidebar() {
@@ -64,6 +65,7 @@ export default function DashboardSidebar() {
     { title: t("categories"), url: `/${locale}/dashboard/categories`, icon: Tags, permission: PERMISSIONS.VIEW_CATEGORIES },
     { title: t("customers"), url: `/${locale}/dashboard/customers`, icon: Users, permission: PERMISSIONS.VIEW_CUSTOMERS },
     { title: "البانرات", url: `/${locale}/dashboard/banners`, icon: Sparkles, permission: PERMISSIONS.VIEW_SETTINGS },
+    { title: "الكوبونات", url: `/${locale}/dashboard/coupons`, icon: TicketPercent, permission: PERMISSIONS.VIEW_SETTINGS },
     { title: "الصفحات", url: `/${locale}/dashboard/pages`, icon: LayoutDashboard, permission: PERMISSIONS.VIEW_SETTINGS },
   ];
 

@@ -16,6 +16,13 @@ import {
 import { createPaymentLink, generateReferenceId } from '@/lib/wayle/client'
 import { releaseExpiredIntents } from '@/lib/wayle/expire'
 import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
+import {
+  assertCouponUsable,
+  CouponError,
+  normaliseCode,
+  roundMoney,
+} from '@/lib/coupons/validate'
+import { claimCouponRedemption } from '@/lib/coupons/redeem'
 
 /**
  * Raised inside the order transaction when a conditional stock decrement
@@ -170,8 +177,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate items and calculate total
-    let total = 0
+    // Validate items and calculate the basket subtotal (before any discount).
+    let subtotal = 0
     const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
     const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
 
@@ -211,7 +218,7 @@ export async function POST(request: NextRequest) {
       }
 
       const itemPrice = product.salePrice ?? product.price
-      total += itemPrice * quantity
+      subtotal += itemPrice * quantity
 
       orderItemsData.push({
         productId,
@@ -228,9 +235,52 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    subtotal = roundMoney(subtotal)
+
+    // --- Coupon ---
+    //
+    // The client sends a CODE and nothing else. The discount is resolved here,
+    // from the database, against a subtotal this endpoint computed itself — the
+    // checkout's preview (POST /api/coupons/validate) is a display convenience
+    // and is never trusted. Anything the client claims about the discount, the
+    // subtotal or the total is ignored.
+    const requestedCode = normaliseCode(body.couponCode)
+    let coupon: Awaited<ReturnType<typeof prisma.coupon.findUnique>> = null
+    let discount = 0
+
+    if (requestedCode) {
+      coupon = await prisma.coupon.findUnique({ where: { code: requestedCode } })
+
+      if (!coupon) {
+        return noStoreJson(
+          { error: 'This code is not valid.', reason: 'NOT_FOUND' },
+          { status: 422 }
+        )
+      }
+
+      const userRedemptions = await prisma.couponRedemption.count({
+        where: { couponId: coupon.id, userId: user.id, voidedAt: null },
+      })
+
+      try {
+        discount = assertCouponUsable({ coupon, subtotal, userRedemptions })
+      } catch (error) {
+        if (error instanceof CouponError) {
+          return noStoreJson(
+            { error: error.message, reason: error.reason, ...error.detail },
+            { status: 422 }
+          )
+        }
+        throw error
+      }
+    }
+
+    const total = roundMoney(subtotal - discount)
+
     // For online payment, convert and enforce Wayle's floor BEFORE creating
     // anything — so a below-minimum order never becomes a half-built record.
     let amountIqd = 0
+    let discountIqd = 0
     let lineItemAmountsIqd: number[] = []
     // Resolved lazily inside the online-payment branch only. Hoisting this out
     // meant a malformed USD_TO_IQD_RATE threw for CASH orders too, 500-ing
@@ -260,7 +310,21 @@ export async function POST(request: NextRequest) {
       lineItemAmountsIqd = lineItemSources.map((source) =>
         usdToIqd(source.amountUsd, usdToIqdRate)
       )
-      amountIqd = lineItemAmountsIqd.reduce((sum, amount) => sum + amount, 0)
+      const grossIqd = lineItemAmountsIqd.reduce((sum, amount) => sum + amount, 0)
+
+      // The discount is converted and subtracted in IQD, then sent to Wayle as
+      // its own `decrease` line. Converting the already-discounted USD total
+      // instead would leave the line items Wayle displays adding up to more
+      // than the amount it collects, and Wayle rejects that mismatch.
+      //
+      // Clamped to the gross so a fixed-amount coupon worth more than the
+      // basket cannot produce a negative charge.
+      discountIqd =
+        discount > 0
+          ? Math.min(usdToIqd(discount, usdToIqdRate), grossIqd)
+          : 0
+
+      amountIqd = grossIqd - discountIqd
       try {
         assertAboveWayleMinimum(amountIqd)
       } catch (error) {
@@ -278,6 +342,27 @@ export async function POST(request: NextRequest) {
         throw error
       }
     }
+
+    const isStaff = user.role === 'ADMIN' || user.role === 'EMPLOYEE'
+    const orderUserId = isStaff && targetUserId ? targetUserId : user.id
+
+    // Auto-save the phone to the profile if it is not set yet.
+    //
+    // Deliberately OUTSIDE the order transaction: it is a convenience unrelated
+    // to order correctness, and every extra round-trip inside an interactive
+    // transaction is held against its timeout. Under concurrency those
+    // round-trips queue behind row locks and the whole transaction expires —
+    // which is exactly how checkout started failing with
+    // "A query cannot be executed on an expired transaction".
+    await prisma.user
+      .updateMany({
+        where: { id: orderUserId, OR: [{ phone: null }, { phone: '' }] },
+        data: { phone: phone.trim() },
+      })
+      .catch((error) => {
+        // Never fail an order because we could not cache a phone number.
+        console.error('Could not save phone to profile (continuing)', error)
+      })
 
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -299,23 +384,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create the order
-      const isStaff = user.role === 'ADMIN' || user.role === 'EMPLOYEE'
-      const orderUserId = isStaff && targetUserId ? targetUserId : user.id
-
-      // Auto-save phone to user profile if not set
-      const orderUser = await tx.user.findUnique({ where: { id: orderUserId } })
-      if (orderUser && !orderUser.phone && phone) {
-        await tx.user.update({
-          where: { id: orderUserId },
-          data: { phone: phone.trim() },
-        })
-      }
-
-      return tx.order.create({
+      const created = await tx.order.create({
         data: {
           userId: orderUserId,
+          subtotal,
+          discount,
           total,
+          couponId: coupon?.id ?? null,
+          // Snapshot of the code, so the order still explains itself if the
+          // coupon is later renamed or deleted.
+          couponCode: coupon?.code ?? null,
           notes: notes || null,
           phone: phone.trim(),
           location: location.trim(),
@@ -327,26 +405,58 @@ export async function POST(request: NextRequest) {
             create: orderItemsData,
           },
         },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  titleEn: true,
-                  titleAr: true,
-                  images: true,
-                },
-              },
+        // No `include` here on purpose. Joining the products back in doubles
+        // the work done while the transaction (and its row locks) are open; the
+        // full shape is re-read after the commit instead.
+        select: { id: true },
+      })
+
+      // Consume the coupon in the SAME transaction as the order.
+      //
+      // Outside it, a coupon could be burned by an order that then failed to
+      // insert (or whose stock claim lost a race), permanently costing the
+      // shopper a redemption for an order that never existed. This also closes
+      // the reverse: the limit checks above only read, so two shoppers racing
+      // for the last redemption both passed them — the conditional increment
+      // inside claimCouponRedemption is what lets exactly one through.
+      if (coupon && discount > 0) {
+        await claimCouponRedemption(tx, {
+          couponId: coupon.id,
+          userId: orderUserId,
+          orderId: created.id,
+          amount: discount,
+          maxRedemptions: coupon.maxRedemptions,
+          maxPerUser: coupon.maxPerUser,
+        })
+      }
+
+      return created
+    }, {
+      // Defaults are maxWait 2s / timeout 5s, which a remote pooled Postgres
+      // cannot honour once several checkouts contend for the same product row:
+      // the losers sat on a lock and then died with "expired transaction",
+      // 500-ing a checkout that should simply have been told "out of stock".
+      maxWait: 10_000,
+      timeout: 20_000,
+    })
+
+    // Re-read outside the transaction, in the shape callers expect.
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: { id: true, titleEn: true, titleAr: true, images: true },
             },
           },
         },
-      })
+      },
     })
 
     // Cash on delivery is complete once the order exists.
     if (paymentMethod === 'COD') {
-      return noStoreJson(order, { status: 201 })
+      return noStoreJson(orderWithItems ?? order, { status: 201 })
     }
 
     // Online payment: issue the hosted Wayle link.
@@ -364,7 +474,7 @@ export async function POST(request: NextRequest) {
         data: {
           referenceId,
           orderId: order.id,
-          userId: order.userId,
+          userId: orderUserId,
           amountIqd,
           amountUsd: total,
           rateUsdToIqd: usdToIqdRate,
@@ -375,20 +485,34 @@ export async function POST(request: NextRequest) {
       const link = await createPaymentLink({
         referenceId,
         totalIqd: amountIqd,
-        lineItems: lineItemSources.map((source, index) => ({
-          label: source.label,
-          // Reuse the exact figures summed into amountIqd above — never
-          // recompute, or the parts stop matching the whole.
-          amount: lineItemAmountsIqd[index],
-          type: 'increase' as const,
-          // Wayle rejects line items without an image URL, so fall back to the
-          // site logo when a product has no image of its own.
-          image: source.image
-            ? source.image.startsWith('http')
-              ? source.image
-              : `${siteUrl}${source.image}`
-            : `${siteUrl}/images/logo/logo.svg`,
-        })),
+        lineItems: [
+          ...lineItemSources.map((source, index) => ({
+            label: source.label,
+            // Reuse the exact figures summed into amountIqd above — never
+            // recompute, or the parts stop matching the whole.
+            amount: lineItemAmountsIqd[index],
+            type: 'increase' as const,
+            // Wayle rejects line items without an image URL, so fall back to the
+            // site logo when a product has no image of its own.
+            image: source.image
+              ? source.image.startsWith('http')
+                ? source.image
+                : `${siteUrl}${source.image}`
+              : `${siteUrl}/images/logo/logo.svg`,
+          })),
+          // The discount rides as its own decrease line so the figures Wayle
+          // shows the payer still sum to the amount it charges.
+          ...(discountIqd > 0
+            ? [
+                {
+                  label: coupon?.code ? `خصم (${coupon.code})` : 'خصم',
+                  amount: discountIqd,
+                  type: 'decrease' as const,
+                  image: `${siteUrl}/images/logo/logo.svg`,
+                },
+              ]
+            : []),
+        ],
         webhookUrl: `${siteUrl}/api/payments/wayle/webhook`,
         // Locale-prefixed on purpose: the return page lives under /[locale],
         // so an unprefixed URL bounces every payer onto the default locale.
@@ -401,7 +525,7 @@ export async function POST(request: NextRequest) {
       })
 
       return noStoreJson(
-        { ...order, referenceId, paymentUrl: link.url },
+        { ...(orderWithItems ?? order), referenceId, paymentUrl: link.url },
         { status: 201 }
       )
     } catch (error) {
@@ -434,6 +558,17 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
+    // A coupon exhausted between validation and the atomic claim is a client
+    // condition too. Without this the losers of a race for the last redemption
+    // got a 500, which reads as "the shop is broken" rather than "that code is
+    // used up".
+    if (error instanceof CouponError) {
+      return noStoreJson(
+        { error: error.message, reason: error.reason, ...error.detail },
+        { status: 422 }
+      )
+    }
+
     // Losing a stock race is a client-visible condition, not a server fault.
     if (error instanceof InsufficientStockError) {
       return noStoreJson(

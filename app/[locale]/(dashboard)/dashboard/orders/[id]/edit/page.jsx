@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { formatMoney } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
@@ -222,7 +223,7 @@ export default function EditOrderPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("total")}</span>
-                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>${Number(order.total).toFixed(2)}</span>
+                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{formatMoney(order.total, "USD")}</span>
               </div>
             </div>
           </div>

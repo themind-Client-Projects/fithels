@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client'
+import { releaseCouponRedemption } from '@/lib/coupons/redeem'
 
 /**
  * The single place an order's reserved stock is returned to the shelf.
@@ -35,6 +36,7 @@ export async function cancelOrderAndReleaseStock(
   if (claimed.count === 0) return false
 
   await releaseOrderStock(tx, orderId)
+  await releaseCouponRedemption(tx, orderId)
   return true
 }
 

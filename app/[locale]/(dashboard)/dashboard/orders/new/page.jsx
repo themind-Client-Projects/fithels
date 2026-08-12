@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { formatMoney } from "@/lib/currency";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +11,8 @@ import { ArrowLeft, Plus, Trash2, Package, User, MapPin, Phone } from "lucide-re
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function CreateOrderPage() {
+  // Shared formatter so staff see the same figures as the storefront.
+  const formatCurrency = (a) => formatMoney(a, "USD");
   const router = useRouter();
   const params = useParams();
   const locale = params?.locale || "ar";
@@ -265,7 +268,7 @@ export default function CreateOrderPage() {
                       <div>
                         <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1a1a2e" }}>{p.titleAr}</div>
                         <div style={{ fontSize: "0.75rem", color: "#6c757d" }}>
-                          ${(p.salePrice || p.price).toFixed(2)} · {t("stock")}: {p.stock}
+                          {formatCurrency(p.salePrice || p.price)} · {t("stock")}: {p.stock}
                         </div>
                       </div>
                       {!alreadyAdded && <Plus style={{ color: "#2563eb", width: "1.25rem", height: "1.25rem" }} />}
@@ -317,7 +320,7 @@ export default function CreateOrderPage() {
                           </div>
                         )}
                         <div style={{ display: "flex", alignItems: "flex-end" }}>
-                          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "#2563eb" }}>${(item.price * item.quantity).toFixed(2)}</span>
+                          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "#2563eb" }}>{formatCurrency(item.price * item.quantity)}</span>
                         </div>
                       </div>
                     </div>
@@ -385,7 +388,7 @@ export default function CreateOrderPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 0", borderTop: "1px solid #f1f3f5" }}>
                 <span style={{ fontWeight: 700, fontSize: "1rem", color: "#1a1a2e" }}>{t("total")}</span>
-                <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#2563eb" }}>${total.toFixed(2)}</span>
+                <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#2563eb" }}>{formatCurrency(total)}</span>
               </div>
             </div>
             <div style={{ padding: "0 1.5rem 1.5rem" }}>

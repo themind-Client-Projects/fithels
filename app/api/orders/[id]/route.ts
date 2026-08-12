@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { cancelOrderAndReleaseStock, releaseOrderStock } from '@/lib/orders/stock'
 import { canTransition, isTerminalOrderStatus } from '@/lib/orders/status'
+import { releaseCouponRedemption } from '@/lib/coupons/redeem'
 
 /** Raised when another update changed the order's status first. */
 class OrderConcurrencyError extends Error {
@@ -165,7 +166,7 @@ export async function PATCH(
       updateData.location = location
     }
 
-    const order = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // Optimistic concurrency. `existing` was read outside this transaction, so
       // two staff acting at the same instant both passed the transition check.
       // Applying the write only while the status is still what we validated
@@ -190,38 +191,55 @@ export async function PATCH(
       // wrote to Product at all.
       if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
         await releaseOrderStock(tx, id)
+        // A cancelled order did not happen, so the coupon it consumed goes back
+        // to the shopper. This path claims the transition itself (the
+        // conditional updateMany above) rather than going through
+        // cancelOrderAndReleaseStock, so it has to release the coupon too.
+        await releaseCouponRedemption(tx, id)
       }
 
-      return tx.order.findUnique({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
+      return true
+    }, {
+      // Cancelling walks every line item to credit stock, so the work inside
+      // grows with basket size. On a remote pooled Postgres that overran the
+      // 5s default and threw "A commit cannot be executed on an expired
+      // transaction" — the admin saw a failed save while the status change had
+      // in fact been applied.
+      maxWait: 10_000,
+      timeout: 20_000,
+    })
+
+    // Re-read outside the transaction: it is a pure read, and holding the
+    // transaction open for it only lengthens the window other writers block on.
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
           },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  titleEn: true,
-                  titleAr: true,
-                  images: true,
-                },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                titleEn: true,
+                titleAr: true,
+                images: true,
               },
             },
           },
-          // The detail page replaces its order state with this response, so
-          // omitting the intent made the "needs reconciliation" warning vanish
-          // the moment staff changed the status — hiding exactly the case the
-          // badge exists to surface.
-          paymentIntent: { select: { status: true, failureReason: true } },
         },
-      })
+        // The detail page replaces its order state with this response, so
+        // omitting the intent made the "needs reconciliation" warning vanish
+        // the moment staff changed the status — hiding exactly the case the
+        // badge exists to surface.
+        paymentIntent: { select: { status: true, failureReason: true } },
+      },
     })
 
     return noStoreJson(order)

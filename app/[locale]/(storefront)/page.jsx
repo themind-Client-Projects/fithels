@@ -8,6 +8,7 @@ import Catalog from "@/components/homes/home-1/Catalog";
 import Products from "@/components/common/Products3";
 import Showcase from "@/components/homes/home-1/Showcase";
 import { prisma } from "@/lib/prisma";
+import { resolveProductColors } from "@/lib/products/colors";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({ params }) {
@@ -52,7 +53,7 @@ export default async function HomePage({ params }) {
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
-      colors: p.colors.map(c => ({ bgColor: "bg-main", imgSrc: p.images[0] || "" })),
+      colors: resolveProductColors(p.colors, p.images),
       inStock: p.stock > 0,
       filterColor: p.colors,
       filterSizes: p.sizes,

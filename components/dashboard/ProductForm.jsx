@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
+import ColorMultiSelect from "@/components/dashboard/ColorMultiSelect";
 
 export default function ProductForm({ product, onSuccess, onCancel }) {
   const isEditing = !!product;
@@ -22,7 +23,9 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
   const [sizes, setSizes] = useState(product?.sizes?.join(", ") || "");
-  const [colors, setColors] = useState(product?.colors?.join(", ") || "");
+  // Array, not a comma-joined string: the colour picker owns the vocabulary
+  // now, so there is nothing to parse back out of a text field.
+  const [colors, setColors] = useState(product?.colors ?? []);
   const [stock, setStock] = useState(product?.stock?.toString() || "0");
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState(product?.images || []);
@@ -147,9 +150,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       sizes: sizes
         ? sizes.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
-      colors: colors
-        ? colors.split(",").map((c) => c.trim()).filter(Boolean)
-        : [],
+      colors: Array.isArray(colors) ? colors : [],
       stock,
       isActive,
       images,
@@ -359,13 +360,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </div>
         <div className="flex flex-col gap-2.5">
           <Label htmlFor="colors" className="text-start text-sm font-bold text-foreground">{t("colors")}</Label>
-          <Input
-            id="colors"
-            value={colors}
-            onChange={(e) => setColors(e.target.value)}
-            placeholder="Red, Blue, Black"
-            className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
-          />
+          <ColorMultiSelect value={colors} onChange={setColors} />
         </div>
       </div>
 

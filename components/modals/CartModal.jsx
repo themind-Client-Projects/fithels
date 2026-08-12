@@ -270,34 +270,6 @@ export default function CartModal() {
                       </svg>
                       <div className="text-caption-1">Shipping</div>
                     </div>
-                    <div
-                      className="tf-mini-cart-tool-btn btn-add-coupon"
-                      onClick={() => setCurrentOpenPopup("add-coupon")}
-                    >
-                      <svg
-                        width={21}
-                        height={20}
-                        viewBox="0 0 21 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.3247 11.1751L11.3497 17.1501C11.1949 17.305 11.0111 17.428 10.8087 17.5118C10.6064 17.5957 10.3895 17.6389 10.1705 17.6389C9.95148 17.6389 9.7346 17.5957 9.53227 17.5118C9.32994 17.428 9.14613 17.305 8.99134 17.1501L1.83301 10.0001V1.66675H10.1663L17.3247 8.82508C17.6351 9.13735 17.8093 9.55977 17.8093 10.0001C17.8093 10.4404 17.6351 10.8628 17.3247 11.1751V11.1751Z"
-                          stroke="#181818"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M5.99902 5.83325H6.00902"
-                          stroke="#181818"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <div className="text-caption-1">Coupon</div>
-                    </div>
                   </div>
                   <div className="tf-mini-cart-bottom-wrap">
                     <div className="tf-cart-totals-discounts">

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import RangeSlider from "react-range-slider-input";
 import { useTranslations } from "next-intl";
+import { resolveColor } from "@/lib/products/colors";
 
 export default function FilterModal({ allProps, products = [] }) {
   const t = useTranslations("shop");
@@ -25,9 +26,12 @@ export default function FilterModal({ allProps, products = [] }) {
 
     return {
       sizes: Array.from(sizeSet),
+      // Resolved to a real swatch. This built `bg-color-${name}` before, which
+      // for an Arabic colour name produced a class like `bg-color-أسود` that no
+      // stylesheet defines — so every filter swatch rendered blank.
       colors: Array.from(colorSet).map((c) => ({
         name: c,
-        className: `bg-color-${String(c).toLowerCase()}`,
+        swatch: resolveColor(c),
       })),
       maxPrice: maxP,
       availabilityCounts: {
@@ -125,7 +129,10 @@ export default function FilterModal({ allProps, products = [] }) {
                       color.name == allProps.color?.name || color.name == allProps.color ? "active" : ""
                     }`}
                   >
-                    <span className={`color ${color.className}`} />
+                    <span
+                      className={`color ${color.swatch.isLight ? "line" : ""}`}
+                      style={{ backgroundColor: color.swatch.hex }}
+                    />
                     {color.name}
                   </div>
                 ))}

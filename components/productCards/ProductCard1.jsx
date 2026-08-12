@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
+import { useLocale } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function ProductCard1({
   product,
@@ -13,6 +14,7 @@ export default function ProductCard1({
   radiusClass = "",
 }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
+  const locale = useLocale();
 
   const {
     setQuickAddItem,
@@ -257,26 +259,40 @@ export default function ProductCard1({
           )}{" "}
           <CurrencyFormatter price={product.price} />
         </span>
-        {product.colors && (
+        {product.colors?.length > 0 && (
           <ul className="list-color-product">
-            {product.colors.map((color, index) => (
-              <li
-                key={index}
-                className={`list-color-item color-swatch ${
-                  currentImage == color.imgSrc ? "active" : ""
-                } ${color.bgColor == "bg-white" ? "line" : ""}`}
-                onMouseOver={() => setCurrentImage(color.imgSrc)}
-              >
-                <span className={`swatch-value ${color.bgColor}`} />
-                <Image
-                  className="lazyload"
-                  src={color.imgSrc}
-                  alt="color variant"
-                  width={600}
-                  height={800}
-                />
-              </li>
-            ))}
+            {product.colors.map((color, index) => {
+              // Colours arrive resolved from lib/products/colors. The swatch is
+              // painted inline because the stored names are Arabic, so there is
+              // no utility class to reach for — the previous `bg-main` class
+              // rendered every colour of a product as the same black dot.
+              const label = locale === "en" ? color.nameEn : color.nameAr;
+              return (
+                <li
+                  key={color.key ?? index}
+                  className={`list-color-item color-swatch ${
+                    currentImage == color.imgSrc ? "active" : ""
+                  } ${color.isLight ? "line" : ""}`}
+                  onMouseOver={() => color.imgSrc && setCurrentImage(color.imgSrc)}
+                  title={label}
+                >
+                  <span
+                    className="swatch-value"
+                    style={{ backgroundColor: color.hex }}
+                    aria-label={label}
+                  />
+                  {color.imgSrc && (
+                    <Image
+                      className="lazyload"
+                      src={color.imgSrc}
+                      alt={label}
+                      width={600}
+                      height={800}
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

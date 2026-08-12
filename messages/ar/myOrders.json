@@ -49,5 +49,8 @@
   "orderCancelled": "طلب ملغى",
   "fullName": "الاسم",
   "emailLabel": "البريد الإلكتروني",
-  "phoneLabel": "رقم الهاتف"
+  "phoneLabel": "رقم الهاتف",
+  "currentStatus": "الحالة الحالية",
+  "subtotal": "المجموع الفرعي",
+  "discount": "الخصم"
 }

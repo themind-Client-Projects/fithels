@@ -45,5 +45,13 @@
   "paymentPendingDesc": "تم استلام دفعتك وهي قيد المعالجة. أموالك بأمان وسنؤكد طلبك قريبًا.",
   "backToOrders": "عرض طلباتي",
   "noPaymentFound": "لا توجد عملية دفع جارية",
-  "noPaymentFoundDesc": "لم نعثر على عملية دفع مرتبطة بهذه الصفحة. إذا كنت قد أتممت الدفع، ستجد طلبك في صفحة طلباتي."
+  "noPaymentFoundDesc": "لم نعثر على عملية دفع مرتبطة بهذه الصفحة. إذا كنت قد أتممت الدفع، ستجد طلبك في صفحة طلباتي.",
+  "couponPlaceholder": "رمز الخصم",
+  "couponApply": "تطبيق",
+  "couponRemove": "إزالة",
+  "couponApplied": "تم تطبيق الرمز {code}",
+  "couponDiscount": "الخصم",
+  "couponInvalid": "هذا الرمز غير صالح.",
+  "couponSignInRequired": "سجّلي الدخول لاستخدام رمز الخصم.",
+  "couponCheckFailed": "تعذّر التحقق من الرمز. حاولي مرة أخرى."
 }

@@ -8,6 +8,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useUIStore } from "@/stores/useUIStore";
 import { useTranslations } from "next-intl";
+import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 
 function CheckoutContent() {
   const { cartProducts, totalPrice: cartTotal, setCartProducts } = useContextElement();
@@ -27,6 +28,13 @@ function CheckoutContent() {
   const [errors, setErrors] = useState({});
   // "COD" (cash on delivery) or "WAYLE" (online payment link).
   const [paymentMethod, setPaymentMethod] = useState("COD");
+
+  // Coupon. `applied` holds the SERVER's answer (code + discount); nothing here
+  // is trusted at order time — POST /api/orders re-resolves the code itself.
+  const [couponInput, setCouponInput] = useState("");
+  const [applied, setApplied] = useState(null);
+  const [couponError, setCouponError] = useState("");
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
   
   const router = useRouter();
   const params = useParams();
@@ -113,6 +121,9 @@ function CheckoutContent() {
           phone: phone.trim(),
           location: location.trim(),
           paymentMethod,
+          // Only the CODE travels. The discount is recomputed server-side, so a
+          // tampered amount here changes nothing.
+          couponCode: applied?.code || undefined,
           // So Wayle returns the payer to their own language.
           locale,
         }),
@@ -273,6 +284,64 @@ function CheckoutContent() {
     displayTotal = cartTotal;
   }
 
+  // The server is the authority on the discount. If the basket changed after a
+  // code was applied, the preview below is re-fetched; the figure shown here is
+  // always whichever one the server last returned, clamped so it can never make
+  // the payable total negative on screen.
+  const discountShown = applied ? Math.min(applied.discount, displayTotal) : 0;
+  const payableShown = Math.max(0, Math.round((displayTotal - discountShown) * 100) / 100);
+
+  const orderItemsPayload = () =>
+    isSingleProduct && singleProduct
+      ? [{ productId: singleProduct.id, quantity: parseInt(searchParams.get("qty") || "1", 10) }]
+      : cartProducts.map((item) => ({
+          productId: item.dbId || item.id?.toString(),
+          quantity: item.quantity || 1,
+        }));
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setCheckingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, items: orderItemsPayload() }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setApplied(null);
+        // 401 means the shopper is not signed in — coupons are per-account, so
+        // say that rather than "invalid code", which would send them hunting
+        // for a typo that is not there.
+        setCouponError(
+          res.status === 401
+            ? t("couponSignInRequired")
+            : data.error || t("couponInvalid")
+        );
+        return;
+      }
+
+      setApplied({ code: data.code, discount: data.discount });
+      setCouponInput(data.code);
+    } catch {
+      setApplied(null);
+      setCouponError(t("couponCheckFailed"));
+    } finally {
+      setCheckingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setApplied(null);
+    setCouponInput("");
+    setCouponError("");
+  };
+
   return (
     <section className="flat-spacing">
       <div className="container">
@@ -310,11 +379,11 @@ function CheckoutContent() {
                         {item.selectedSize && <span>{locale === "ar" ? "المقاس:" : "Size:"} {item.selectedSize}</span>}
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                        {item.quantity} × ${Number(item.price).toFixed(2)}
+                        {item.quantity} × <CurrencyFormatter price={item.price} />
                       </div>
                     </div>
                     <div style={{ fontWeight: "700", fontSize: "16px" }}>
-                      ${(item.quantity * item.price).toFixed(2)}
+                      <CurrencyFormatter price={item.quantity * item.price} />
                     </div>
                   </div>
                 ))}
@@ -364,8 +433,67 @@ function CheckoutContent() {
               <div style={{ background: "#f8f9fa", borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
                 <div className="d-flex justify-content-between align-items-center text-button" style={{ marginBottom: "10px" }}>
                   <span>{tShop("subtotal")}</span>
-                  <span>${displayTotal.toFixed(2)}</span>
+                  <span><CurrencyFormatter price={displayTotal} /></span>
                 </div>
+
+                {/* Coupon. Replaces a form whose submit handler was
+                    `e.preventDefault()` and nothing else — it accepted any code
+                    and silently discounted nothing. */}
+                <div style={{ marginBottom: "10px" }}>
+                  {applied ? (
+                    <div
+                      className="d-flex justify-content-between align-items-center"
+                      style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "8px", padding: "10px 12px" }}
+                    >
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>
+                        {t("couponApplied", { code: applied.code })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        style={{ background: "none", border: "none", color: "#065f46", fontSize: "13px", textDecoration: "underline", cursor: "pointer" }}
+                      >
+                        {t("couponRemove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyCoupon();
+                          }
+                        }}
+                        placeholder={t("couponPlaceholder")}
+                        aria-label={t("couponPlaceholder")}
+                        style={{ flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={applyCoupon}
+                        disabled={checkingCoupon || !couponInput.trim()}
+                        style={{ padding: "10px 18px", borderRadius: "8px", border: "1px solid #111", background: "#111", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", opacity: checkingCoupon || !couponInput.trim() ? 0.5 : 1 }}
+                      >
+                        {checkingCoupon ? "…" : t("couponApply")}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <div role="alert" style={{ marginTop: "8px", fontSize: "12px", color: "#b91c1c" }}>
+                      {couponError}
+                    </div>
+                  )}
+                </div>
+
+                {discountShown > 0 && (
+                  <div className="d-flex justify-content-between align-items-center text-button" style={{ marginBottom: "10px", color: "#059669" }}>
+                    <span>{t("couponDiscount")}</span>
+                    <span>− <CurrencyFormatter price={discountShown} /></span>
+                  </div>
+                )}
                 <div className="text-button" style={{ marginBottom: "10px" }}>
                   <span style={{ display: "block", marginBottom: "10px" }}>
                     {tShop("paymentMethod")}
@@ -422,7 +550,7 @@ function CheckoutContent() {
                 <hr style={{ margin: "12px 0", borderColor: "#ddd" }} />
                 <div className="d-flex justify-content-between align-items-center">
                   <h5>{tShop("total")}</h5>
-                  <h5>${displayTotal.toFixed(2)}</h5>
+                  <h5><CurrencyFormatter price={payableShown} /></h5>
                 </div>
               </div>
 

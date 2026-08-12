@@ -1,5 +1,7 @@
 "use client";
 import { useContextElement } from "@/context/Context";
+import Image from "next/image";
+import Link from "next/link";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function BannerTabProduct({ product }) {
   const { setQuickViewItem } = useContextElement();

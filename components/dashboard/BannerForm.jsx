@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import Image from "next/image";
+import { Upload, X } from "lucide-react";
 
 export default function BannerForm({ banner, onSuccess, onCancel }) {
   const t = useTranslations("Dashboard");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     titleEn: "",
@@ -37,8 +40,53 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
     }
   }, [banner]);
 
+  /** Same contract as the product uploader: POST /api/upload → { url }. */
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body });
+
+      if (!res.ok) {
+        const reason =
+          res.status === 413
+            ? "TOO_LARGE"
+            : res.status === 415
+              ? "UNSUPPORTED_TYPE"
+              : res.status === 401 || res.status === 403
+                ? "UNAUTHORIZED"
+                : "GENERIC";
+        throw new Error(t(`uploadError.${reason}`));
+      }
+
+      const data = await res.json();
+      if (typeof data?.url !== "string" || !data.url) {
+        throw new Error(t("uploadError.GENERIC"));
+      }
+      setFormData((prev) => ({ ...prev, image: data.url }));
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || t("uploadError.GENERIC"));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // The image input is a file picker now, so `required` cannot guard it.
+    if (!formData.image) {
+      setError("الرجاء رفع صورة للبانر.");
+      return;
+    }
+
     setLoading(true);
     try {
       const url = banner?.id ? `/api/banners/${banner.id}` : `/api/banners`;
@@ -80,16 +128,48 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
       )}
       <div className="grid gap-5">
         <div className="grid gap-2">
-          <Label htmlFor="image" className="text-start text-sm font-semibold text-muted-foreground">صورة البانر (URL)</Label>
-          <Input
-            id="image"
-            value={formData.image}
-            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-            placeholder="/images/banner/example.jpg"
-            className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
-            dir="ltr"
-            required
-          />
+          <Label className="text-start text-sm font-semibold text-muted-foreground">صورة البانر</Label>
+          {/* Upload, not a URL field. Typing a path meant a banner could point
+              at a file that was never deployed — the slide then rendered as a
+              blank hero, which is exactly how the carousel went missing. */}
+          {formData.image ? (
+            <div className="relative w-full overflow-hidden rounded-xl border border-border">
+              <Image
+                src={formData.image}
+                alt={formData.titleAr || "banner"}
+                width={1920}
+                height={600}
+                className="h-40 w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                className="absolute top-2 end-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+                aria-label="إزالة الصورة"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex h-40 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/20 text-muted-foreground transition-colors hover:bg-muted/40">
+              {uploading ? (
+                <span className="text-sm">جاري الرفع…</span>
+              ) : (
+                <>
+                  <Upload size={22} />
+                  <span className="text-sm font-medium">اختر صورة للبانر</span>
+                  <span className="text-xs">JPEG أو PNG أو WebP · حتى 5 ميغابايت</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                className="hidden"
+                disabled={uploading}
+                onChange={handleFileUpload}
+              />
+            </label>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">

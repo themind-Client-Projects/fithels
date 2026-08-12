@@ -6,6 +6,7 @@ import Link from "next/link";
 import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
+import { resolveProductColors } from "@/lib/products/colors";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -48,7 +49,7 @@ export default async function ShopDefaultGridPage({ params }) {
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
       // The template expects colors as swatches: { bgColor, imgSrc }
-      colors: p.colors.map(c => ({ bgColor: "bg-main", imgSrc: p.images[0] || "" })),
+      colors: resolveProductColors(p.colors, p.images),
       inStock: p.stock > 0,
       filterColor: p.colors,
       filterSizes: p.sizes,

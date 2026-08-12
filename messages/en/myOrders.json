@@ -49,5 +49,8 @@
   "orderCancelled": "Cancelled",
   "fullName": "Name",
   "emailLabel": "Email",
-  "phoneLabel": "Phone"
+  "phoneLabel": "Phone",
+  "currentStatus": "Current status",
+  "subtotal": "Subtotal",
+  "discount": "Discount"
 }

@@ -9,19 +9,20 @@ datasource db {
 // ─── Auth.js Models ───────────────────────────────────────────
 
 model User {
-  id            String      @id @default(cuid())
-  name          String?
-  email         String      @unique
-  emailVerified DateTime?
-  image         String?
-  phone         String?
-  role          Role        @default(CUSTOMER)
-  permissions   Permission?
-  orders        Order[]
-  accounts      Account[]
-  sessions      Session[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String             @id @default(cuid())
+  name              String?
+  email             String             @unique
+  emailVerified     DateTime?
+  image             String?
+  phone             String?
+  role              Role               @default(CUSTOMER)
+  permissions       Permission?
+  orders            Order[]
+  couponRedemptions CouponRedemption[]
+  accounts          Account[]
+  sessions          Session[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@index([role])
 }
@@ -101,10 +102,31 @@ model Category {
 }
 
 model Order {
-  id       String      @id @default(cuid())
-  user     User        @relation(fields: [userId], references: [id])
-  userId   String
-  items    OrderItem[]
+  id     String      @id @default(cuid())
+  user   User        @relation(fields: [userId], references: [id])
+  userId String
+  items  OrderItem[]
+
+  // Money breakdown.
+  //
+  // `total` remains the amount actually payable, so every existing reader of it
+  // (the dashboard, the customer's order list, the Wayle amount) stays correct
+  // without change. subtotal + discount explain how it was reached:
+  //   total == subtotal - discount
+  //
+  // Defaulted to 0 for rows written before coupons existed; those are
+  // backfilled to subtotal = total, discount = 0.
+  subtotal Float @default(0)
+  discount Float @default(0)
+
+  // The coupon is recorded by id AND by code. The id is the live link; the code
+  // is a snapshot, so an order still shows what was used after the coupon is
+  // renamed or deleted.
+  couponId         String?
+  coupon           Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCode       String?
+  couponRedemption CouponRedemption?
+
   total    Float
   status   OrderStatus @default(PENDING)
   notes    String?
@@ -290,4 +312,107 @@ model PageContent {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum DiscountType {
+  /**
+   * `value` is a percentage of the subtotal, 1–100.
+   */
+  PERCENT
+  /**
+   * `value` is a fixed amount off, in USD (the currency prices are stored in).
+   */
+  FIXED
+}
+
+model Coupon {
+  id   String       @id @default(cuid())
+  /**
+   * Stored upper-cased and trimmed. Shoppers type codes inconsistently, so
+   * every lookup normalises the input the same way rather than relying on the
+   * database being case-insensitive.
+   */
+  code String       @unique
+  type DiscountType @default(PERCENT)
+
+  /**
+   * Percent (1–100) when type is PERCENT, else a fixed USD amount.
+   */
+  value Float
+
+  /**
+   * Order subtotal (USD) the basket must reach before the code applies.
+   */
+  minSubtotal Float?
+  /**
+   * Ceiling on a PERCENT discount, so "50% off" cannot cost more than this.
+   */
+  maxDiscount Float?
+
+  startsAt  DateTime?
+  expiresAt DateTime?
+
+  /**
+   * Total redemptions allowed across all shoppers. Null means unlimited.
+   */
+  maxRedemptions Int?
+  /**
+   * Redemptions allowed per shopper. Null means unlimited.
+   */
+  maxPerUser     Int? @default(1)
+
+  /**
+   * Live count of non-voided redemptions, maintained by the conditional update
+   * in lib/coupons/redeem.ts. It is a claim counter, not a cached statistic —
+   * incrementing it under a `redeemedCount < max` guard is what makes hitting
+   * the limit race-free.
+   */
+  redeemedCount Int @default(0)
+
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  orders      Order[]
+  redemptions CouponRedemption[]
+
+  @@index([isActive])
+}
+
+model CouponRedemption {
+  id       String @id @default(cuid())
+  coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  couponId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  /**
+   * One coupon per order — enforced by the database, not by application code.
+   */
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId  String @unique
+
+  /**
+   * Monotonic per (coupon, user) counter that makes the per-user limit
+   * race-safe. Two concurrent checkouts both compute the same next slot, so the
+   * unique index below rejects one of them — which a plain `count()` check
+   * inside the transaction could not do under READ COMMITTED.
+   * Never reused: voiding sets `voidedAt` rather than deleting, so a released
+   * slot cannot collide with a later redemption.
+   */
+  slot Int
+
+  /**
+   * Discount actually granted, in USD. Frozen at redemption time.
+   */
+  amount Float
+
+  /**
+   * Set when the order was cancelled and the redemption handed back. The row
+   * survives for audit; `redeemedCount` is decremented at the same time.
+   */
+  voidedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, userId, slot])
+  @@index([couponId, userId])
 }

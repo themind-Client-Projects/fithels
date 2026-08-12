@@ -380,6 +380,55 @@ async function main() {
 
   console.log(`✅ Created ${orders.length} mock orders for ${adminEmail}`)
 
+  // --- Home hero slides ---
+  //
+  // The hero renders whatever Banner rows exist. Seeding none left a brand-new
+  // (and, once, an existing) install with an empty first section on the home
+  // page — the storefront's most prominent slot, silently blank.
+  //
+  // Idempotent on purpose: re-seeding must not duplicate slides or clobber the
+  // ones an admin has since uploaded.
+  const existingBanners = await prisma.banner.count()
+  if (existingBanners === 0) {
+    await prisma.banner.createMany({
+      data: [
+        {
+          titleAr: 'أناقة تبدأ من خطوتك',
+          titleEn: 'Elegance Starts With Your Step',
+          btnTextAr: 'تسوقي الآن',
+          btnTextEn: 'Shop Now',
+          image: '/images/slider/slider-women1.jpg',
+          link: '/shop-default-grid',
+          order: 0,
+          isActive: true,
+        },
+        {
+          titleAr: 'تشكيلة الكعب الجديدة',
+          titleEn: 'The New Heels Collection',
+          btnTextAr: 'اكتشفي التشكيلة',
+          btnTextEn: 'Discover The Collection',
+          image: '/images/slider/slider-fashion-classyCove1.jpg',
+          link: '/shop-default-grid',
+          order: 1,
+          isActive: true,
+        },
+        {
+          titleAr: 'إطلالة المساء',
+          titleEn: 'Evening Edit',
+          btnTextAr: 'تسوقي الإطلالة',
+          btnTextEn: 'Shop The Edit',
+          image: '/images/slider/slider-fashion-eleganNest1.jpg',
+          link: '/shop-default-grid',
+          order: 2,
+          isActive: true,
+        },
+      ],
+    })
+    console.log('✅ Created 3 hero banners')
+  } else {
+    console.log(`ℹ️  ${existingBanners} banner(s) already present — left untouched`)
+  }
+
   console.log('')
   console.log('🎉 Seed completed successfully!')
   console.log('')
