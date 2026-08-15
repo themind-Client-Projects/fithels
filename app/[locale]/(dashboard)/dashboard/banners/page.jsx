@@ -177,7 +177,7 @@ export default function BannersPage() {
           </Button>
         }
       >
-        <TableSkeleton rows={5} />
+        <TableSkeleton rows={5} columns={5} firstColumnIsMedia />
       </DashboardShell>
     );
   }

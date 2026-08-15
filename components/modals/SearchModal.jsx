@@ -1,22 +1,56 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 
-import { productMain } from "@/data/products";
 import ProductCard1 from "../productCards/ProductCard1";
-export default function SearchModal() {
-  const [loading, setLoading] = useState(false);
+import { resolveProductColors } from "@/lib/products/colors";
 
-  const [loadedItems, setLoadedItems] = useState(productMain.slice(0, 8));
-  const handleLoad = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoadedItems((pre) => [
-        ...pre,
-        ...productMain.slice(pre.length, pre.length + 4),
-      ]);
-      setLoading(false);
-    }, 1000);
-  };
+/**
+ * Search drawer.
+ *
+ * The suggestions below used to come from `productMain` — the static template
+ * fixture. Because this modal is mounted in the storefront layout, those eight
+ * demo products sat in the DOM of EVERY page: fake titles, fake prices, and
+ * links to /product-detail/7, which is not a real slug and 404s. Adding one to
+ * the basket was rejected by the cart's `dbId` guard, so the only thing they
+ * could do was mislead. They now come from the catalogue.
+ */
+const SUGGESTION_COUNT = 8;
+
+export default function SearchModal() {
+  const locale = useLocale();
+  const [loadedItems, setLoadedItems] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/products?limit=${SUGGESTION_COUNT}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((products) => {
+        if (cancelled || !Array.isArray(products)) return;
+        setLoadedItems(
+          products.map((p) => {
+            const onSale = p.salePrice && p.salePrice < p.price;
+            return {
+              id: p.slug,
+              dbId: p.id,
+              title: locale === "ar" ? p.titleAr : p.titleEn,
+              price: p.salePrice ?? p.price,
+              oldPrice: onSale ? p.price : null,
+              isOnSale: onSale,
+              imgSrc: p.images?.[0] ?? "",
+              imgHover: p.images?.[1] ?? p.images?.[0] ?? "",
+              colors: resolveProductColors(p.colors, p.images),
+              sizes: p.sizes,
+              inStock: p.stock > 0,
+            };
+          })
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
   return (
     <div className="modal fade modal-search" id="search">
       <div className="modal-dialog modal-dialog-centered">
@@ -100,26 +134,6 @@ export default function SearchModal() {
               ))}
             </div>
           </div>
-          {/* Load Item */}
-
-          {productMain.length == loadedItems.length ? (
-            ""
-          ) : (
-            <div
-              className="wd-load view-more-button text-center"
-              onClick={() => handleLoad()}
-            >
-              <button
-                className={`tf-loading btn-loadmore tf-btn btn-reset ${
-                  loading ? "loading" : ""
-                } `}
-              >
-                <span className="text text-btn text-btn-uppercase">
-                  Load more
-                </span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

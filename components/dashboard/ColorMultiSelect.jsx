@@ -24,7 +24,9 @@ export default function ColorMultiSelect({ value = [], onChange }) {
   const locale = useLocale();
   const [customName, setCustomName] = useState("");
 
-  const selected = Array.isArray(value) ? value : [];
+  // Memoised: a fresh `[]` on every render would change the identity that the
+  // useMemo below depends on, so it recomputed each time.
+  const selected = useMemo(() => (Array.isArray(value) ? value : []), [value]);
 
   // Anything already on the product that is not one of the palette entries —
   // typed by hand before this picker existed, or added via "custom" below.

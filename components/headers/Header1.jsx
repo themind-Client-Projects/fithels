@@ -216,7 +216,7 @@ export default function Header1({ fullWidth = false }) {
                       </div>
                       <div style={{ padding: "12px 24px 16px" }}>
                         {(user.role === 'ADMIN' || user.role === 'EMPLOYEE') && (
-                          <a href="/dashboard" className="profile-dropdown-link" style={{
+                          <Link href="/dashboard" className="profile-dropdown-link" style={{
                             display: "flex",
                             alignItems: "center",
                             gap: "10px",
@@ -230,7 +230,7 @@ export default function Header1({ fullWidth = false }) {
                           }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                             Dashboard
-                          </a>
+                          </Link>
                         )}
                         <Link href="/account" className="profile-dropdown-link" style={{
                           display: "flex",

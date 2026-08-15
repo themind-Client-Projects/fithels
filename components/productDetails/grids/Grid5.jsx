@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { images } from "@/data/singleProductSliders";
 import Image from "next/image";
@@ -16,7 +16,7 @@ export default function Grid5({
 
   const observerRef = useRef(null);
 
-  const scrollToTarget = () => {
+  const scrollToTarget = useCallback(() => {
     // Find the element with the specific data-value attribute
     const scrollContainerElemt = document.querySelector(".wrap-quick-view");
     const heightScroll = scrollContainerElemt.scrollTop;
@@ -38,11 +38,11 @@ export default function Grid5({
 
       // Scroll only if the element is not already in view
     }
-  };
+  }, [activeColor]);
 
   useEffect(() => {
     scrollToTarget();
-  }, [activeColor]);
+  }, [scrollToTarget]);
 
   useEffect(() => {
     const options = {
@@ -70,7 +70,8 @@ export default function Grid5({
         observerRef.current.disconnect();
       }
     };
-  }, []);
+    // setState identities are stable, so this still runs once on mount.
+  }, [setActiveColor]);
   return (
     <div className="tf-quick-view-image">
       <div className="wrap-quick-view wrapper-scroll-quickview">

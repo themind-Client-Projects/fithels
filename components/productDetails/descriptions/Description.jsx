@@ -10,8 +10,8 @@ export default function Description() {
         </div>
         <p className="mb_12 text-secondary">
           Nodding to retro styles, this Hyperbola T-shirt is defined by its
-          off-the-shoulder design. It's spun from a green stretch cotton jersey
-          and adorned with an embroidered AC logo on the front, a brand's
+          off-the-shoulder design. It&apos;s spun from a green stretch cotton jersey
+          and adorned with an embroidered AC logo on the front, a brand&apos;s
           signature.
         </p>
         <p className="text-secondary">

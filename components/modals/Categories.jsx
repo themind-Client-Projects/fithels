@@ -24,7 +24,6 @@ export default function Categories() {
               className="facet-title collapsed"
               data-bs-target="#forWomen"
               data-bs-toggle="collapse"
-              aria-expanded="true"
               aria-controls="forWomen"
             >
               <Image
@@ -146,7 +145,6 @@ export default function Categories() {
               className="facet-title collapsed"
               data-bs-target="#forMen"
               data-bs-toggle="collapse"
-              aria-expanded="true"
               aria-controls="forMen"
             >
               <Image
@@ -198,7 +196,6 @@ export default function Categories() {
               className="facet-title collapsed"
               data-bs-target="#forKid"
               data-bs-toggle="collapse"
-              aria-expanded="true"
               aria-controls="forKid"
             >
               <Image
@@ -250,7 +247,6 @@ export default function Categories() {
               className="facet-title collapsed"
               data-bs-target="#accessories"
               data-bs-toggle="collapse"
-              aria-expanded="true"
               aria-controls="accessories"
             >
               <Image

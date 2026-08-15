@@ -264,7 +264,7 @@ export default function OrdersPage() {
           </Button>
         }
       >
-        <TableSkeleton rows={5} />
+        <TableSkeleton rows={5} columns={8} />
       </DashboardShell>
     );
   }

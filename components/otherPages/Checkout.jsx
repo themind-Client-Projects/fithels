@@ -50,14 +50,19 @@ function CheckoutContent() {
 
   // Auto-fill phone from user profile
   useEffect(() => {
-    if (isSignedIn) {
-      fetch("/api/auth/me")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.phone && !phone) setPhone(data.phone);
-        })
-        .catch(() => {});
-    }
+    if (!isSignedIn) return;
+    const controller = new AbortController();
+    fetch("/api/auth/me", { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        // Functional update. `!phone` read the value captured when the effect
+        // was created — empty at mount — so a shopper who started typing while
+        // this request was in flight had their number overwritten when it
+        // landed. Reading `prev` means we only ever fill a genuinely empty box.
+        if (data.phone) setPhone((prev) => prev || data.phone);
+      })
+      .catch(() => {});
+    return () => controller.abort();
   }, [isSignedIn]);
 
   // Load single product if query param is present

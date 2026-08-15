@@ -123,7 +123,7 @@ export default function CartModal() {
                   </div>
                 </div>
                 <div className="text-caption-1">
-                  Congratulations! You've got free shipping!
+                  Congratulations! You&apos;ve got free shipping!
                 </div>
               </div>
               <div className="tf-mini-cart-wrap">

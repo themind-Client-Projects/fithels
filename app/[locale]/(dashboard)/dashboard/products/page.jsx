@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 
 export default function ProductsPage() {
   const t = useTranslations("Dashboard");
@@ -91,9 +92,13 @@ export default function ProductsPage() {
       cell: ({ row }) => (
         <div className="h-14 w-14 rounded-xl border border-border/50 bg-muted/30 overflow-hidden flex items-center justify-center shadow-sm">
           {row.images && row.images.length > 0 ? (
-            <img
+            <Image
               src={row.images[0]}
               alt={row.titleAr || row.titleEn}
+              width={56}
+              height={56}
+              // A 56px cell was being handed the full-size product photo.
+              sizes="56px"
               className="h-full w-full object-cover transition-transform hover:scale-110 duration-300"
             />
           ) : (
@@ -214,7 +219,7 @@ export default function ProductsPage() {
           </Button>
         }
       >
-        <TableSkeleton rows={5} />
+        <TableSkeleton rows={5} columns={7} firstColumnIsMedia />
       </DashboardShell>
     );
   }

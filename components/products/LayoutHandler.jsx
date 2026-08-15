@@ -21,7 +21,7 @@ export default function LayoutHandler({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, [setActiveLayout]); // setState identity is stable, so this still runs once
 
   return (
     <>

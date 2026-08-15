@@ -9,6 +9,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { siteContact } from "@/data/siteContact";
+import Link from "next/link";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -52,9 +53,9 @@ export default async function ContactPage({ params }) {
               <h3 className="heading text-center">{pageTitle}</h3>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
-                  <a className="link" href="/">
+                  <Link className="link" href={`/${locale}`}>
                     {tNav("home")}
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <i className="icon-arrRight" />

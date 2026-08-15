@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Star, User, Truck, Receipt, Package, Calendar, Pencil } from "lucide-react";
+import Image from "next/image";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -367,7 +368,7 @@ export default function OrderDetailPage() {
                 <div style={{ backgroundColor: "#f8f9fa", borderRight: "4px solid #adb5bd", borderRadius: "0.5rem 0 0 0.5rem", padding: "1rem 1.25rem" }}>
                   {order.notes ? (
                     <p dir="auto" style={{ fontSize: "0.875rem", color: "#212529", margin: 0, lineHeight: 1.6, fontStyle: "italic" }}>
-                      "{order.notes}"
+                      &quot;{order.notes}&quot;
                     </p>
                   ) : (
                     <p style={{ fontSize: "0.875rem", color: "#adb5bd", margin: 0, fontStyle: "italic" }}>
@@ -396,9 +397,12 @@ export default function OrderDetailPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                 <div style={{ height: "4rem", width: "4rem", borderRadius: "0.5rem", border: "1px solid #e9ecef", backgroundColor: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.25rem", flexShrink: 0 }}>
                   {item.product?.images?.[0] ? (
-                    <img
+                    <Image
                       src={item.product.images[0]}
                       alt={item.product.titleAr || item.product.titleEn}
+                      width={64}
+                      height={64}
+                      sizes="64px"
                       style={{ height: "100%", width: "100%", objectFit: "contain" }}
                     />
                   ) : (

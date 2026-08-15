@@ -162,7 +162,7 @@ export default function CategoriesPage() {
           </Button>
         }
       >
-        <TableSkeleton rows={4} />
+        <TableSkeleton rows={4} columns={4} firstColumnIsMedia />
       </DashboardShell>
     );
   }

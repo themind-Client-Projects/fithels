@@ -184,7 +184,7 @@ export default function CouponsPage() {
   if (isLoading) {
     return (
       <DashboardShell title="كوبونات الخصم" description="إنشاء أكواد الخصم وإدارتها">
-        <TableSkeleton rows={5} />
+        <TableSkeleton rows={5} columns={7} />
       </DashboardShell>
     );
   }

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 
 const CountdownTimer = ({ style = 1, targetDate = "2025-06-31T23:59:59" }) => {
   const [showTimer, setShowTimer] = useState(false);
@@ -7,7 +7,10 @@ const CountdownTimer = ({ style = 1, targetDate = "2025-06-31T23:59:59" }) => {
     setShowTimer(true);
   }, []);
 
-  const calculateTimeLeft = () => {
+  // Memoised on targetDate: the interval below closes over this function, so an
+  // identity that changed every render would leave the running timer pointing at
+  // a stale copy.
+  const calculateTimeLeft = useCallback(() => {
     const difference = +new Date(targetDate) - +new Date();
     if (difference > 0) {
       return {
@@ -18,7 +21,7 @@ const CountdownTimer = ({ style = 1, targetDate = "2025-06-31T23:59:59" }) => {
       };
     }
     return null; // Time is up
-  };
+  }, [targetDate]);
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
@@ -28,10 +31,10 @@ const CountdownTimer = ({ style = 1, targetDate = "2025-06-31T23:59:59" }) => {
     }, 1000);
 
     return () => clearInterval(timer); // Cleanup the timer on component unmount
-  }, [targetDate]);
+  }, [calculateTimeLeft]);
 
   if (!timeLeft) {
-    return <div>Time's up!</div>;
+    return <div>Time&apos;s up!</div>;
   }
 
   return (

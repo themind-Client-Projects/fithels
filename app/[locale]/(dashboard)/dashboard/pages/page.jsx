@@ -132,7 +132,7 @@ export default function PagesDashboard() {
           </Button>
         }
       >
-        <TableSkeleton rows={3} />
+        <TableSkeleton rows={3} columns={5} />
       </DashboardShell>
     );
   }

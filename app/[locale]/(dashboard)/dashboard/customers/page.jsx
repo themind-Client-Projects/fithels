@@ -188,7 +188,7 @@ export default function CustomersPage() {
   if (isLoading) {
     return (
       <DashboardShell title={t("customers") || "العملاء"} description={t("viewCustomers") || "إدارة العملاء والصلاحيات"}>
-        <TableSkeleton rows={5} />
+        <TableSkeleton rows={5} columns={6} />
       </DashboardShell>
     );
   }

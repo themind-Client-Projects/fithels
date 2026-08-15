@@ -29,7 +29,10 @@ import Image from "next/image";
  * A CSS shimmer rather than `blurDataURL`: banners are admin-uploaded, so there
  * is no build step in which to generate per-image placeholders.
  */
-export default function ImageWithSkeleton({ skeletonClassName = "", ...imageProps }) {
+// `alt` is pulled out explicitly rather than left in the spread: it is required
+// for accessibility, and hiding it inside `...imageProps` meant a caller could
+// omit it with nothing to catch the mistake.
+export default function ImageWithSkeleton({ alt, skeletonClassName = "", ...imageProps }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -39,6 +42,7 @@ export default function ImageWithSkeleton({ skeletonClassName = "", ...imageProp
       )}
       <Image
         {...imageProps}
+        alt={alt}
         onLoad={() => setLoaded(true)}
         // Also drop the shimmer if the image errors — leaving it spinning would
         // promise a picture that is never coming.
