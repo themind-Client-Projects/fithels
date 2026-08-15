@@ -13,8 +13,17 @@
  * Fill these in and the rows appear automatically.
  */
 export const siteContact = {
-  /** Already in use in the topbar, so this one is known to be real. */
-  email: "fit@gmail.com",
+  /**
+   * The shop's public handle, shown wherever a contact line appears.
+   *
+   * Deliberately NOT an email address: it is rendered as plain text rather
+   * than a `mailto:` link, because a handle that is not an address would
+   * produce a dead compose window.
+   */
+  handle: "Heels_byfit",
+
+  /** A real address, if there is one. Rendered as a mailto link when set. */
+  email: "",
 
   /** TODO: the shop's real number, in international form, e.g. "+964 770 000 0000". */
   phone: "",

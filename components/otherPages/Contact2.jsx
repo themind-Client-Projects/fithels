@@ -129,14 +129,19 @@ export default function Contact2() {
                 </p>
               </div>
             )}
-            {siteContact.email && (
+            {siteContact.email ? (
               <div className="mb_20">
                 <div className="text-title mb_8">{t("emailTitle")}</div>
                 <p className="text-secondary">
                   <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
                 </p>
               </div>
-            )}
+            ) : siteContact.handle ? (
+              <div className="mb_20">
+                <div className="text-title mb_8">{t("emailTitle")}</div>
+                <p className="text-secondary">{siteContact.handle}</p>
+              </div>
+            ) : null}
             {siteContact.address && (
               <div className="mb_20">
                 <div className="text-title mb_8">{t("addressTitle")}</div>

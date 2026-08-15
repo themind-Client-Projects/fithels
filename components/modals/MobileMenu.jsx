@@ -158,14 +158,19 @@ export default function MobileMenu() {
               </Link>
             </div>
             <ul className="mb-info">
-              {siteContact.email && (
+              {siteContact.email ? (
                 <li>
                   <i className="icon icon-mail" />
                   <p>
                     <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
                   </p>
                 </li>
-              )}
+              ) : siteContact.handle ? (
+                <li>
+                  <i className="icon icon-mail" />
+                  <p>{siteContact.handle}</p>
+                </li>
+              ) : null}
               {siteContact.phone && (
                 <li>
                   <i className="icon icon-phone" />

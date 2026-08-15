@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function ProductCard1({
   product,
@@ -15,6 +15,7 @@ export default function ProductCard1({
 }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
   const locale = useLocale();
+  const tShop = useTranslations("shop");
 
   const {
     setQuickAddItem,
@@ -243,8 +244,8 @@ export default function ProductCard1({
               onClick={() => addProductToCart(product)}
             >
               {isAddedToCartProducts(product.id)
-                ? "Already Added"
-                : "ADD TO CART"}
+                ? tShop("alreadyAdded")
+                : tShop("addToCart")}
             </a>
           )}
         </div>

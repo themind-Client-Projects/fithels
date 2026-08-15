@@ -7,7 +7,9 @@ import Grid5 from "../productDetails/grids/Grid5";
 import { useContextElement } from "@/context/Context";
 import QuantitySelect from "../productDetails/QuantitySelect";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useTranslations } from "next-intl";
 export default function QuickView() {
+  const tShop = useTranslations("shop");
   const [activeColor, setActiveColor] = useState("gray");
   // Lifted so the chosen variant reaches the cart instead of being discarded.
   const [selectedSize, setSelectedSize] = useState(null);
@@ -163,8 +165,8 @@ export default function QuickView() {
                     >
                       <span>
                         {isAddedToCartProducts(quickViewItem.id)
-                          ? "Already Added"
-                          : "Add to cart -"}
+                          ? tShop("alreadyAdded")
+                          : tShop("addToCart")}
                       </span>
                       <span className="tf-qty-price total-price">
                         $

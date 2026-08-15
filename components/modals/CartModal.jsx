@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function CartModal() {
+  const tShop = useTranslations("shop");
   const {
     cartProducts,
     setCartProducts,
@@ -93,8 +94,8 @@ export default function CartModal() {
                           onClick={() => addProductToCart(product, 1, false)}
                         >
                           {isAddedToCartProducts(product.id)
-                            ? "Already Added"
-                            : "Add to cart"}
+                            ? tShop("alreadyAdded")
+                            : tShop("addToCart")}
                         </a>
                       </div>
                     </div>

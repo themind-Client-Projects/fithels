@@ -7,8 +7,9 @@ import ColorSelect from "../productDetails/ColorSelect";
 import SizeSelect from "../productDetails/SizeSelect";
 import QuantitySelect from "../productDetails/QuantitySelect";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 export default function QuickAdd() {
+  const tShop = useTranslations("shop");
   const locale = useLocale();
   const [quantity, setQuantity] = useState(1);
   // Lifted so the chosen variant reaches the cart. QuickView got this treatment;
@@ -112,8 +113,8 @@ export default function QuickAdd() {
                     >
                       <span>
                         {isAddedToCartProducts(item.id)
-                          ? "Already Added"
-                          : "Add to cart -"}
+                          ? tShop("alreadyAdded")
+                          : tShop("addToCart")}
                         &nbsp;
                       </span>
                       <span className="tf-qty-price total-price">

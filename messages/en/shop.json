@@ -20,5 +20,10 @@
   "viewCart": "View Cart",
   "totalPrice": "Total Price",
   "remove": "Remove",
-  "filters": "Filters"
+  "filters": "Filters",
+  "newArrivals": "New Arrivals",
+  "bestSeller": "Best Seller",
+  "onSale": "On Sale",
+  "addToCart": "Add to cart",
+  "alreadyAdded": "Already added"
 }

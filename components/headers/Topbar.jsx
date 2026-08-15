@@ -23,7 +23,7 @@ export default function Topbar() {
                 </a>
               </li>
             )}
-            {siteContact.email && (
+            {siteContact.email ? (
               <li>
                 {/* Was href="#", so tapping the address in the topbar did
                     nothing at all. */}
@@ -34,7 +34,13 @@ export default function Topbar() {
                   {siteContact.email}
                 </a>
               </li>
-            )}
+            ) : siteContact.handle ? (
+              // A handle is not an address, so it is plain text — a mailto
+              // link here would open an empty compose window.
+              <li>
+                <span className="text-caption-1 text-white">{siteContact.handle}</span>
+              </li>
+            ) : null}
             <li>
               <Link
                 className="text-caption-1 text-white text-decoration-underline"

@@ -2,12 +2,21 @@
 import ProductCard1 from "@/components/productCards/ProductCard1";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
-const tabItems = ["New Arrivals", "Best Seller", "On Sale"];
+import { useLocale, useTranslations } from "next-intl";
+
+// `value` is the filter key stored on each product (tabFilterOptions2), so it
+// stays in English; only the visible label is translated. Translating the
+// value too would silently match nothing and empty the grid.
+const tabItems = [
+  { value: "New Arrivals", labelKey: "newArrivals" },
+  { value: "Best Seller", labelKey: "bestSeller" },
+  { value: "On Sale", labelKey: "onSale" },
+];
 
 export default function Products3({ parentClass = "flat-spacing-3", products = [] }) {
   const locale = useLocale();
-  const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active
+  const t = useTranslations("shop");
+  const [activeItem, setActiveItem] = useState(tabItems[0].value); // Default the first item as active
 
   // Derived, not state. This used to start as `[]` and fill from a 300ms
   // setTimeout inside an effect, which meant the grid was EMPTY in the server
@@ -41,16 +50,16 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
         <div className="flat-animate-tab">
           <ul className="tab-product justify-content-sm-center" role="tablist">
             {tabItems.map((item) => (
-              <li key={item} className="nav-tab-item">
+              <li key={item.value} className="nav-tab-item">
                 <a
                   href={`#`} // Generate href dynamically
-                  className={activeItem === item ? "active" : ""}
+                  className={activeItem === item.value ? "active" : ""}
                   onClick={(e) => {
                     e.preventDefault(); // Prevent default anchor behavior
-                    setActiveItem(item);
+                    setActiveItem(item.value);
                   }}
                 >
-                  {item}
+                  {t(item.labelKey)}
                 </a>
               </li>
             ))}

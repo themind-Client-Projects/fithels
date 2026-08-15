@@ -20,5 +20,10 @@
   "viewCart": "عرض السلة",
   "totalPrice": "المجموع الكلي",
   "remove": "إزالة",
-  "filters": "التصفية"
+  "filters": "التصفية",
+  "newArrivals": "وصل حديثًا",
+  "bestSeller": "الأكثر مبيعًا",
+  "onSale": "عروض",
+  "addToCart": "أضيفي إلى السلة",
+  "alreadyAdded": "مضاف بالفعل"
 }

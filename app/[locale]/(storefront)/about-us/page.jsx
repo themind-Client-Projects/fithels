@@ -1,5 +1,4 @@
 import Brands from "@/components/common/Brands";
-import Features from "@/components/common/Features";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Link from "next/link";
@@ -85,8 +84,6 @@ export default async function AboutUsPage({ params }) {
       ) : (
         <About />
       )}
-      
-      <Features parentClass="flat-spacing line-bottom-container mt-5" />
       <Team />
       <Brands parentClass="flat-spacing-5 bg-surface" />
       <Testimonials />

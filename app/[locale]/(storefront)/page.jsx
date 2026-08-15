@@ -2,7 +2,6 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar from "@/components/headers/Topbar";
 import BannerCollection from "@/components/homes/home-1/BannerCollection";
-import Features from "@/components/common/Features";
 import Hero from "@/components/homes/home-1/Hero";
 import Catalog from "@/components/homes/home-1/Catalog";
 import Products from "@/components/common/Products3";
@@ -103,7 +102,6 @@ export default async function HomePage({ params }) {
       <Showcase />
       <Products products={mappedProducts} />
       <BannerCollection banners={banners} locale={locale} />
-      <Features />
       <Footer1 />
     </>
   );
