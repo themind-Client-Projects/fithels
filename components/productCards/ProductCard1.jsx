@@ -251,7 +251,16 @@ export default function ProductCard1({
         </div>
       </div>
       <div className="card-product-info">
-        <Link href={`/${locale}/product-detail/${product.id}`} className="title link">
+        {/* card-stretch-link paints an overlay across the whole card (see
+            globals.css), so the image, the price and the empty space are all
+            part of this one link rather than only the title text. The overlay
+            approach is used instead of wrapping the card in an <a> because the
+            card also holds buttons — add-to-cart, wishlist, quick view — and
+            nesting those inside an anchor is invalid and breaks their clicks. */}
+        <Link
+          href={`/${locale}/product-detail/${product.id}`}
+          className="title link card-stretch-link"
+        >
           {product.title}
         </Link>
         <span className="price">

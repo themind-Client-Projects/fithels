@@ -481,3 +481,259 @@ tr:hover > .tbl-pin-cell {
   right: auto;
   max-width: calc(100vw - 32px);
 }
+
+/* Whole-card click target for product cards.
+ *
+ * Only the title text and the image were links, so the price, the colour row
+ * and the empty space around them did nothing on click — the card looked
+ * clickable everywhere and behaved like a link in two small places.
+ *
+ * This stretches the title link across the card with an overlay rather than
+ * wrapping the card in an <a>, because the card also contains buttons
+ * (add-to-cart, wishlist, compare, quick view). Nesting those inside an anchor
+ * is invalid html and swallows their clicks. One link keeps the accessible name
+ * on the product title, so screen readers still announce it correctly.
+ */
+.card-product {
+  position: relative;
+}
+
+.card-product .card-stretch-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* The colour swatches are the one interactive control the overlay would cover.
+ * They sit in .card-product-info and are statically positioned, so raising them
+ * needs `position: relative` — which moves nothing — plus a z-index above the
+ * overlay. Without this their mouseover image-swap stops firing.
+ *
+ * The other controls (.list-product-btn z-index 6, .list-btn-main z-index 5,
+ * .variant-wrap z-index 3) deliberately get NO rule here: they already live
+ * inside .card-product-wrapper, which carries `position: relative; z-index: 20`
+ * and so paints entirely above the overlay. Re-declaring `position: relative`
+ * on them would override the template's `position: absolute` and drop them out
+ * of their pinned positions into normal flow. */
+.card-product .list-color-product {
+  position: relative;
+  z-index: 2;
+}
+
+/* Cart drawer.
+ *
+ * Every rule here is scoped under `.modal-shopping-cart` on purpose. globals.css
+ * is imported by the ROOT layout, while the storefront template
+ * (public/scss/main.scss) is imported by the nested storefront layout — so the
+ * template's stylesheet loads AFTER this one and wins any tie on equal
+ * specificity. The extra class lifts these to (0,2,0) so the drawer keeps its
+ * own layout instead of inheriting the template's product/image styling, which
+ * was stretching the thumbnail to the full width of the panel.
+ *
+ * Logical properties throughout (inline-size, padding-inline, margin-inline)
+ * so the drawer mirrors correctly in the RTL storefront with no second ruleset.
+ */
+/* The template leaves this panel `position: absolute` with no width, so it sized
+   itself to whatever was inside — an unconstrained thumbnail stretched the whole
+   drawer and pushed the text past the edge. A definite width makes the panel a
+   fixed surface that its contents fit into, rather than the reverse. */
+.modal-shopping-cart .modal-content {
+  inline-size: min(420px, 92vw);
+}
+
+.modal-shopping-cart .mini-cart {
+  /* .modal-content is itself a row flex container in the template, so this has
+     to claim the free space — left to `flex: 0 1 auto` it would shrink to its
+     content and leave the panel half empty. min-width:0 lets long product names
+     ellipsize instead of forcing the row wider than the drawer. */
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+.modal-shopping-cart .mini-cart__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(24, 24, 24, 0.08);
+}
+
+.modal-shopping-cart .mini-cart__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.modal-shopping-cart .mini-cart__items {
+  flex: 1 1 auto;
+  /* min-height:0 — a flex child refuses to shrink below its content, so without
+     this the list grows past the panel and pushes the pay button off screen
+     instead of scrolling. */
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* One product = one card across the full width of the drawer. */
+.modal-shopping-cart .mini-cart__item {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid rgba(24, 24, 24, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-shopping-cart .mini-cart__item:hover {
+  border-color: rgba(24, 24, 24, 0.16);
+  box-shadow: 0 6px 18px rgba(24, 24, 24, 0.06);
+}
+
+/* Square thumbnail. aspect-ratio keeps it square whatever the source photo's
+   proportions are, and object-fit crops rather than distorting it. */
+.modal-shopping-cart .mini-cart__thumb {
+  flex: none;
+  inline-size: 84px;
+  block-size: 84px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f2efec;
+}
+
+.modal-shopping-cart .mini-cart__thumb img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.modal-shopping-cart .mini-cart__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-shopping-cart .mini-cart__name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: inherit;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.modal-shopping-cart .mini-cart__variant {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(24, 24, 24, 0.5);
+}
+
+.modal-shopping-cart .mini-cart__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.modal-shopping-cart .mini-cart__qty {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Reset rather than inherit: the template styles bare <button> elements, which
+   rendered this plain text link as a large filled pill inside the card. */
+.modal-shopping-cart .mini-cart__remove {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(24, 24, 24, 0.45);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal-shopping-cart .mini-cart__remove:hover {
+  color: #d63333;
+}
+
+.modal-shopping-cart .mini-cart__foot {
+  flex: none;
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  /* Clears the home indicator when the drawer runs full height on a phone. */
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(24, 24, 24, 0.08);
+  background: #fff;
+}
+
+.modal-shopping-cart .mini-cart__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: rgba(24, 24, 24, 0.6);
+}
+
+.modal-shopping-cart .mini-cart__total strong {
+  font-size: 19px;
+  font-weight: 700;
+  color: #181818;
+}
+
+.modal-shopping-cart .mini-cart__continue {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(24, 24, 24, 0.55);
+}
+
+.modal-shopping-cart .mini-cart__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60vh;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.modal-shopping-cart .mini-cart__empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-shopping-cart .mini-cart__empty-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: rgba(24, 24, 24, 0.55);
+}
