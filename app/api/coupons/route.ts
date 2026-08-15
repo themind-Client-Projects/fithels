@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { normaliseCode } from '@/lib/coupons/validate'
 import { parseCouponInput, CouponInputError } from '@/lib/coupons/input'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 const MAX_PAGE_SIZE = 100
 const DEFAULT_PAGE_SIZE = 20
@@ -57,6 +58,13 @@ export async function GET(request: NextRequest) {
       totalPages: Math.max(1, Math.ceil(total / limit)),
     })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return noStoreJson(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error listing coupons:', error)
     return noStoreJson({ error: 'Failed to load coupons' }, { status: 500 })
   }
@@ -103,6 +111,13 @@ export async function POST(request: NextRequest) {
     const coupon = await prisma.coupon.create({ data: { ...data, code } })
     return noStoreJson(coupon, { status: 201 })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return noStoreJson(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error creating coupon:', error)
     return noStoreJson({ error: 'Failed to create coupon' }, { status: 500 })
   }

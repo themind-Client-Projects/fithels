@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 // GET /api/categories/[id] - Get single category (public)
 export async function GET(
@@ -26,6 +27,13 @@ export async function GET(
 
     return NextResponse.json(category)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error fetching category:', error)
     return NextResponse.json(
       { error: 'Failed to fetch category' },
@@ -83,6 +91,13 @@ export async function PUT(
 
     return NextResponse.json(category)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error updating category:', error)
     return NextResponse.json(
       { error: 'Failed to update category' },
@@ -128,6 +143,13 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Category deleted successfully' })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error deleting category:', error)
     return NextResponse.json(
       { error: 'Failed to delete category' },

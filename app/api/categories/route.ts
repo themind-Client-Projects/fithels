@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 // GET /api/categories - List all categories with product count (public)
 export async function GET() {
@@ -17,6 +18,13 @@ export async function GET() {
 
     return NextResponse.json(categories)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error fetching categories:', error)
     return NextResponse.json(
       { error: 'Failed to fetch categories' },
@@ -68,6 +76,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(category, { status: 201 })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error creating category:', error)
     return NextResponse.json(
       { error: 'Failed to create category' },

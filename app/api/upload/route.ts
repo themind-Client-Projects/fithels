@@ -28,7 +28,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const formData = await request.formData();
+    // `formData()` throws a TypeError when the request is not multipart, which
+    // happened BEFORE the "no file provided" guard below could run — so a
+    // malformed upload returned 500 "Internal Server Error" instead of telling
+    // the caller what was wrong with their request.
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Upload must be sent as multipart/form-data with a `file` field.",
+          reason: "NOT_MULTIPART",
+        },
+        { status: 400 }
+      );
+    }
+
     const file = formData.get("file") as File;
 
     if (!file) {

@@ -7,6 +7,7 @@ import {
   parseStock,
   PricingValidationError,
 } from '@/lib/products/pricing'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 // GET /api/products/[id] - Get single product (public)
 export async function GET(
@@ -27,6 +28,13 @@ export async function GET(
 
     return NextResponse.json(product)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error fetching product:', error)
     return NextResponse.json(
       { error: 'Failed to fetch product' },
@@ -133,6 +141,13 @@ export async function PUT(
 
     return NextResponse.json(product)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error updating product:', error)
     return NextResponse.json(
       { error: 'Failed to update product' },
@@ -181,6 +196,13 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Product deleted successfully' })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error deleting product:', error)
     return NextResponse.json(
       { error: 'Failed to delete product' },

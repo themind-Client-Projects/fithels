@@ -8,6 +8,7 @@ import {
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { buildProductSlug } from '@/lib/products/slug'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 /** Hard ceiling so no caller can ask for the whole table. */
 const MAX_PRODUCT_PAGE_SIZE = 100
@@ -163,6 +164,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
+    // A category that was deleted between the form loading and the save is the
+    // caller's problem, not the server's — it used to surface as a bare 500
+    // saying "Failed to create product", which told the admin nothing.
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error creating product:', error)
     return NextResponse.json(
       { error: 'Failed to create product' },

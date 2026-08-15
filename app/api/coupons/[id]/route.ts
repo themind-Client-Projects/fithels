@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { normaliseCode } from '@/lib/coupons/validate'
 import { parseCouponInput, CouponInputError } from '@/lib/coupons/input'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 /** GET /api/coupons/[id] — one coupon, with how often it has been redeemed. */
 export async function GET(
@@ -28,6 +29,13 @@ export async function GET(
 
     return noStoreJson(coupon)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return noStoreJson(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error fetching coupon:', error)
     return noStoreJson({ error: 'Failed to load coupon' }, { status: 500 })
   }
@@ -105,6 +113,13 @@ export async function PATCH(
 
     return noStoreJson(coupon)
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return noStoreJson(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error updating coupon:', error)
     return noStoreJson({ error: 'Failed to update coupon' }, { status: 500 })
   }
@@ -152,6 +167,13 @@ export async function DELETE(
     await prisma.coupon.delete({ where: { id } })
     return noStoreJson({ success: true })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return noStoreJson(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error deleting coupon:', error)
     return noStoreJson({ error: 'Failed to delete coupon' }, { status: 500 })
   }

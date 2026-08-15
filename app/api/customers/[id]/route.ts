@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
+import { translatePrismaError } from '@/lib/prisma-errors'
 
 /** Raised when a change would leave the store with no administrator. */
 class LastAdminError extends Error {
@@ -152,6 +153,13 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    const translated = translatePrismaError(error)
+    if (translated) {
+      return NextResponse.json(
+        { error: translated.error, reason: translated.reason, field: translated.field },
+        { status: translated.status }
+      )
+    }
     console.error('Error deleting customer:', error)
     return NextResponse.json(
       { error: 'Failed to delete customer' },
