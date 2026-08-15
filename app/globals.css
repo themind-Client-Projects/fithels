@@ -407,3 +407,48 @@ tr:hover > .tbl-pin-cell {
 .site-footer__muted {
   color: color-mix(in oklab, var(--color-text, #1a1a2e) 45%, transparent);
 }
+
+/* Storefront template bleeding into the dashboard.
+ *
+ * public/scss/_reset.scss:659 declares, UNLAYERED:
+ *     a { display: inline-block; color: var(--main); }
+ *
+ * Tailwind v4 emits its utilities inside `@layer utilities`, and unlayered css
+ * outranks every layer — so those two declarations beat both the sidebar's
+ * `text-sidebar-foreground` and the `flex` on each menu button. `--main` is
+ * #181818, near-black on the near-black sidebar, so every link's label was in
+ * the DOM but invisible: the brand, all nav items. Anything NOT inside an <a>
+ * — the "الإدارة"/"الإعدادات" group headings, the user card, which is a
+ * <button> — kept rendering, which is what made the breakage look so odd.
+ *
+ * It only appears after a CLIENT-SIDE navigation from the storefront into the
+ * dashboard, i.e. signing in and landing on /ar/dashboard. Next keeps the
+ * previous route's stylesheet in the document across soft navigations, so the
+ * template reset is still loaded. A hard reload pulls only the dashboard's own
+ * css — which is why reloading appeared to fix it.
+ *
+ * Unlayered here too, deliberately: it has to beat the template on specificity
+ * (0,1,1 vs 0,0,1) rather than on layer order. Scoped to the sidebar wrapper —
+ * and to the sidebar itself, which is portalled out of that wrapper on mobile —
+ * so it cannot leak back onto the storefront.
+ *
+ * Colour is restored with `inherit` rather than a fixed value so each link
+ * simply picks up whatever its container sets — white in the sidebar, the
+ * normal foreground in the inset — and `revert`/`revert-layer` are avoided
+ * because rolling back past the author origin would hand links the browser's
+ * default blue.
+ *
+ * Only `display` needs restoring on top of that: the template touches nothing
+ * else the dashboard relies on. Menu buttons are matched through their parent's
+ * literal `data-sidebar="menu-item"` attribute, which covers the nav items and
+ * the brand link in the header.
+ */
+[data-slot="sidebar-wrapper"] a,
+[data-slot="sidebar"] a {
+  color: inherit;
+}
+
+[data-slot="sidebar-wrapper"] [data-sidebar="menu-item"] > a,
+[data-slot="sidebar"] [data-sidebar="menu-item"] > a {
+  display: flex;
+}
