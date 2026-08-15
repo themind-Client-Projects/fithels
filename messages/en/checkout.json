@@ -56,5 +56,7 @@
   "couponCheckFailed": "Could not check that code. Please try again.",
   "viewYourOrder": "Track your order",
   "paymentSignedOutTitle": "Sign in to see your order",
-  "paymentSignedOutDesc": "Your payment was received. Sign in with the same account to follow its status."
+  "paymentSignedOutDesc": "Your payment was received. Sign in with the same account to follow its status.",
+  "savedDeliveryTitle": "Delivery details saved",
+  "savedDeliveryHint": "Filled in from your last order — edit them if anything has changed."
 }

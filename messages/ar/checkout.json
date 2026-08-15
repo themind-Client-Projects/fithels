@@ -56,5 +56,7 @@
   "couponCheckFailed": "تعذّر التحقق من الرمز. حاولي مرة أخرى.",
   "viewYourOrder": "تتبّعي طلبك",
   "paymentSignedOutTitle": "سجّلي الدخول لعرض طلبك",
-  "paymentSignedOutDesc": "تم استلام دفعتك. سجّلي الدخول بالحساب نفسه لمتابعة حالة الطلب."
+  "paymentSignedOutDesc": "تم استلام دفعتك. سجّلي الدخول بالحساب نفسه لمتابعة حالة الطلب.",
+  "savedDeliveryTitle": "معلومات التوصيل محفوظة",
+  "savedDeliveryHint": "عبّأناها من طلبك السابق — عدّليها إن تغيّر شيء."
 }

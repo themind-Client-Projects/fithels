@@ -288,3 +288,46 @@ body {
     background: #eeebe7;
   }
 }
+
+/* ── Sticky header offset ──────────────────────────────────────────────────
+   Driven by --header-offset, which app/ClientProviders sets from the scroll
+   direction. It used to be written straight onto the <header> element's inline
+   style; because React renders that element, every client-side navigation
+   produced a hydration mismatch warning. A variable on <html> is invisible to
+   React's diff. */
+:root {
+  --header-offset: 0px;
+}
+
+#header.header-default {
+  top: var(--header-offset);
+}
+
+/* ── Confirm-order button ──────────────────────────────────────────────────
+   `btn-reset` deliberately opts out of .tf-btn's skew hover, which left the
+   most important button on the checkout with no hover state at all. Uses the
+   theme's existing --pink token rather than a new hard-coded colour. */
+.btn-confirm-order {
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-confirm-order:hover:not(:disabled) {
+  background-color: var(--pink) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(236, 116, 157, 0.35);
+}
+
+.btn-confirm-order:active:not(:disabled) {
+  /* Slightly deeper on press so the button confirms the tap. */
+  background-color: #d95c86 !important;
+  box-shadow: none;
+}
+
+.btn-confirm-order:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+.btn-confirm-order:disabled {
+  cursor: not-allowed;
+}

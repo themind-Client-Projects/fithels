@@ -61,7 +61,9 @@ export default function CurrencySelect({ topStart = false, light = false }) {
         type="button"
         tabIndex={-1}
         className={`btn dropdown-toggle btn-light  ${isDDOpen ? "show" : ""} `}
-        title="USD $ | United States"
+        // Was hardcoded to "USD $ | United States", so the tooltip claimed
+        // dollars even while the shop was displaying dinars.
+        title={selected.text}
       >
         <div className="filter-option">
           <div className="filter-option-inner">

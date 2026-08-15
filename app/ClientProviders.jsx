@@ -60,11 +60,22 @@ export default function ClientProviders({ children }) {
     });
   }, [pathname]);
 
+  // Hide-on-scroll for the sticky header.
+  //
+  // This used to write `header.style.top` directly. That node is rendered by
+  // React (components/headers/Header1), so on a client-side navigation React
+  // re-hydrated the subtree, compared the freshly streamed HTML (no inline
+  // style) against a DOM it had not written (style="top:-185px") and logged a
+  // hydration mismatch on every page change.
+  //
+  // Writing a CSS variable on <html> instead keeps the mutation off any element
+  // React diffs; the header reads it in CSS. Same behaviour, nothing for React
+  // to disagree with.
   useEffect(() => {
-    const header = document.querySelector("header");
-    if (header) {
-      header.style.top = scrollDirection === "up" ? "0px" : "-185px";
-    }
+    document.documentElement.style.setProperty(
+      "--header-offset",
+      scrollDirection === "up" ? "0px" : "-185px"
+    );
   }, [scrollDirection]);
 
   useEffect(() => {

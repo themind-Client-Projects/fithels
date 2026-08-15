@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { useUIStore } from "@/stores/useUIStore";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { Banknote, CreditCard, MapPin } from "lucide-react";
 
 function CheckoutContent() {
   const { cartProducts, totalPrice: cartTotal, setCartProducts } = useContextElement();
@@ -48,18 +49,27 @@ function CheckoutContent() {
   const [singleProduct, setSingleProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(isSingleProduct);
 
-  // Auto-fill phone from user profile
+  // Delivery details remembered from the customer's last order.
+  const [savedDelivery, setSavedDelivery] = useState(null);
+
+  // Auto-fill phone and address from the profile / last order.
   useEffect(() => {
     if (!isSignedIn) return;
     const controller = new AbortController();
     fetch("/api/auth/me", { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        // Functional update. `!phone` read the value captured when the effect
-        // was created — empty at mount — so a shopper who started typing while
-        // this request was in flight had their number overwritten when it
-        // landed. Reading `prev` means we only ever fill a genuinely empty box.
-        if (data.phone) setPhone((prev) => prev || data.phone);
+        // Functional updates throughout. Reading `phone`/`location` from the
+        // closure would see their mount-time values, so a shopper who started
+        // typing while this request was in flight had their input overwritten
+        // when it landed. `prev ||` only ever fills a genuinely empty field.
+        const saved = data.lastDelivery;
+        if (saved?.location) {
+          setSavedDelivery(saved);
+          setLocation((prev) => prev || saved.location);
+        }
+        const knownPhone = saved?.phone || data.phone;
+        if (knownPhone) setPhone((prev) => prev || knownPhone);
       })
       .catch(() => {});
     return () => controller.abort();
@@ -472,6 +482,36 @@ function CheckoutContent() {
               </div>
 
               <h5 className="title" style={{ marginBottom: "16px" }}>{t("deliveryInfo")}</h5>
+
+              {/* Say that the fields were filled from a previous order rather
+                  than just filling them. Silently prefilled inputs read as
+                  something the shopper typed, so they scroll past without
+                  checking — and a stale address is only noticed when the order
+                  fails to arrive. The fields stay editable; this is a label,
+                  not a lock. */}
+              {savedDelivery && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    background: "#f0f9ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: "10px",
+                    padding: "12px 14px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <MapPin size={16} style={{ color: "#1e40af", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
+                  <div style={{ fontSize: "13px", lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 600, color: "#1e40af" }}>
+                      {t("savedDeliveryTitle")}
+                    </div>
+                    <div style={{ color: "#334155" }}>{t("savedDeliveryHint")}</div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: "24px" }}>
                 <label style={{ fontSize: "14px", fontWeight: "600", marginBottom: "8px", display: "block" }}>
                   {t("orderPhone")} <span style={{ color: "#dc2626" }}>*</span>
@@ -581,53 +621,78 @@ function CheckoutContent() {
                     {tShop("paymentMethod")}
                   </span>
 
+                  {/* Line icons rather than the 💵/💳 emoji these used to be:
+                      emoji render as a different picture on every platform, do
+                      not take the selected colour, and sat at whatever size the
+                      system font decided. */}
                   {[
                     {
                       value: "COD",
-                      icon: "💵",
+                      Icon: Banknote,
                       label: tShop("cashOnDelivery"),
                       desc: t("cashOnDeliveryDesc"),
                     },
                     {
                       value: "WAYLE",
-                      icon: "💳",
+                      Icon: CreditCard,
                       label: t("onlinePayment"),
                       desc: t("onlinePaymentDesc"),
                     },
-                  ].map((option) => (
-                    <label
-                      key={option.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: "12px",
-                        marginBottom: "8px",
-                        border: `1px solid ${paymentMethod === option.value ? "#28a745" : "#ddd"}`,
-                        borderRadius: "8px",
-                        background: "#fff",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={option.value}
-                        checked={paymentMethod === option.value}
-                        onChange={() => setPaymentMethod(option.value)}
-                        style={{ accentColor: "#28a745", cursor: "pointer" }}
-                      />
-                      <span aria-hidden="true">{option.icon}</span>
-                      <span style={{ flex: 1 }}>
-                        <span style={{ display: "block", fontWeight: 600 }}>
-                          {option.label}
+                  ].map((option) => {
+                    const selected = paymentMethod === option.value;
+                    return (
+                      <label
+                        key={option.value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "14px",
+                          marginBottom: "10px",
+                          border: `1.5px solid ${selected ? "#16a34a" : "#e2e8f0"}`,
+                          borderRadius: "12px",
+                          background: selected ? "#f0fdf4" : "#fff",
+                          cursor: "pointer",
+                          transition: "border-color .15s ease, background .15s ease",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={option.value}
+                          checked={selected}
+                          onChange={() => setPaymentMethod(option.value)}
+                          style={{ accentColor: "#16a34a", cursor: "pointer" }}
+                        />
+                        {/* Fixed-size tile so both rows align regardless of glyph. */}
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "38px",
+                            height: "38px",
+                            borderRadius: "10px",
+                            flexShrink: 0,
+                            background: selected ? "#dcfce7" : "#f1f5f9",
+                            color: selected ? "#15803d" : "#64748b",
+                            transition: "background .15s ease, color .15s ease",
+                          }}
+                        >
+                          <option.Icon size={19} strokeWidth={1.9} />
                         </span>
-                        <span style={{ display: "block", fontSize: "12px", opacity: 0.7 }}>
-                          {option.desc}
+                        <span style={{ flex: 1 }}>
+                          <span style={{ display: "block", fontWeight: 600 }}>
+                            {option.label}
+                          </span>
+                          <span style={{ display: "block", fontSize: "12px", opacity: 0.7 }}>
+                            {option.desc}
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
                 <hr style={{ margin: "12px 0", borderColor: "#ddd" }} />
                 <div className="d-flex justify-content-between align-items-center">
@@ -638,7 +703,7 @@ function CheckoutContent() {
 
               {displayItems.length > 0 ? (
                 <button
-                  className="tf-btn btn-reset"
+                  className="tf-btn btn-reset btn-confirm-order"
                   style={{ width: "100%", opacity: isSubmitting ? 0.6 : 1 }}
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
