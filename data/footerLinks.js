@@ -16,7 +16,7 @@ export const footerLinks = [
       { label: "Size Guide", href: "#", isLink: false },
       { label: "Contact us", href: "/contact", isLink: true },
       { label: "Career", href: "#", isLink: false },
-      { label: "My Account", href: "/my-account", isLink: true },
+      { label: "My Account", href: "/account", isLink: true },
     ],
   },
   {
@@ -25,9 +25,9 @@ export const footerLinks = [
       { label: "Shipping", href: "#", isLink: false },
       { label: "Return & Refund", href: "#", isLink: false },
       { label: "Privacy Policy", href: "#", isLink: false },
-      { label: "Terms & Conditions", href: "/term-of-use", isLink: true },
-      { label: "Orders FAQs", href: "/FAQs", isLink: true },
-      { label: "My Wishlist", href: "/wish-list", isLink: true },
+      { label: "Terms & Conditions", href: "#", isLink: false },
+      { label: "Orders FAQs", href: "#", isLink: false },
+      { label: "My Wishlist", href: "#", isLink: false },
     ],
   },
 ];

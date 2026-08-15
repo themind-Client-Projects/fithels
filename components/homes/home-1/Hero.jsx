@@ -1,7 +1,7 @@
 "use client";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
-import Image from "next/image";
+import ImageWithSkeleton from "@/components/common/ImageWithSkeleton";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -47,7 +47,7 @@ export default function Hero({ banners = [] }) {
           <SwiperSlide key={index}>
             <div className="wrap-slider" style={{ maxHeight: "800px" }}>
               {banner?.image && (
-              <Image
+              <ImageWithSkeleton
                 alt={banner.titleAr || banner.titleEn || "slide"}
                 src={banner.image}
                 width={1920}

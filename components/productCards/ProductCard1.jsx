@@ -42,7 +42,7 @@ export default function ProductCard1({
           isNotImageRatio ? "aspect-ratio-0" : ""
         } ${radiusClass} `}
       >
-        <Link href={`/product-detail/${product.id}`} className="product-img">
+        <Link href={`/${locale}/product-detail/${product.id}`} className="product-img">
           <Image
             className="lazyload img-product"
             src={currentImage}
@@ -250,7 +250,7 @@ export default function ProductCard1({
         </div>
       </div>
       <div className="card-product-info">
-        <Link href={`/product-detail/${product.id}`} className="title link">
+        <Link href={`/${locale}/product-detail/${product.id}`} className="title link">
           {product.title}
         </Link>
         <span className="price">

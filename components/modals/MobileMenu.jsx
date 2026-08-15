@@ -112,7 +112,7 @@ export default function MobileMenu() {
                 </svg>
                 {tNav('wishlist')}
               </a>
-              <Link href={`/`} className="site-nav-icon">
+              <Link href={`/${locale}`} className="site-nav-icon">
                 <svg
                   className="icon"
                   width={18}
@@ -140,7 +140,7 @@ export default function MobileMenu() {
               </Link>
             </div>
             <div className="mb-notice">
-              <Link href={`/contact`} className="text-need">
+              <Link href={`/${locale}/contact`} className="text-need">
                 {tNav('needHelp')}
               </Link>
             </div>
@@ -149,7 +149,7 @@ export default function MobileMenu() {
                 {tContact('addressDesc')}
               </p>
               <Link
-                href={`/contact`}
+                href={`/${locale}/contact`}
                 className="tf-btn-default text-btn-uppercase"
               >
                 {tNav('getDirection')}

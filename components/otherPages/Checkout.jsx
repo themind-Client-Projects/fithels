@@ -3,7 +3,7 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useUIStore } from "@/stores/useUIStore";
@@ -72,6 +72,83 @@ function CheckoutContent() {
         .finally(() => setLoadingProduct(false));
     }
   }, [isSingleProduct, searchParams]);
+
+  // A stable description of the basket. The cart context hands back a new array
+  // identity on every render, so keying the effect below on `cartProducts`
+  // itself would re-validate in a loop.
+  const basketSignature = useMemo(() => {
+    if (isSingleProduct) {
+      return `${searchParams.get("product") ?? ""}x${searchParams.get("qty") ?? "1"}`;
+    }
+    return cartProducts
+      .map((i) => `${i.dbId || i.id}x${i.quantity || 1}`)
+      .sort()
+      .join("|");
+  }, [isSingleProduct, searchParams, cartProducts]);
+
+  // Re-price an applied coupon whenever the basket changes.
+  //
+  // The cart drawer is mounted in the storefront layout, so the shopper can add
+  // or remove items WITHOUT leaving this page. The discount was captured once,
+  // when the code was applied, and then never revisited — so removing half the
+  // basket left a 20%-off code still showing the discount for the old, larger
+  // total. POST /api/orders re-derives the discount from its own subtotal, so
+  // the order was placed at a different figure from the one on screen. For an
+  // online payment the shopper would then meet a third number on Wayle's page.
+  const appliedCode = applied?.code;
+  useEffect(() => {
+    if (!appliedCode) return;
+
+    const items = isSingleProduct
+      ? (singleProduct
+          ? [{ productId: singleProduct.id, quantity: parseInt(searchParams.get("qty") || "1", 10) }]
+          : [])
+      : cartProducts.map((item) => ({
+          productId: item.dbId || item.id?.toString(),
+          quantity: item.quantity || 1,
+        }));
+
+    if (items.length === 0) {
+      setApplied(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: appliedCode, items }),
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          // The smaller basket may no longer meet the code's minimum. Drop it
+          // and say why, rather than showing a discount that will not be honoured.
+          setApplied(null);
+          setCouponError(data.error || t("couponInvalid"));
+          return;
+        }
+        // Functional update: comparing against a captured `applied` would read a
+        // stale value, and re-setting an unchanged object would re-run this.
+        setApplied((prev) =>
+          prev && prev.code === data.code && prev.discount === data.discount
+            ? prev
+            : { code: data.code, discount: data.discount }
+        );
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          // Leave the previous figure alone on a network blip; the server
+          // recomputes at order time regardless, so nothing can be mischarged.
+          console.error("Could not re-check the coupon", error);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [appliedCode, basketSignature, isSingleProduct, singleProduct, searchParams, cartProducts, t]);
 
   const handlePlaceOrder = async () => {
     if (!isSignedIn) {
@@ -284,10 +361,10 @@ function CheckoutContent() {
     displayTotal = cartTotal;
   }
 
-  // The server is the authority on the discount. If the basket changed after a
-  // code was applied, the preview below is re-fetched; the figure shown here is
-  // always whichever one the server last returned, clamped so it can never make
-  // the payable total negative on screen.
+  // The server is the authority on the discount. The effect above re-fetches it
+  // whenever the basket changes, so the figure here is always whichever one the
+  // server last returned — clamped so it can never make the payable total
+  // negative on screen.
   const discountShown = applied ? Math.min(applied.discount, displayTotal) : 0;
   const payableShown = Math.max(0, Math.round((displayTotal - discountShown) * 100) / 100);
 

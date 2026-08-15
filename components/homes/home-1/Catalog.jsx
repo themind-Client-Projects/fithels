@@ -54,8 +54,7 @@ export default function Catalog({
             alt={leftAlt}
             fill
             style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
-            sizes="50vw"
-            priority
+            sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
           />
           <div className="catalog-overlay">
@@ -82,8 +81,7 @@ export default function Catalog({
             alt={rightAlt}
             fill
             style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
-            sizes="50vw"
-            priority
+            sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
           />
           <div className="catalog-overlay">

@@ -2,7 +2,7 @@
 import { Link } from "@/i18n/navigation";
 import React from "react";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import {useTranslations} from "next-intl";
 
 export default function Nav() {
   const pathname = usePathname();

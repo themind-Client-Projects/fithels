@@ -9,6 +9,9 @@ import {
 } from '@/lib/products/pricing'
 import { buildProductSlug } from '@/lib/products/slug'
 
+/** Hard ceiling so no caller can ask for the whole table. */
+const MAX_PRODUCT_PAGE_SIZE = 100
+
 // GET /api/products - List all products (public)
 export async function GET(request: NextRequest) {
   try {
@@ -47,8 +50,19 @@ export async function GET(request: NextRequest) {
         : {}),
     }
 
+    // `limit` is opt-in so the dashboard's product table keeps working unchanged,
+    // but there is now a hard ceiling: this had no `take` at all, so a storefront
+    // widget wanting six tiles pulled the entire catalogue — every row, every
+    // description, and the joined category — on every page that mounted it.
+    const requestedLimit = Number(searchParams.get('limit'))
+    const limit =
+      Number.isFinite(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, MAX_PRODUCT_PAGE_SIZE)
+        : MAX_PRODUCT_PAGE_SIZE
+
     const products = await prisma.product.findMany({
       where,
+      take: limit,
       include: { category: true },
       orderBy: { createdAt: 'desc' },
     })

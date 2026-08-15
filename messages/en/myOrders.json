@@ -52,5 +52,15 @@
   "phoneLabel": "Phone",
   "currentStatus": "Current status",
   "subtotal": "Subtotal",
-  "discount": "Discount"
+  "discount": "Discount",
+  "reorder": "Order again",
+  "reorderAdded": "{count, plural, one {# item added to your cart} other {# items added to your cart}}",
+  "reorderAlreadyInCart": "{count, plural, one {# item was already in your cart} other {# items were already in your cart}}",
+  "reorderUnavailable": "{count, plural, one {# item is no longer available} other {# items are no longer available}}",
+  "reorderNothing": "There is nothing from this order we can add.",
+  "reorderGoToCheckout": "Check out",
+  "paymentPending": "Waiting for payment",
+  "paymentProcessing": "Confirming payment",
+  "paymentFailed": "Payment failed",
+  "paymentExpired": "Payment window expired"
 }

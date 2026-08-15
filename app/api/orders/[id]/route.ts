@@ -40,7 +40,23 @@ export async function GET(
         },
         items: {
           include: {
-            product: true,
+            // Named columns rather than the whole row. `product: true` shipped
+            // descEn and descAr — unbounded Text holding the full product copy —
+            // for every line of every order, to render a 60px thumbnail and a
+            // title.
+            product: {
+              select: {
+                id: true,
+                slug: true,
+                titleEn: true,
+                titleAr: true,
+                price: true,
+                salePrice: true,
+                images: true,
+                isActive: true,
+                stock: true,
+              },
+            },
           },
         },
         paymentIntent: {

@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import { allProducts } from "@/data/products";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useLocale } from "next-intl";
 export default function Compare() {
+  const locale = useLocale();
   const { removeFromCompareItem, compareItem, setCompareItem } =
     useContextElement();
   const [items, setItems] = useState([]);
@@ -94,7 +96,7 @@ export default function Compare() {
                             onClick={() => removeFromCompareItem(elm.id)}
                           />
                           <Link
-                            href={`/product-detail/${elm.id}`}
+                            href={`/${locale}/product-detail/${elm.id}`}
                             className="image"
                           >
                             <Image
@@ -109,7 +111,7 @@ export default function Compare() {
                             <div className="text-title">
                               <Link
                                 className="link text-line-clamp-2"
-                                href={`/product-detail/${elm.id}`}
+                                href={`/${locale}/product-detail/${elm.id}`}
                               >
                                 {elm.title}
                               </Link>

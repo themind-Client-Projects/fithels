@@ -170,5 +170,7 @@
   "discountsGiven": "Discounts given",
   "cancelledOrders": "Cancelled orders",
   "refundDue": "Refunds due",
-  "ordersWord": "orders"
+  "ordersWord": "orders",
+  "subtotal": "Subtotal",
+  "discount": "Discount"
 }

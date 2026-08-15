@@ -1,22 +1,40 @@
 "use client";
 import ProductCard1 from "@/components/productCards/ProductCard1";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "next-intl";
 const tabItems = ["New Arrivals", "Best Seller", "On Sale"];
 
 export default function Products3({ parentClass = "flat-spacing-3", products = [] }) {
+  const locale = useLocale();
   const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active
-  const [selectedItems, setSelectedItems] = useState([]);
-  
+
+  // Derived, not state. This used to start as `[]` and fill from a 300ms
+  // setTimeout inside an effect, which meant the grid was EMPTY in the server
+  // HTML and for 300ms after hydration — the whole lower half of the home page
+  // jumped down once it appeared, and a crawler saw no products at all.
+  const selectedItems = useMemo(
+    () => products.filter((elm) => elm.tabFilterOptions2?.includes(activeItem)),
+    [products, activeItem]
+  );
+
+  // The fade is now purely cosmetic and only runs when the shopper switches
+  // tab. `didMount` keeps it off the first paint, so the initial grid is
+  // visible immediately rather than fading in from nothing.
+  const didMount = useRef(false);
   useEffect(() => {
-    document.getElementById("newArrivals")?.classList.remove("filtered");
-    setTimeout(() => {
-      setSelectedItems(
-        products.filter((elm) => elm.tabFilterOptions2?.includes(activeItem))
-      );
-      document.getElementById("newArrivals")?.classList.add("filtered");
-    }, 300);
-  }, [activeItem, products]);
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    const el = document.getElementById("newArrivals");
+    if (!el) return;
+    el.classList.remove("filtered");
+    const timer = setTimeout(() => el.classList.add("filtered"), 300);
+    // Cleared on unmount and on a rapid second tab change — without this the
+    // stale timer could re-add the class to a node that had moved on.
+    return () => clearTimeout(timer);
+  }, [activeItem]);
   return (
     <section className={parentClass}>
       <div className="container">
@@ -49,7 +67,7 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
                 ))}
               </div>
               <div className="sec-btn text-center">
-                <Link href={`/shop-default-grid`} className="btn-line">
+                <Link href={`/${locale}/shop-default-grid`} className="btn-line">
                   View All Products
                 </Link>
               </div>

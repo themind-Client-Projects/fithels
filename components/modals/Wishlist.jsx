@@ -5,8 +5,10 @@ import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import { allProducts } from "@/data/products";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useLocale } from "next-intl";
 
 export default function Wishlist() {
+  const locale = useLocale();
   const { removeFromWishlist, wishList } = useContextElement();
   const [items, setItems] = useState([]);
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function Wishlist() {
                             <div className="mb_12 d-flex align-items-center justify-content-between flex-wrap gap-12">
                               <div className="text-title">
                                 <Link
-                                  href={`/product-detail/${elm.id}`}
+                                  href={`/${locale}/product-detail/${elm.id}`}
                                   className="link text-line-clamp-1"
                                 >
                                   {elm.title}
@@ -75,7 +77,7 @@ export default function Wishlist() {
                     <div className="p-4">
                       Your wishlist is empty. Start adding your favorite
                       products to save them for later!{" "}
-                      <Link className="btn-line" href="/shop-default-grid">
+                      <Link className="btn-line" href={`/${locale}/shop-default-grid`}>
                         Explore Products
                       </Link>
                     </div>
@@ -84,7 +86,7 @@ export default function Wishlist() {
               </div>
               <div className="tf-mini-cart-bottom">
                 <Link
-                  href={`/shop-default-grid`}
+                  href={`/${locale}/shop-default-grid`}
                   className="text-btn-uppercase"
                 >
                   Or continue shopping

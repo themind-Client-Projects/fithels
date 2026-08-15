@@ -103,11 +103,18 @@ export async function GET(request: NextRequest) {
             product: {
               select: {
                 id: true,
+                // Needed to rebuild a cart line for "order again": the cart
+                // keys on the slug and checkout sends the id, and the two
+                // availability flags decide whether the item can be re-added
+                // at all rather than failing at checkout.
+                slug: true,
                 titleEn: true,
                 titleAr: true,
                 price: true,
                 salePrice: true,
                 images: true,
+                isActive: true,
+                stock: true,
               },
             },
           },
@@ -182,19 +189,41 @@ export async function POST(request: NextRequest) {
     const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
     const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
 
+    // Validate the shapes before touching the database, so a malformed basket
+    // costs nothing.
     for (const item of items) {
-      const { productId, quantity, size, color } = item
-
-      if (!productId || !quantity || quantity < 1) {
+      if (!item?.productId || !item?.quantity || item.quantity < 1) {
         return noStoreJson(
           { error: 'Each item must have a valid productId and quantity' },
           { status: 400 }
         )
       }
+    }
 
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-      })
+    // ONE query for the whole basket. This ran `findUnique` per line, awaited in
+    // sequence, fetching the entire product row each time — so a five-item cart
+    // paid five sequential round-trips to a remote Postgres before the order
+    // transaction had even opened, on the single most latency-sensitive request
+    // in the app.
+    const basketProducts = await prisma.product.findMany({
+      where: { id: { in: [...new Set(items.map((i: { productId: string }) => i.productId))] } },
+      select: {
+        id: true,
+        titleEn: true,
+        titleAr: true,
+        price: true,
+        salePrice: true,
+        images: true,
+        isActive: true,
+        stock: true,
+      },
+    })
+    const productById = new Map(basketProducts.map((p) => [p.id, p]))
+
+    for (const item of items) {
+      const { productId, quantity, size, color } = item
+
+      const product = productById.get(productId)
 
       if (!product) {
         return noStoreJson(

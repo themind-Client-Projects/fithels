@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import ReorderButton from "@/components/my-account/ReorderButton";
 
 const STATUS_COLORS = {
   PENDING: "bg-warning bg-opacity-10 text-warning",
@@ -213,6 +214,13 @@ export default function MyOrdersList() {
                     >
                       {t("viewDetails")} →
                     </Link>
+                  </div>
+
+                  {/* Offered on every past order, not only delivered ones: a
+                      shopper who cancelled is at least as likely to want the
+                      same basket again as one who received it. */}
+                  <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+                    <ReorderButton order={order} />
                   </div>
                 </div>
               ))}

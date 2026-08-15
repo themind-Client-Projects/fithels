@@ -2,7 +2,7 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar from "@/components/headers/Topbar";
 import DynamicDetails from "@/components/productDetails/details/DynamicDetails";
-import React from "react";
+import React, { cache } from "react";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -21,12 +21,20 @@ import { prisma } from "@/lib/prisma";
  * but by-slug was not, so a delisted product kept a live, indexable page with a
  * working Buy It Now that the order API only rejected at the final step.
  */
-async function getActiveProduct(slug) {
-  return prisma.product.findFirst({
+/**
+ * Deduplicated across the two calls Next.js makes per render.
+ *
+ * `generateMetadata` and the page component both need the product, so without
+ * `cache` this ran the identical query twice against a remote Postgres on every
+ * product view. React's `cache` memoises for the lifetime of a single request,
+ * which is exactly the scope required.
+ */
+const getActiveProduct = cache(async (slug) =>
+  prisma.product.findFirst({
     where: { slug, isActive: true },
     include: { category: true },
-  });
-}
+  })
+);
 
 export async function generateMetadata({ params }) {
   const { slug, locale } = await params;

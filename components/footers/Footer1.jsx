@@ -9,11 +9,13 @@ import ToolbarBottom from "../headers/ToolbarBottom";
 import ScrollTop from "../common/ScrollTop";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
 import axios from "axios";
+import { useLocale } from "next-intl";
 export default function Footer1({
   border = true,
   dark = false,
   hasPaddingBottom = false,
 }) {
+  const locale = useLocale();
   const [success, setSuccess] = useState(true);
   const [showMessage, setShowMessage] = useState(false);
 
@@ -93,7 +95,7 @@ export default function Footer1({
                 <div className="col-lg-4">
                   <div className="footer-infor">
                     <div className="footer-logo">
-                      <Link href={`/`}>
+                      <Link href={`/${locale}`}>
                         <Image
                           alt=""
                           src={
@@ -110,7 +112,7 @@ export default function Footer1({
                     <div className="footer-address">
                       <p>549 Oak St.Crystal Lake, IL 60014</p>
                       <Link
-                        href={`/contact`}
+                        href={`/${locale}/contact`}
                         className={`tf-btn-default fw-6 ${
                           dark ? "style-white" : ""
                         } `}
@@ -247,7 +249,7 @@ export default function Footer1({
                             htmlFor="footer-Form_agree"
                           >
                             By clicking subcribe, you agree to the{" "}
-                            <Link className="fw-6 link" href={`/contact`}>
+                            <Link className="fw-6 link" href={`/${locale}/contact`}>
                               Terms of Service
                             </Link>{" "}
                             and{" "}

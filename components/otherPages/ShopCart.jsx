@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useLocale } from "next-intl";
 
 export default function ShopCart() {
+  const locale = useLocale();
   const { cartProducts, setCartProducts, totalPrice } = useContextElement();
 
   // Cart lines are identified by product AND variant. Matching on the product
@@ -52,7 +54,7 @@ export default function ShopCart() {
                         <tr key={i} className="tf-cart-item file-delete">
                           <td className="tf-cart-item_product">
                             <Link
-                              href={`/product-detail/${elm.id}`}
+                              href={`/${locale}/product-detail/${elm.id}`}
                               className="img-box"
                             >
                               <Image
@@ -64,7 +66,7 @@ export default function ShopCart() {
                             </Link>
                             <div className="cart-info">
                               <Link
-                                href={`/product-detail/${elm.id}`}
+                                href={`/${locale}/product-detail/${elm.id}`}
                                 className="cart-title link"
                               >
                                 {elm.title}
@@ -139,7 +141,7 @@ export default function ShopCart() {
               ) : (
                 <div>
                   Your cart is empty. Start adding your favorite products!{" "}
-                  <Link className="btn-line" href="/shop-default-grid">
+                  <Link className="btn-line" href={`/${locale}/shop-default-grid`}>
                     Explore Products
                   </Link>
                 </div>
@@ -163,11 +165,11 @@ export default function ShopCart() {
                     <p className="text-caption-1 text-secondary" style={{ marginBottom: "12px" }}>
                       We will contact you to confirm your order details and delivery.
                     </p>
-                    <Link href={`/checkout`} className="tf-btn btn-reset">
+                    <Link href={`/${locale}/checkout`} className="tf-btn btn-reset">
                       Place Order
                     </Link>
                     <p className="text-button text-center" style={{ marginTop: "10px" }}>
-                      <Link href="/shop-default-grid">Or continue shopping</Link>
+                      <Link href={`/${locale}/shop-default-grid`}>Or continue shopping</Link>
                     </p>
                   </div>
                 </div>

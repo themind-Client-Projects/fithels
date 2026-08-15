@@ -2,9 +2,10 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function Showcase() {
+  const locale = useLocale();
   const t = useTranslations("home.showcase");
   return (
     <section
@@ -15,7 +16,7 @@ export default function Showcase() {
       }}
     >
       <Link
-        href="/shop-default-grid"
+        href={`/${locale}/shop-default-grid`}
         style={{
           display: "block",
           position: "relative",

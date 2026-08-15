@@ -7,6 +7,7 @@ import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { PRODUCT_CARD_SELECT, SHOP_GRID_LIMIT } from "@/lib/products/select";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -24,7 +25,11 @@ export default async function ShopDefaultGridPage({ params }) {
 
   const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    // This had neither a column list nor a limit: it fetched every active
+    // product with its full description text and rendered them all at once.
+    take: SHOP_GRID_LIMIT,
+    select: PRODUCT_CARD_SELECT,
   });
 
   // Map database products to the format expected by the frontend

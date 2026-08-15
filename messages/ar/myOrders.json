@@ -52,5 +52,15 @@
   "phoneLabel": "رقم الهاتف",
   "currentStatus": "الحالة الحالية",
   "subtotal": "المجموع الفرعي",
-  "discount": "الخصم"
+  "discount": "الخصم",
+  "reorder": "اطلبيه مرة أخرى",
+  "reorderAdded": "{count, plural, =1 {تمت إضافة منتج واحد للسلة} =2 {تمت إضافة منتجين للسلة} few {تمت إضافة # منتجات للسلة} other {تمت إضافة # منتجًا للسلة}}",
+  "reorderAlreadyInCart": "{count, plural, =1 {منتج واحد موجود في السلة مسبقًا} =2 {منتجان موجودان في السلة مسبقًا} few {# منتجات موجودة في السلة مسبقًا} other {# منتجًا موجودًا في السلة مسبقًا}}",
+  "reorderUnavailable": "{count, plural, =1 {منتج واحد لم يعد متوفرًا} =2 {منتجان لم يعودا متوفرين} few {# منتجات لم تعد متوفرة} other {# منتجًا لم يعد متوفرًا}}",
+  "reorderNothing": "لا يوجد شيء يمكن إضافته من هذا الطلب.",
+  "reorderGoToCheckout": "إتمام الطلب",
+  "paymentPending": "بانتظار إتمام الدفع",
+  "paymentProcessing": "جارٍ تأكيد الدفع",
+  "paymentFailed": "فشلت عملية الدفع",
+  "paymentExpired": "انتهت مهلة الدفع"
 }

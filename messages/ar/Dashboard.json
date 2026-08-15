@@ -170,5 +170,7 @@
   "discountsGiven": "قيمة الخصومات",
   "cancelledOrders": "طلبات ملغاة",
   "refundDue": "مبالغ تحتاج إرجاع",
-  "ordersWord": "طلب"
+  "ordersWord": "طلب",
+  "subtotal": "المجموع الفرعي",
+  "discount": "الخصم"
 }

@@ -249,3 +249,42 @@ body {
 .nav-account .dropdown-account {
   transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
 }
+
+/* ── Image loading skeleton ────────────────────────────────────────────────
+   Used by components/common/ImageWithSkeleton. A neutral shimmer that sits
+   behind an image until its bitmap has decoded, so a slow hero reads as
+   "loading" rather than as a broken image on an empty coloured band.
+
+   Kept to a single element with no layout of its own — it fills whatever box
+   the image already reserves, so it cannot introduce layout shift. */
+.img-skeleton {
+  position: absolute;
+  inset: 0;
+  display: block;
+  /* Strictly an underlay. The image paints over it, so the shimmer is never
+     visible once the photo arrives — which is what lets the image's own
+     visibility stay independent of JavaScript. */
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    #e9e6e1 0%,
+    #f4f2ef 45%,
+    #e9e6e1 90%
+  );
+  background-size: 220% 100%;
+  animation: img-skeleton-sweep 1.35s ease-in-out infinite;
+}
+
+@keyframes img-skeleton-sweep {
+  0%   { background-position: 140% 0; }
+  100% { background-position: -40% 0; }
+}
+
+/* Respect a reduced-motion preference: keep the placeholder, drop the sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .img-skeleton {
+    animation: none;
+    background: #eeebe7;
+  }
+}

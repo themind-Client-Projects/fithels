@@ -1,11 +1,13 @@
 import Link from "next/link";
 import React from "react";
+import { useLocale } from "next-intl";
 
 export default function ToolbarBottom() {
+  const locale = useLocale();
   return (
     <div className="tf-toolbar-bottom">
       <div className="toolbar-item">
-        <Link href={`/shop-default-grid`}>
+        <Link href={`/${locale}/shop-default-grid`}>
           <div className="toolbar-icon">
             <svg
               className="icon"

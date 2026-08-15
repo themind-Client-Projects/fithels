@@ -303,6 +303,25 @@ export default function OrderDetailPage() {
               <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("paymentStatus")}</span>
               <PaymentBadge order={order} />
             </div>
+            {/* Shown only when a coupon was actually used, so ordinary orders
+                keep a single uncluttered total. Without this an owner looking at
+                a discounted order saw a total that did not match the line items
+                and had no way to tell why. */}
+            {order.discount > 0 && (
+              <>
+                <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("subtotal")}</span>
+                  <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700, direction: "ltr" }}>{formatCurrency(order.subtotal)}</span>
+                </div>
+                <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.875rem", color: "#059669", fontWeight: 600 }}>
+                    {t("discount")}
+                    {order.couponCode ? ` (${order.couponCode})` : ""}
+                  </span>
+                  <span style={{ fontSize: "0.875rem", color: "#059669", fontWeight: 700, direction: "ltr" }}>− {formatCurrency(order.discount)}</span>
+                </div>
+              </>
+            )}
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f3f5", backgroundColor: "#f8f9fa", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700 }}>{t("total")}</span>
               <span style={{ fontSize: "1.25rem", color: "#1a1a2e", fontWeight: 800, direction: "ltr" }}>{formatCurrency(order.total)}</span>

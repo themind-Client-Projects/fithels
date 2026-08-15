@@ -7,7 +7,9 @@ import ColorSelect from "../productDetails/ColorSelect";
 import SizeSelect from "../productDetails/SizeSelect";
 import QuantitySelect from "../productDetails/QuantitySelect";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useLocale } from "next-intl";
 export default function QuickAdd() {
+  const locale = useLocale();
   const [quantity, setQuantity] = useState(1);
   // Lifted so the chosen variant reaches the cart. QuickView got this treatment;
   // QuickAdd was missed, so this — the add-to-cart path on every product card —
@@ -54,7 +56,7 @@ export default function QuickAdd() {
                   <Image alt="" src={item.imgSrc} width={600} height={800} />
                 </div>
                 <div className="content">
-                  <Link href={`/product-detail/${item.id}`}>{item.title}</Link>
+                  <Link href={`/${locale}/product-detail/${item.id}`}>{item.title}</Link>
                   <div className="tf-product-info-price">
                     <h5 className="price-on-sale font-2">
                       <CurrencyFormatter price={item.price} />

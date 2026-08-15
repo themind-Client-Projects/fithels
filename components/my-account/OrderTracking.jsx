@@ -7,9 +7,20 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import ReorderButton from "@/components/my-account/ReorderButton";
 import { Clock, CheckCircle2, Package, Truck, Home, Check } from "lucide-react";
 
 const STATUS_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
+
+/** One entry per PaymentStatus in the Prisma enum — none may fall through. */
+const PAYMENT_STATE = {
+  UNPAID:     { key: "awaitingPayment",   color: "#b45309" },
+  PENDING:    { key: "paymentPending",    color: "#b45309" },
+  PROCESSING: { key: "paymentProcessing", color: "#b45309" },
+  PAID:       { key: "paid",              color: "#28a745" },
+  FAILED:     { key: "paymentFailed",     color: "#dc2626" },
+  EXPIRED:    { key: "paymentExpired",    color: "#dc2626" },
+};
 
 export default function OrderTracking({ orderId }) {
   const { data: session, status } = useSession();
@@ -261,7 +272,7 @@ export default function OrderTracking({ orderId }) {
               >
                 <div style={{ fontSize: "40px", marginBottom: "8px" }}>❌</div>
                 <p style={{ color: "#991b1b", fontWeight: 600, margin: 0 }}>
-                  تم إلغاء هذا الطلب
+                  {t("orderCancelled")}
                 </p>
               </div>
             )}
@@ -337,13 +348,13 @@ export default function OrderTracking({ orderId }) {
               {order.paymentMethod === "WAYLE" && (
                 <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
                   <span className="text-secondary">{t("paymentStatus")}</span>
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      color: order.paymentStatus === "PAID" ? "#28a745" : "#b45309",
-                    }}
-                  >
-                    {order.paymentStatus === "PAID" ? t("paid") : t("awaitingPayment")}
+                  {/* Every PaymentStatus, not just PAID vs not-PAID. Collapsing
+                      them told a customer whose payment had FAILED or EXPIRED —
+                      and whose order was therefore already cancelled — that
+                      their payment was still being awaited, so they sat waiting
+                      for something that was never going to happen. */}
+                  <span style={{ fontWeight: 600, color: PAYMENT_STATE[order.paymentStatus]?.color ?? "#b45309" }}>
+                    {t(PAYMENT_STATE[order.paymentStatus]?.key ?? "awaitingPayment")}
                   </span>
                 </div>
               )}
@@ -375,6 +386,10 @@ export default function OrderTracking({ orderId }) {
               <div className="d-flex justify-content-between">
                 <h5>{t("total")}</h5>
                 <h5><CurrencyFormatter price={order.total} /></h5>
+              </div>
+
+              <div style={{ marginTop: "20px" }}>
+                <ReorderButton order={order} variant="block" />
               </div>
               {order.deliveredAt && (
                 <div className="d-flex justify-content-between" style={{ marginTop: "8px" }}>

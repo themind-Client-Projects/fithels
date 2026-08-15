@@ -2,10 +2,9 @@ import React from "react";
 import { Link } from "@/i18n/navigation";
 import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
-import { useTranslations, useLocale } from "next-intl";
+import {useTranslations} from "next-intl";
 
 export default function Topbar() {
-  const locale = useLocale();
   const t = useTranslations("nav");
   return (
     <div className="tf-topbar bg-main">
@@ -25,7 +24,7 @@ export default function Topbar() {
             <li>
               <Link
                 className="text-caption-1 text-white text-decoration-underline"
-                href={`/${locale}/contact`}
+                href="/contact"
               >
                 {t("ourStore", { defaultMessage: "Our Store" })}
               </Link>

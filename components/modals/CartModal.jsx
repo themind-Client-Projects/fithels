@@ -33,7 +33,9 @@ export default function CartModal() {
   const [recommendations, setRecommendations] = useState([]);
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/products")
+    // Ask for six, not the whole catalogue. This drawer mounts in the root
+    // layout, so it ran on EVERY storefront page load.
+    fetch("/api/products?limit=6")
       .then((res) => (res.ok ? res.json() : []))
       .then((products) => {
         if (cancelled || !Array.isArray(products)) return;
@@ -147,7 +149,7 @@ export default function CartModal() {
                               <div className="mb_12 d-flex align-items-center justify-content-between flex-wrap gap-12">
                                 <div className="text-title">
                                   <Link
-                                    href={`/product-detail/${product.id}`}
+                                    href={`/${locale}/product-detail/${product.id}`}
                                     className="link text-line-clamp-1"
                                   >
                                     {product.title}
@@ -179,7 +181,7 @@ export default function CartModal() {
                       <div className="p-4">
                         Your Cart is empty. Start adding favorite products to
                         cart!{" "}
-                        <Link className="btn-line" href="/shop-default-grid">
+                        <Link className="btn-line" href={`/${locale}/shop-default-grid`}>
                           Explore Products
                         </Link>
                       </div>
@@ -299,13 +301,13 @@ export default function CartModal() {
                     </div>
                     <div className="tf-mini-cart-view-checkout">
                       <Link
-                        href={`/shopping-cart`}
+                        href={`/${locale}/shopping-cart`}
                         className="tf-btn w-100 btn-white radius-4 has-border"
                       >
                         <span className="text">View cart</span>
                       </Link>
                       <Link
-                        href={`/shopping-cart`}
+                        href={`/${locale}/shopping-cart`}
                         className="tf-btn w-100 btn-fill radius-4"
                       >
                         <span className="text">Check Out</span>
@@ -314,7 +316,7 @@ export default function CartModal() {
                     <div className="text-center">
                       <Link
                         className="link text-btn-uppercase"
-                        href={`/shop-default-grid`}
+                        href={`/${locale}/shop-default-grid`}
                       >
                         Or continue shopping
                       </Link>

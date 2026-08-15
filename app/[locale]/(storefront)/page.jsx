@@ -9,6 +9,7 @@ import Products from "@/components/common/Products3";
 import Showcase from "@/components/homes/home-1/Showcase";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({ params }) {
@@ -27,7 +28,10 @@ export default async function HomePage({ params }) {
   const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
-    take: 12 // Limit for home page
+    take: 12, // Limit for home page
+    // Only the columns a card renders. Without this the descriptions (Text)
+    // travelled with all 12 rows on every request.
+    select: PRODUCT_CARD_SELECT,
   });
 
   // Map to frontend format
@@ -69,6 +73,15 @@ export default async function HomePage({ params }) {
   const banners = await prisma.banner.findMany({
     where: { isActive: true },
     orderBy: { order: "asc" },
+    select: {
+      id: true,
+      titleAr: true,
+      titleEn: true,
+      btnTextAr: true,
+      btnTextEn: true,
+      image: true,
+      link: true,
+    },
   });
 
   return (

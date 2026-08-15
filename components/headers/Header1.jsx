@@ -36,7 +36,7 @@ export default function Header1({ fullWidth = false }) {
             </a>
           </div>
           <div className="col-xl-3 col-md-4 col-6">
-            <Link href={`/`} className="logo-header" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <Link href="/" className="logo-header" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <Image
                 alt="logo"
                 className="logo"
@@ -216,7 +216,7 @@ export default function Header1({ fullWidth = false }) {
                       </div>
                       <div style={{ padding: "12px 24px 16px" }}>
                         {(user.role === 'ADMIN' || user.role === 'EMPLOYEE') && (
-                          <a href={`/dashboard`} className="profile-dropdown-link" style={{
+                          <a href="/dashboard" className="profile-dropdown-link" style={{
                             display: "flex",
                             alignItems: "center",
                             gap: "10px",
@@ -232,7 +232,7 @@ export default function Header1({ fullWidth = false }) {
                             Dashboard
                           </a>
                         )}
-                        <Link href={`/${locale}/account`} className="profile-dropdown-link" style={{
+                        <Link href="/account" className="profile-dropdown-link" style={{
                           display: "flex",
                           alignItems: "center",
                           gap: "10px",
