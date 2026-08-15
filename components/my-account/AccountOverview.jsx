@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { orderLabel } from "@/lib/orders/reference";
 
 /** Delivery lifecycle, in order. CANCELLED sits outside it. */
 const DELIVERY_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
@@ -219,7 +220,7 @@ export default function AccountOverview() {
                         <div className="d-flex justify-content-between align-items-start flex-wrap" style={{ gap: "10px" }}>
                           <div>
                             <div style={{ fontFamily: "monospace", fontWeight: 700 }}>
-                              #{order.id.slice(0, 8).toUpperCase()}
+                              {orderLabel(order.id)}
                             </div>
                             <div className="text-secondary" style={{ fontSize: "13px" }}>
                               {new Date(order.createdAt).toLocaleDateString(locale === "ar" ? "ar" : "en-GB", {

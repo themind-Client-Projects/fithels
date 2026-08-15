@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Star, User, Truck, Receipt, Package, Calendar, Pencil } from "lucide-react";
 import Image from "next/image";
+import { orderLabel } from "@/lib/orders/reference";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -174,7 +175,7 @@ export default function OrderDetailPage() {
 
   return (
     <DashboardShell
-      title={`${t("orders")} #${order.id.slice(-6).toUpperCase()}`}
+      title={`${t("orders")} ${orderLabel(order.id)}`}
       description={t("placedOn", { date: formatDate(order.createdAt) })}
       action={
         <div style={{ display: "flex", gap: "0.5rem" }}>

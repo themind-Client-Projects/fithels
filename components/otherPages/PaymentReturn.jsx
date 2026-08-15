@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { orderLabel } from "@/lib/orders/reference";
 
 /** Stop polling after this long and tell the user their money is safe. */
 const POLL_DEADLINE_MS = 60_000;
@@ -163,7 +164,7 @@ export default function PaymentReturn() {
                   the FIRST 8 upper-cased, so the number a customer was given
                   here matched nothing they could find afterwards. */}
               {t("orderNumber")}:{" "}
-              <strong dir="ltr">#{String(orderId).slice(0, 8).toUpperCase()}</strong>
+              <strong dir="ltr">{orderLabel(orderId)}</strong>
             </p>
           )}
 

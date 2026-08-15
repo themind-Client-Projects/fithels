@@ -377,3 +377,33 @@ body {
 tr:hover > .tbl-pin-cell {
   background-color: color-mix(in oklab, var(--muted) 40%, #fff);
 }
+
+/* ── Site footer ───────────────────────────────────────────────────────────
+   One line, one hairline, generous air. The weight comes from the space
+   around it rather than from anything drawn. */
+.site-footer {
+  border-top: 1px solid color-mix(in oklab, var(--color-text, #1a1a2e) 8%, transparent);
+  padding-top: 40px;
+  padding-bottom: 40px;
+  margin-top: 80px;
+}
+
+.site-footer__line {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklab, var(--color-text, #1a1a2e) 70%, transparent);
+  /* The year and the brand read left-to-right even on the Arabic page. */
+  direction: ltr;
+}
+
+.site-footer__sep {
+  margin: 0 8px;
+  opacity: 0.45;
+}
+
+.site-footer__muted {
+  color: color-mix(in oklab, var(--color-text, #1a1a2e) 45%, transparent);
+}

@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import ReorderButton from "@/components/my-account/ReorderButton";
 import { Clock, CheckCircle2, Package, Truck, Home, Check } from "lucide-react";
+import { orderLabel } from "@/lib/orders/reference";
 
 const STATUS_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
 
@@ -149,7 +150,7 @@ export default function OrderTracking({ orderId }) {
                 <div>
                   <span className="text-secondary" style={{ fontSize: "13px" }}>{t("orderNumber")}</span>
                   <h5 style={{ fontFamily: "monospace", marginTop: "4px" }}>
-                    #{order.id.slice(0, 8).toUpperCase()}
+                    {orderLabel(order.id)}
                   </h5>
                 </div>
                 <span

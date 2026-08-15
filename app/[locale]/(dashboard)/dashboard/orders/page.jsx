@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Plus } from "lucide-react";
+import { orderLabel } from "@/lib/orders/reference";
 
 const StatusSelectCell = ({ order }) => {
   const t = useTranslations("Dashboard");
@@ -184,7 +185,7 @@ export default function OrdersPage() {
       accessorKey: "id",
       cell: ({ row }) => (
         <span className="font-mono text-xs text-muted-foreground">
-          #{row.id.slice(-6).toUpperCase()}
+          {orderLabel(row.id)}
         </span>
       ),
     },

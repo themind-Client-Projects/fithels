@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import ReorderButton from "@/components/my-account/ReorderButton";
+import { orderLabel } from "@/lib/orders/reference";
 
 const STATUS_COLORS = {
   PENDING: "bg-warning bg-opacity-10 text-warning",
@@ -172,7 +173,7 @@ export default function MyOrdersList() {
                         {t("orderNumber")}
                       </span>
                       <div style={{ fontFamily: "monospace", fontWeight: 600, fontSize: "15px" }}>
-                        #{order.id.slice(0, 8).toUpperCase()}
+                        {orderLabel(order.id)}
                       </div>
                     </div>
                     <span

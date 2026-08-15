@@ -172,5 +172,10 @@
   "refundDue": "مبالغ تحتاج إرجاع",
   "ordersWord": "طلب",
   "subtotal": "المجموع الفرعي",
-  "discount": "الخصم"
+  "discount": "الخصم",
+  "requiredFieldsMissing": "يرجى تعبئة رقم الهاتف وعنوان التوصيل.",
+  "orderChangedElsewhere": "تم تعديل هذا الطلب من مكان آخر.",
+  "reloadToContinue": "أعد تحميل الصفحة ثم حاول مجددًا.",
+  "saveFailed": "تعذّر حفظ التعديلات.",
+  "connectionFailed": "تعذّر الاتصال بالخادم."
 }

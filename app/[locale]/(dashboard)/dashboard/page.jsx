@@ -19,6 +19,7 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
+import { orderLabel } from "@/lib/orders/reference";
 
 export default function DashboardOverviewPage() {
   const { data: session } = useSession();
@@ -63,7 +64,7 @@ export default function DashboardOverviewPage() {
       accessorKey: "id",
       cell: ({ row }) => (
         <span className="font-mono text-sm text-muted-foreground font-medium">
-          #{row.id.slice(-6).toUpperCase()}
+          {orderLabel(row.id)}
         </span>
       ),
     },

@@ -172,5 +172,10 @@
   "refundDue": "Refunds due",
   "ordersWord": "orders",
   "subtotal": "Subtotal",
-  "discount": "Discount"
+  "discount": "Discount",
+  "requiredFieldsMissing": "Please fill in the phone number and the delivery address.",
+  "orderChangedElsewhere": "This order was changed elsewhere.",
+  "reloadToContinue": "Reload the page and try again.",
+  "saveFailed": "Could not save your changes.",
+  "connectionFailed": "Could not reach the server."
 }

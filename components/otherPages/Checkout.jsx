@@ -10,6 +10,7 @@ import { useUIStore } from "@/stores/useUIStore";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { Banknote, CreditCard, MapPin } from "lucide-react";
+import { orderNumber } from "@/lib/orders/reference";
 
 function CheckoutContent() {
   const { cartProducts, totalPrice: cartTotal, setCartProducts } = useContextElement();
@@ -332,7 +333,7 @@ function CheckoutContent() {
                 {orderId && (
                   <div style={{ background: "#fff", borderRadius: "8px", padding: "12px 20px", marginBottom: "20px", border: "1px solid #e2e8f0", display: "inline-block" }}>
                     <span className="text-secondary">{t("orderNumber")}: </span>
-                    <strong style={{ fontFamily: "monospace", fontSize: "14px" }}>{orderId.slice(0, 8).toUpperCase()}</strong>
+                    <strong style={{ fontFamily: "monospace", fontSize: "14px" }}>{orderNumber(orderId)}</strong>
                   </div>
                 )}
                 <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>

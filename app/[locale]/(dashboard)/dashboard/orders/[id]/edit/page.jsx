@@ -9,6 +9,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Phone, MapPin, Save } from "lucide-react";
+import { orderLabel } from "@/lib/orders/reference";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -29,6 +30,8 @@ export default function EditOrderPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
@@ -64,6 +67,20 @@ export default function EditOrderPage() {
   }, [orderId]);
 
   const handleSave = async () => {
+    // The create endpoint requires both of these; PATCH did not, so saving with
+    // the fields emptied silently removed the only way to reach the customer
+    // about a delivery already in progress.
+    const missing = {};
+    if (!phone.trim()) missing.phone = true;
+    if (!location.trim()) missing.location = true;
+    if (Object.keys(missing).length) {
+      setFieldErrors(missing);
+      setSaveError(t("requiredFieldsMissing"));
+      return;
+    }
+    setFieldErrors({});
+    setSaveError("");
+
     setSaving(true);
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -83,13 +100,21 @@ export default function EditOrderPage() {
 
       if (res.ok) {
         router.push(`/${locale}/dashboard/orders/${orderId}`);
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to update order");
+        return;
       }
+
+      const data = await res.json().catch(() => ({}));
+      // A 409 means someone else moved this order on, or the transition is not
+      // allowed from its current state. Either way the copy on screen is stale,
+      // so say what to do rather than leaving them to guess.
+      setSaveError(
+        res.status === 409
+          ? `${data.error || t("orderChangedElsewhere")} ${t("reloadToContinue")}`
+          : data.error || t("saveFailed")
+      );
     } catch (error) {
       console.error("Failed to update order:", error);
-      alert("حدث خطأ في الاتصال");
+      setSaveError(t("connectionFailed"));
     } finally {
       setSaving(false);
     }
@@ -133,7 +158,7 @@ export default function EditOrderPage() {
 
   return (
     <DashboardShell
-      title={`${t("editOrder")} #${order.id.slice(-6).toUpperCase()}`}
+      title={`${t("editOrder")} ${orderLabel(order.id)}`}
       action={
         <button
           onClick={() => router.push(`/${locale}/dashboard/orders/${orderId}`)}
@@ -144,6 +169,15 @@ export default function EditOrderPage() {
         </button>
       }
     >
+      {saveError && (
+        <div
+          role="alert"
+          className="mb-4 max-w-4xl rounded-xl border border-red-200 bg-red-50 p-4 text-start text-sm font-medium text-red-600"
+        >
+          {saveError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
         {/* Contact & Location */}
         <div style={{ borderRadius: "1rem", border: "1px solid #e9ecef", backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", overflow: "hidden" }}>
@@ -158,9 +192,9 @@ export default function EditOrderPage() {
                 type="tel"
                 dir="ltr"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => { setPhone(e.target.value); setFieldErrors((p) => ({ ...p, phone: false })); }}
                 placeholder="+964 7XX XXX XXXX"
-                style={inputStyle}
+                style={{ ...inputStyle, borderColor: fieldErrors.phone ? "#dc2626" : inputStyle.border.split(" ").pop() }}
               />
             </div>
             <div>
@@ -168,9 +202,9 @@ export default function EditOrderPage() {
               <textarea
                 rows={3}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => { setLocation(e.target.value); setFieldErrors((p) => ({ ...p, location: false })); }}
                 placeholder="المدينة، الحي، الشارع..."
-                style={inputStyle}
+                style={{ ...inputStyle, borderColor: fieldErrors.location ? "#dc2626" : inputStyle.border.split(" ").pop() }}
               />
             </div>
             <div>
@@ -221,6 +255,22 @@ export default function EditOrderPage() {
                 <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("items")}</span>
                 <span style={{ fontWeight: 600, fontSize: "0.8rem" }}>{order.items?.length || 0}</span>
               </div>
+              {order.discount > 0 && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("subtotal")}</span>
+                    <span style={{ fontWeight: 600, fontSize: "0.8rem" }}>{formatMoney(order.subtotal, "IQD")}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ color: "#059669", fontSize: "0.8rem" }}>
+                      {t("discount")}{order.couponCode ? ` (${order.couponCode})` : ""}
+                    </span>
+                    <span style={{ fontWeight: 600, fontSize: "0.8rem", color: "#059669" }}>
+                      − {formatMoney(order.discount, "IQD")}
+                    </span>
+                  </div>
+                </>
+              )}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("total")}</span>
                 <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{formatMoney(order.total, "IQD")}</span>
