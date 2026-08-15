@@ -61,7 +61,14 @@ export async function releaseExpiredIntents(): Promise<number> {
         if (await cancelOrderAndReleaseStock(tx, intent.orderId)) {
           released += 1
         }
-      })
+      }, {
+      // Same ceiling as the order routes: these transactions walk every line item
+      // to credit stock, and Prisma's 5s default expires against a remote pooled
+      // Postgres — which here would abandon a stock release, or make the webhook
+      // 500 and depend on Wayle redelivering it.
+      maxWait: 10_000,
+      timeout: 20_000,
+    })
     } catch (error) {
       // One bad row must not block the checkout that triggered this sweep.
       console.error('Failed to expire payment intent', intent.id, error)

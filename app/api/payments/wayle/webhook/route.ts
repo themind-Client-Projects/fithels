@@ -5,7 +5,7 @@ import {
   verifyWebhookSignature,
   WAYLE_SIGNATURE_HEADER,
 } from '@/lib/wayle/signature'
-import { normaliseWebhookPayload, isAcceptedStatus } from '@/lib/wayle/client'
+import { normaliseWebhookPayload, classifyWebhookStatus } from '@/lib/wayle/client'
 import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 
 /**
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   if ((TERMINAL_STATUSES as readonly string[]).includes(intent.status)) {
     const wasAbandonedByUs = intent.status !== 'PAID'
 
-    if (wasAbandonedByUs && isAcceptedStatus(event.status)) {
+    if (wasAbandonedByUs && classifyWebhookStatus(event.status) === 'accepted') {
       console.error(
         `PAYMENT RECEIVED AFTER ORDER WAS ${intent.status} — REFUND OR REINSTATE MANUALLY`,
         {
@@ -110,8 +110,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true }, { status: 200 })
   }
 
-  // ── Payment did not complete ────────────────────────────────────────────
-  if (!isAcceptedStatus(event.status)) {
+  const outcome = classifyWebhookStatus(event.status)
+
+  // ── Not finished yet ────────────────────────────────────────────────────
+  // A progress ping, not a result. Acknowledge and wait for the real one; the
+  // expiry sweep reclaims the reservation if it never arrives.
+  if (outcome === 'pending') {
+    return NextResponse.json({ received: true, pending: true }, { status: 200 })
+  }
+
+  // ── Status we do not recognise ──────────────────────────────────────────
+  // Deliberately NOT the failure path. This branch used to be `else`, so any
+  // unrecognised status cancelled the order, credited the stock back and
+  // released the coupon — for a payer whose money may well have moved. Leave
+  // the intent PENDING so a corrected redelivery can still fulfil it, and flag
+  // it loudly for a human.
+  if (outcome === 'unknown') {
+    console.error(
+      'Wayle webhook status not recognised — NOT fulfilling, NOT cancelling, NEEDS REVIEW',
+      {
+        referenceId: event.referenceId,
+        orderId: intent.orderId,
+        receivedStatus: event.status,
+      }
+    )
+    await prisma.paymentIntent.updateMany({
+      where: { id: intent.id, status: 'PENDING' },
+      data: {
+        failureReason: `UNKNOWN_PROVIDER_STATUS_${event.status ?? 'MISSING'}_NEEDS_REVIEW`,
+      },
+    })
+    return NextResponse.json({ received: true, needsReview: true }, { status: 200 })
+  }
+
+  // ── Payment explicitly did not complete ─────────────────────────────────
+  if (outcome === 'failed') {
     await prisma.$transaction(async (tx) => {
       const claim = await tx.paymentIntent.updateMany({
         where: { id: intent.id, status: 'PENDING' },
@@ -131,6 +164,13 @@ export async function POST(request: NextRequest) {
       // already cancelled this order by hand, the stock is back on the shelf
       // and this correctly does nothing rather than returning it twice.
       await cancelOrderAndReleaseStock(tx, intent.orderId)
+    }, {
+      // Same ceiling as the order routes: these transactions walk every line item
+      // to credit stock, and Prisma's 5s default expires against a remote pooled
+      // Postgres — which here would abandon a stock release, or make the webhook
+      // 500 and depend on Wayle redelivering it.
+      maxWait: 10_000,
+      timeout: 20_000,
     })
 
     return NextResponse.json({ received: true }, { status: 200 })
@@ -186,6 +226,13 @@ export async function POST(request: NextRequest) {
       })
 
       await cancelOrderAndReleaseStock(tx, intent.orderId)
+    }, {
+      // Same ceiling as the order routes: these transactions walk every line item
+      // to credit stock, and Prisma's 5s default expires against a remote pooled
+      // Postgres — which here would abandon a stock release, or make the webhook
+      // 500 and depend on Wayle redelivering it.
+      maxWait: 10_000,
+      timeout: 20_000,
     })
 
     return NextResponse.json(
@@ -252,7 +299,14 @@ export async function POST(request: NextRequest) {
         data: { failureReason: 'PAID_BUT_ORDER_CANCELLED_NEEDS_RECONCILIATION' },
       })
     }
-  })
+  }, {
+      // Same ceiling as the order routes: these transactions walk every line item
+      // to credit stock, and Prisma's 5s default expires against a remote pooled
+      // Postgres — which here would abandon a stock release, or make the webhook
+      // 500 and depend on Wayle redelivering it.
+      maxWait: 10_000,
+      timeout: 20_000,
+    })
 
   return NextResponse.json({ received: true }, { status: 200 })
 }

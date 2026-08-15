@@ -119,7 +119,71 @@ export async function createPaymentLink(
 }
 
 /** Statuses that mean "money actually captured". */
-const ACCEPTED_STATUSES = ["COMPLETED", "SUCCESS"];
+const ACCEPTED_STATUSES = [
+  "COMPLETED",
+  "SUCCESS",
+  // Common synonyms across Iraqi gateways. Unambiguous: all three mean the
+  // funds were captured, never "authorised" or "partially paid".
+  "SUCCEEDED",
+  "PAID",
+  "CAPTURED",
+  "SETTLED",
+];
+
+/**
+ * Statuses that explicitly mean this payment will never complete, so the order
+ * can safely be cancelled and its stock returned.
+ */
+const FAILED_STATUSES = [
+  "FAILED",
+  "FAILURE",
+  "CANCELLED",
+  "CANCELED",
+  "DECLINED",
+  "REJECTED",
+  "EXPIRED",
+  "VOIDED",
+  "TIMEOUT",
+  "ERROR",
+];
+
+/** Statuses that mean "not finished yet" — no action, no alarm. */
+const PENDING_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "IN_PROGRESS",
+  "INITIATED",
+  "CREATED",
+  "AWAITING_PAYMENT",
+];
+
+export type WebhookOutcome = "accepted" | "failed" | "pending" | "unknown";
+
+/**
+ * Classify a provider status into an action.
+ *
+ * The `unknown` case exists because the alternative is unacceptable. The
+ * webhook previously branched on `isAcceptedStatus` alone, so ANY status it did
+ * not recognise fell into the failure path and cancelled the order, released
+ * the stock and returned the coupon — for a customer whose money had in fact
+ * moved. A provider adding a status, or spelling one differently, was enough to
+ * destroy paid orders silently, because the result was indistinguishable from a
+ * genuine decline.
+ *
+ * This is the same principle the amount check already applies: a value we
+ * cannot interpret is not the same as a value that is wrong. Unrecognised means
+ * "stop and ask a human", never "cancel".
+ */
+export function classifyWebhookStatus(
+  status: string | undefined
+): WebhookOutcome {
+  if (!status) return "unknown";
+  const normalised = status.trim().toUpperCase();
+  if (ACCEPTED_STATUSES.includes(normalised)) return "accepted";
+  if (FAILED_STATUSES.includes(normalised)) return "failed";
+  if (PENDING_STATUSES.includes(normalised)) return "pending";
+  return "unknown";
+}
 
 export interface NormalisedWebhook {
   referenceId?: string;
@@ -160,7 +224,4 @@ export function normaliseWebhookPayload(payload: any): NormalisedWebhook {
   };
 }
 
-export function isAcceptedStatus(status: string | undefined): boolean {
-  if (!status) return false;
-  return ACCEPTED_STATUSES.includes(status.toUpperCase());
-}
+

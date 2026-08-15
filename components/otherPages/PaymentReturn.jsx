@@ -56,6 +56,14 @@ export default function PaymentReturn() {
           { signal: controller.signal, cache: "no-store" }
         );
 
+        // The session can lapse while the payer is on Wayle's site. Polling on
+        // regardless just span for the full minute and then claimed the payment
+        // was received — say what actually needs doing instead.
+        if (res.status === 401) {
+          setState("signedOut");
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           if (data.status === "PAID") {
@@ -121,6 +129,12 @@ export default function PaymentReturn() {
       title: t("paymentPendingTitle"),
       desc: t("paymentPendingDesc"),
     },
+    signedOut: {
+      icon: "🔐",
+      color: "#6c757d",
+      title: t("paymentSignedOutTitle"),
+      desc: t("paymentSignedOutDesc"),
+    },
     // Reached this page without a payment reference — say so plainly.
     none: {
       icon: "🔎",
@@ -144,15 +158,33 @@ export default function PaymentReturn() {
 
           {state === "paid" && orderId && (
             <p style={{ marginBottom: "20px" }}>
-              {t("orderNumber")}: <strong>#{String(orderId).slice(-8)}</strong>
+              {/* Same derivation as the order page's own heading. This showed
+                  the LAST 8 characters in lower case while the order page shows
+                  the FIRST 8 upper-cased, so the number a customer was given
+                  here matched nothing they could find afterwards. */}
+              {t("orderNumber")}:{" "}
+              <strong dir="ltr">#{String(orderId).slice(0, 8).toUpperCase()}</strong>
             </p>
           )}
 
           {state !== "polling" && (
             <div className="d-flex justify-content-center" style={{ gap: "12px", flexWrap: "wrap" }}>
-              <Link href={`/${locale}/my-orders`} className="tf-btn btn-reset">
-                {t("backToOrders")}
-              </Link>
+              {/* Straight to the order that was just paid for. Previously the
+                  only link was to the whole order list, so a customer who had
+                  just paid had to identify their own order by eye — and the
+                  reference shown above did not help them do it. */}
+              {state === "paid" && orderId ? (
+                <Link
+                  href={`/${locale}/my-orders/${orderId}`}
+                  className="tf-btn btn-reset"
+                >
+                  {t("viewYourOrder")}
+                </Link>
+              ) : (
+                <Link href={`/${locale}/my-orders`} className="tf-btn btn-reset">
+                  {t("backToOrders")}
+                </Link>
+              )}
               <Link href={`/${locale}/shop-default-grid`} className="tf-btn btn-outline">
                 {t("goToShop")}
               </Link>

@@ -53,5 +53,8 @@
   "couponDiscount": "الخصم",
   "couponInvalid": "هذا الرمز غير صالح.",
   "couponSignInRequired": "سجّلي الدخول لاستخدام رمز الخصم.",
-  "couponCheckFailed": "تعذّر التحقق من الرمز. حاولي مرة أخرى."
+  "couponCheckFailed": "تعذّر التحقق من الرمز. حاولي مرة أخرى.",
+  "viewYourOrder": "تتبّعي طلبك",
+  "paymentSignedOutTitle": "سجّلي الدخول لعرض طلبك",
+  "paymentSignedOutDesc": "تم استلام دفعتك. سجّلي الدخول بالحساب نفسه لمتابعة حالة الطلب."
 }

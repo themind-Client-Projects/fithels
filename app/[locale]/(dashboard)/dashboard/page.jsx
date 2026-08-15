@@ -14,6 +14,10 @@ import {
   DollarSign,
   Package,
   Users,
+  Truck,
+  TicketPercent,
+  XCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function DashboardOverviewPage() {
@@ -127,7 +131,7 @@ export default function DashboardOverviewPage() {
         />
         <StatsCard
           icon={DollarSign}
-          label={t("revenue")}
+          label={t("revenueCollected")}
           value={formatCurrency(stats?.totalRevenue || 0)}
         />
         <StatsCard
@@ -139,6 +143,38 @@ export default function DashboardOverviewPage() {
           icon={Users}
           label={t("customersCount")}
           value={stats?.totalCustomers?.toLocaleString("en-US") || "0"}
+        />
+      </div>
+
+      {/* The figures the single "revenue" number used to conflate. For a
+          cash-on-delivery shop, money still out with drivers is not revenue,
+          but it is the number that decides whether to restock. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          icon={Truck}
+          label={t("outstandingRevenue")}
+          value={formatCurrency(stats?.outstandingRevenue || 0)}
+          trend={`${stats?.outstandingOrders ?? 0} ${t("ordersWord")}`}
+        />
+        <StatsCard
+          icon={TicketPercent}
+          label={t("discountsGiven")}
+          value={formatCurrency(stats?.totalDiscounts || 0)}
+        />
+        <StatsCard
+          icon={XCircle}
+          label={t("cancelledOrders")}
+          value={(stats?.cancelledOrders ?? 0).toLocaleString("en-US")}
+        />
+        <StatsCard
+          icon={AlertTriangle}
+          label={t("refundDue")}
+          value={formatCurrency(stats?.refundDueAmount || 0)}
+          trend={
+            stats?.refundDueOrders
+              ? `${stats.refundDueOrders} ${t("needsReconciliation")}`
+              : undefined
+          }
         />
       </div>
 

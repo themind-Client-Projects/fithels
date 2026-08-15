@@ -53,5 +53,8 @@
   "couponDiscount": "Discount",
   "couponInvalid": "This code is not valid.",
   "couponSignInRequired": "Sign in to use a discount code.",
-  "couponCheckFailed": "Could not check that code. Please try again."
+  "couponCheckFailed": "Could not check that code. Please try again.",
+  "viewYourOrder": "Track your order",
+  "paymentSignedOutTitle": "Sign in to see your order",
+  "paymentSignedOutDesc": "Your payment was received. Sign in with the same account to follow its status."
 }
