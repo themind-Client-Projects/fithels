@@ -452,3 +452,32 @@ tr:hover > .tbl-pin-cell {
 [data-slot="sidebar"] [data-sidebar="menu-item"] > a {
   display: flex;
 }
+
+/* Header account dropdown — keep the panel inside the viewport.
+ *
+ * The template positions it with hardcoded negative offsets: `left: -100px` on
+ * .dropdown-account (component/_header.scss:1325), `left: -200px` on
+ * .dropdown-login (:1356), plus per-breakpoint variants of -125px and -70px in
+ * _responsive.scss. The header element here carries BOTH class names, so which
+ * offset wins changes with viewport width — but all of them are negative.
+ *
+ * Those values were tuned for the template's original LTR layout, where the
+ * account icon sits at the far RIGHT of the header: pulling the panel leftwards
+ * is what kept it on screen. This storefront is RTL, so the icon group sits at
+ * the far LEFT instead and the same offsets drag the panel off the left edge,
+ * clipping the details on hover.
+ *
+ * (public/scss/rtl.scss has a `left: -50px` override that looks like it should
+ * apply here, but that file is never imported by main.scss and its rules are
+ * scoped under a `.rtl` class this site does not use — it is dead code, so it
+ * is not the thing to edit.)
+ *
+ * Anchoring to the icon's own inline edge keeps the panel on screen wherever
+ * the header lands, and the max-width stops it overflowing on narrow screens.
+ */
+[dir="rtl"] .nav-account .dropdown-account,
+[dir="rtl"] .nav-account .dropdown-login {
+  left: 0;
+  right: auto;
+  max-width: calc(100vw - 32px);
+}
