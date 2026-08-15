@@ -5,6 +5,7 @@ import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { siteContact, telHref } from "@/data/siteContact";
 export default function MobileMenu() {
   const tNav = useTranslations("nav");
   const tContact = useTranslations("contact");
@@ -145,9 +146,9 @@ export default function MobileMenu() {
               </Link>
             </div>
             <div className="mb-contact">
-              <p className="text-caption-1">
-                {tContact('addressDesc')}
-              </p>
+              {siteContact.address && (
+                <p className="text-caption-1">{siteContact.address}</p>
+              )}
               <Link
                 href={`/${locale}/contact`}
                 className="tf-btn-default text-btn-uppercase"
@@ -157,14 +158,22 @@ export default function MobileMenu() {
               </Link>
             </div>
             <ul className="mb-info">
-              <li>
-                <i className="icon icon-mail" />
-                <p>{tContact('emailDesc')}</p>
-              </li>
-              <li>
-                <i className="icon icon-phone" />
-                <p>{tContact('phoneDesc')}</p>
-              </li>
+              {siteContact.email && (
+                <li>
+                  <i className="icon icon-mail" />
+                  <p>
+                    <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
+                  </p>
+                </li>
+              )}
+              {siteContact.phone && (
+                <li>
+                  <i className="icon icon-phone" />
+                  <p dir="ltr">
+                    <a href={telHref(siteContact.phone)}>{siteContact.phone}</a>
+                  </p>
+                </li>
+              )}
             </ul>
           </div>
         </div>

@@ -416,3 +416,27 @@ model CouponRedemption {
   @@unique([couponId, userId, slot])
   @@index([couponId, userId])
 }
+
+/// Newsletter sign-ups.
+///
+/// These used to be POSTed straight from the browser to
+/// `https://express-brevomail.vercel.app/api/contacts` — a third-party endpoint
+/// that shipped with the template and belongs to someone else. Every shopper who
+/// entered an email in the footer (present on every page) or the pop-up sent
+/// their address to an unrelated service, with no consent, no record kept here,
+/// and no way to reach the list. They are stored first-party now.
+model Subscriber {
+  id    String @id @default(cuid())
+  /// Stored lower-cased and trimmed; @unique makes re-subscribing idempotent.
+  email String @unique
+
+  /// Which form it came from, so the shop can tell the footer from the pop-up.
+  source         String    @default("footer")
+  /// Set when the address is removed, rather than deleting the row, so an
+  /// unsubscribe cannot be undone by simply re-submitting the form.
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

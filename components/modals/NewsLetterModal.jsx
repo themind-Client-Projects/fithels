@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import axios from "axios";
 export default function NewsLetterModal() {
   const pathname = usePathname();
   const modalElement = useRef();
@@ -42,23 +41,26 @@ export default function NewsLetterModal() {
     const email = e.target.email.value;
 
     try {
-      const response = await axios.post(
-        "https://express-brevomail.vercel.app/api/contacts",
-        {
-          email,
-        }
-      );
+      // First-party. This used to POST the shopper's address straight to
+      // https://express-brevomail.vercel.app/api/contacts — a third-party
+      // endpoint from the template — so every sign-up handed a customer email
+      // to an unrelated service and left no record here.
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "popup" }),
+      });
 
-      if ([200, 201].includes(response.status)) {
+      if (response.ok) {
         e.target.reset(); // Reset the form
         setSuccess(true); // Set success state
         handleShowMessage();
       } else {
-        setSuccess(false); // Handle unexpected responses
+        setSuccess(false); // Rejected — most likely a malformed address
         handleShowMessage();
       }
     } catch (error) {
-      console.error("Error:", error.response?.data || "An error occurred");
+      console.error("Newsletter sign-up failed:", error);
       setSuccess(false); // Set error state
       handleShowMessage();
       e.target.reset(); // Reset the form

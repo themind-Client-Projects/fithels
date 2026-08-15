@@ -8,8 +8,8 @@ import LanguageSelect from "../common/LanguageSelect";
 import ToolbarBottom from "../headers/ToolbarBottom";
 import ScrollTop from "../common/ScrollTop";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
-import axios from "axios";
 import { useLocale } from "next-intl";
+import { siteContact, telHref } from "@/data/siteContact";
 export default function Footer1({
   border = true,
   dark = false,
@@ -31,23 +31,26 @@ export default function Footer1({
     const email = e.target.email.value;
 
     try {
-      const response = await axios.post(
-        "https://express-brevomail.vercel.app/api/contacts",
-        {
-          email,
-        }
-      );
+      // First-party. This used to POST the shopper's address straight to
+      // https://express-brevomail.vercel.app/api/contacts — a third-party
+      // endpoint from the template — so every sign-up handed a customer email
+      // to an unrelated service and left no record here.
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "footer" }),
+      });
 
-      if ([200, 201].includes(response.status)) {
+      if (response.ok) {
         e.target.reset(); // Reset the form
         setSuccess(true); // Set success state
         handleShowMessage();
       } else {
-        setSuccess(false); // Handle unexpected responses
+        setSuccess(false); // Rejected — most likely a malformed address
         handleShowMessage();
       }
     } catch (error) {
-      console.error("Error:", error.response?.data || "An error occurred");
+      console.error("Newsletter sign-up failed:", error);
       setSuccess(false); // Set error state
       handleShowMessage();
       e.target.reset(); // Reset the form
@@ -110,7 +113,10 @@ export default function Footer1({
                       </Link>
                     </div>
                     <div className="footer-address">
-                      <p>549 Oak St.Crystal Lake, IL 60014</p>
+                      {/* Real details only — see data/siteContact.js. Each row
+                          is hidden while its value is blank, because an Illinois
+                          address on an Iraqi shop is worse than no address. */}
+                      {siteContact.address && <p>{siteContact.address}</p>}
                       <Link
                         href={`/${locale}/contact`}
                         className={`tf-btn-default fw-6 ${
@@ -122,14 +128,24 @@ export default function Footer1({
                       </Link>
                     </div>
                     <ul className="footer-info">
-                      <li>
-                        <i className="icon-mail" />
-                        <p>themesflat@gmail.com</p>
-                      </li>
-                      <li>
-                        <i className="icon-phone" />
-                        <p>315-666-6688</p>
-                      </li>
+                      {siteContact.email && (
+                        <li>
+                          <i className="icon-mail" />
+                          <p>
+                            <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
+                          </p>
+                        </li>
+                      )}
+                      {siteContact.phone && (
+                        <li>
+                          <i className="icon-phone" />
+                          <p>
+                            <a href={telHref(siteContact.phone)} dir="ltr">
+                              {siteContact.phone}
+                            </a>
+                          </p>
+                        </li>
+                      )}
                     </ul>
                     <ul
                       className={`tf-social-icon  ${

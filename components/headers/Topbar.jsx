@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
 import {useTranslations} from "next-intl";
+import { siteContact, telHref } from "@/data/siteContact";
 
 export default function Topbar() {
   const t = useTranslations("nav");
@@ -11,16 +12,29 @@ export default function Topbar() {
       <div className="container">
         <div className="tf-topbar_wrap d-flex align-items-center justify-content-center justify-content-xl-between">
           <ul className="topbar-left">
-            <li>
-              <a className="text-caption-1 text-white" href="tel:315-666-6688">
-                315-666-6688
-              </a>
-            </li>
-            <li>
-              <a className="text-caption-1 text-white" href="#">
-                fit@gmail.com
-              </a>
-            </li>
+            {siteContact.phone && (
+              <li>
+                <a
+                  className="text-caption-1 text-white"
+                  href={telHref(siteContact.phone)}
+                  dir="ltr"
+                >
+                  {siteContact.phone}
+                </a>
+              </li>
+            )}
+            {siteContact.email && (
+              <li>
+                {/* Was href="#", so tapping the address in the topbar did
+                    nothing at all. */}
+                <a
+                  className="text-caption-1 text-white"
+                  href={`mailto:${siteContact.email}`}
+                >
+                  {siteContact.email}
+                </a>
+              </li>
+            )}
             <li>
               <Link
                 className="text-caption-1 text-white text-decoration-underline"

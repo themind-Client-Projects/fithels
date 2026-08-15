@@ -2,6 +2,7 @@
 import React, { useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { useTranslations } from "next-intl";
+import { siteContact, telHref } from "@/data/siteContact";
 
 export default function Contact2() {
   const formRef = useRef();
@@ -116,27 +117,38 @@ export default function Contact2() {
           </div>
           <div className="right">
             <h4>{t("info")}</h4>
-            <div className="mb_20">
-              <div className="text-title mb_8">{t("phoneTitle")}</div>
-              <p className="text-secondary">{t("phoneDesc")}</p>
-            </div>
-            <div className="mb_20">
-              <div className="text-title mb_8">{t("emailTitle")}</div>
-              <p className="text-secondary">{t("emailDesc")}</p>
-            </div>
-            <div className="mb_20">
-              <div className="text-title mb_8">{t("addressTitle")}</div>
-              <p className="text-secondary">{t("addressDesc")}</p>
-            </div>
-            <div>
-              <div className="text-title mb_8">{t("openTimeTitle")}</div>
-              <p className="mb_4 open-time">
-                <span className="text-secondary">{t("openTimeDesc1").split(':')[0]}:</span> {t("openTimeDesc1").split(':').slice(1).join(':')}
-              </p>
-              <p className="open-time">
-                <span className="text-secondary">{t("openTimeDesc2").split(':')[0]}:</span> {t("openTimeDesc2").split(':').slice(1).join(':')}
-              </p>
-            </div>
+            {/* Read from data/siteContact.js, not from the message files: the
+                translations carried the template's US demo data, so the Arabic
+                page advertised a North Carolina address and a +1 number. Rows
+                stay hidden until real values are configured. */}
+            {siteContact.phone && (
+              <div className="mb_20">
+                <div className="text-title mb_8">{t("phoneTitle")}</div>
+                <p className="text-secondary" dir="ltr">
+                  <a href={telHref(siteContact.phone)}>{siteContact.phone}</a>
+                </p>
+              </div>
+            )}
+            {siteContact.email && (
+              <div className="mb_20">
+                <div className="text-title mb_8">{t("emailTitle")}</div>
+                <p className="text-secondary">
+                  <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
+                </p>
+              </div>
+            )}
+            {siteContact.address && (
+              <div className="mb_20">
+                <div className="text-title mb_8">{t("addressTitle")}</div>
+                <p className="text-secondary">{siteContact.address}</p>
+              </div>
+            )}
+            {siteContact.openingHours && (
+              <div>
+                <div className="text-title mb_8">{t("openTimeTitle")}</div>
+                <p className="open-time">{siteContact.openingHours}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
