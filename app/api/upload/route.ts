@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getAuthUser } from "@/lib/auth-utils";
 
 /**
@@ -26,6 +26,19 @@ export async function POST(request: NextRequest) {
     }
     if (user.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Storage env vars are absent on a freshly created deployment. Say so
+    // explicitly instead of letting the client constructor throw into the
+    // generic 500 below, which gave the admin no idea what to fix.
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        {
+          error: "Image storage is not configured on this deployment.",
+          reason: "STORAGE_NOT_CONFIGURED",
+        },
+        { status: 503 }
+      );
     }
 
     // `formData()` throws a TypeError when the request is not multipart, which
