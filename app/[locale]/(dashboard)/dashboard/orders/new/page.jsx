@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function CreateOrderPage() {
   // Shared formatter so staff see the same figures as the storefront.
-  const formatCurrency = (a) => formatMoney(a, "USD");
+  const formatCurrency = (a) => formatMoney(a, "IQD");
   const router = useRouter();
   const params = useParams();
   const locale = params?.locale || "ar";

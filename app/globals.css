@@ -154,10 +154,25 @@
    Base Styles
    ======================================== */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Wrapped in @layer base deliberately.
+ *
+ * Tailwind v4 emits its utilities inside `@layer utilities`, and UNLAYERED css
+ * beats layered css in the cascade no matter how specific the layered rule is.
+ * While this reset sat outside a layer it silently defeated every Tailwind
+ * padding and margin utility in the app: `px-4` on the dashboard inputs
+ * computed to 0, so the text sat flush against the border, and 22 of the 70
+ * elements carrying a spacing class on a single dashboard page were rendering
+ * with none of it.
+ *
+ * Inside `@layer base` the reset still normalises unstyled elements, but any
+ * explicit utility now wins — which is what every `p-*`/`m-*` in this codebase
+ * has been assuming all along. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 body {
@@ -166,6 +181,15 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* The account dropdown and the mobile off-canvas are parked off-screen to the
+     left while closed. They are only visibility:hidden, so they still counted
+     toward the document's scroll width and the storefront carried a horizontal
+     scrollbar (1370px of scroll in a 1265px viewport).
+
+     `clip` rather than `hidden`: `overflow-x: hidden` turns the body into a
+     scroll container, which silently breaks `position: sticky` descendants —
+     and the header is sticky. `clip` crops without creating one. */
+  overflow-x: clip;
 }
 
 /* RTL support */
@@ -330,4 +354,26 @@ body {
 
 .btn-confirm-order:disabled {
   cursor: not-allowed;
+}
+
+/* ── Pinned (sticky) table column ──────────────────────────────────────────
+   The actions column is pinned to the inline-end edge so it stays reachable
+   when a dashboard table is wider than the viewport. A pinned cell has other
+   cells scrolling underneath it, so its background MUST be opaque — with the
+   semi-transparent `bg-muted/30` it started with, the header read as
+   "الإجراءاتالحالة" because the column behind it showed straight through.
+
+   color-mix reproduces exactly what muted/30 and muted/40 composite to over
+   the card's white, so the pinned cells are indistinguishable from the rest of
+   the row until they actually overlap something. */
+.tbl-pin-head {
+  background-color: color-mix(in oklab, var(--muted) 30%, #fff);
+}
+
+.tbl-pin-cell {
+  background-color: #fff;
+}
+
+tr:hover > .tbl-pin-cell {
+  background-color: color-mix(in oklab, var(--muted) 40%, #fff);
 }

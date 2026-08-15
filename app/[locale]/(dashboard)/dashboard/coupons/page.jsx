@@ -87,9 +87,9 @@ export default function CouponsPage() {
       accessorKey: "value",
       cell: (row) => (
         <span className="font-semibold">
-          {row.type === "PERCENT" ? `${row.value}%` : formatMoney(row.value, "USD")}
+          {row.type === "PERCENT" ? `${row.value}%` : formatMoney(row.value, "IQD")}
           {row.type === "PERCENT" && row.maxDiscount
-            ? ` (بحد أقصى ${formatMoney(row.maxDiscount, "USD")})`
+            ? ` (بحد أقصى ${formatMoney(row.maxDiscount, "IQD")})`
             : ""}
         </span>
       ),
@@ -97,7 +97,7 @@ export default function CouponsPage() {
     {
       header: "الحد الأدنى للسلة",
       accessorKey: "minSubtotal",
-      cell: (row) => (row.minSubtotal ? formatMoney(row.minSubtotal, "USD") : "—"),
+      cell: (row) => (row.minSubtotal ? formatMoney(row.minSubtotal, "IQD") : "—"),
     },
     {
       header: "الاستخدام",

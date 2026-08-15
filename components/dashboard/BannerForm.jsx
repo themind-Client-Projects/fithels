@@ -190,7 +190,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               value={formData.titleEn}
               onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
               placeholder="e.g: Summer Collection"
-              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
               dir="ltr"
             />
           </div>
@@ -214,7 +214,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               value={formData.btnTextEn}
               onChange={(e) => setFormData({ ...formData, btnTextEn: e.target.value })}
               placeholder="Shop Now"
-              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
               dir="ltr"
             />
           </div>
@@ -228,7 +228,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               value={formData.link}
               onChange={(e) => setFormData({ ...formData, link: e.target.value })}
               placeholder="/shop-default-grid"
-              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
               dir="ltr"
               required
             />
@@ -240,24 +240,28 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               type="number"
               value={formData.order}
               onChange={(e) => setFormData({ ...formData, order: e.target.value })}
-              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              // Digits read left-to-right. Without this the number sat against
+              // the opposite edge from the URL field beside it in the same row.
+              dir="ltr"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-2 p-4 bg-muted/20 rounded-xl border border-border/50">
-          <div className="space-y-0.5">
+        <div className="mt-2 flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">
+          <div className="min-w-0 space-y-0.5">
             <Label className="text-sm font-bold">تفعيل البانر</Label>
             <p className="text-xs text-muted-foreground">هل ترغب بعرض هذا البانر في الموقع؟</p>
           </div>
           <Switch
+            className="shrink-0"
             checked={formData.isActive}
             onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3 mt-8 pt-4 border-t border-border/50">
+      <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-border/50 pt-4">
         <Button
           type="button"
           variant="outline"

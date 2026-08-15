@@ -163,16 +163,32 @@ export default function DataTable({
       )}
 
       {/* Table Structure */}
+      {/* No extra overflow wrapper here: the Table primitive already renders its
+          own `overflow-x-auto` container. Nesting a second one created two
+          scroll areas, only the inner of which actually scrolled — and it made
+          the containing block for the sticky actions column ambiguous. */}
       <div className="rounded-xl border border-border/60 bg-white overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="hover:bg-transparent">
-                {columns.map((col, index) => (
-                  <TableHead key={index} className="whitespace-nowrap text-sm !px-8 !py-5 text-start font-bold">
-                    {col.header}
-                  </TableHead>
-                ))}
+                {columns.map((col, index) => {
+                  // The last column is always the actions cell. It is pinned to
+                  // the inline-end edge so it stays reachable when the table is
+                  // wider than the viewport — at 1024px this table needed
+                  // 1288px, which put the edit/delete buttons 568px off-screen
+                  // with no way to scroll to them.
+                  const isActions = index === columns.length - 1;
+                  return (
+                    <TableHead
+                      key={index}
+                      className={`whitespace-nowrap px-4 py-4 text-start text-sm font-bold xl:!px-8 xl:!py-5 ${
+                        isActions ? "tbl-pin-head sticky end-0 z-20 border-s border-border/60" : ""
+                      }`}
+                    >
+                      {col.header}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,20 +226,29 @@ export default function DataTable({
                 currentData.map((row, rowIndex) => (
                   <TableRow 
                     key={rowIndex} 
-                    className={`transition-colors hover:bg-muted/40 ${onRowClick ? "cursor-pointer" : ""}`}
+                    className={`group/row transition-colors hover:bg-muted/40 ${onRowClick ? "cursor-pointer" : ""}`}
                     onClick={() => onRowClick && onRowClick(row)}
                   >
-                    {columns.map((col, colIndex) => (
-                      <TableCell key={colIndex} className="whitespace-nowrap !px-8 !py-6 text-start align-middle">
-                        {col.cell ? col.cell({ row }) : getNestedValue(row, col.accessorKey)}
-                      </TableCell>
-                    ))}
+                    {columns.map((col, colIndex) => {
+                      const isActions = colIndex === columns.length - 1;
+                      return (
+                        <TableCell
+                          key={colIndex}
+                          className={`whitespace-nowrap px-4 py-4 text-start align-middle xl:!px-8 xl:!py-6 ${
+                            isActions
+                              ? "tbl-pin-cell sticky end-0 z-10 border-s border-border/60 transition-colors"
+                              : ""
+                          }`}
+                        >
+                          {col.cell ? col.cell({ row }) : getNestedValue(row, col.accessorKey)}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </div>
       </div>
 
       {/* Pagination Footer */}

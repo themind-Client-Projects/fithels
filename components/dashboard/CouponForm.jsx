@@ -120,7 +120,7 @@ export default function CouponForm({ coupon, onSuccess, onCancel }) {
               placeholder="SUMMER20"
               dir="ltr"
               required
-              className={`${inputClass} text-left ${invalid("code")}`}
+              className={`${inputClass} text-start ${invalid("code")}`}
             />
           </div>
 
@@ -265,21 +265,22 @@ export default function CouponForm({ coupon, onSuccess, onCancel }) {
           </div>
         </div>
 
-        <div className="mt-2 flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 p-4">
-          <div className="space-y-0.5">
+        <div className="mt-2 flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">
+          <div className="min-w-0 space-y-0.5">
             <Label className="text-sm font-bold">تفعيل الكوبون</Label>
             <p className="text-xs text-muted-foreground">
               الكوبون المعطّل يُرفض عند الدفع فوراً.
             </p>
           </div>
           <Switch
+            className="shrink-0"
             checked={form.isActive}
             onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked }))}
           />
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-end gap-3 border-t border-border/50 pt-4">
+      <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-border/50 pt-4">
         <Button
           type="button"
           variant="outline"

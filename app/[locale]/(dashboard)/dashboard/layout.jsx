@@ -94,11 +94,18 @@ export default function DashboardLayout({ children }) {
     <PermissionProvider permissions={permissions}>
       <SidebarProvider>
         <DashboardSidebar />
-        <SidebarInset style={{ backgroundColor: "#f8f9fa" }}>
+        {/* min-w-0 all the way down.
+            A flex child defaults to min-width:auto, which refuses to shrink
+            below its content — so next to the 256px sidebar this inset stayed
+            at the full viewport width and the pair overflowed by exactly the
+            sidebar's width. On a 1024px screen the page gained a horizontal
+            scrollbar and the inline-end of every table (the actions column)
+            sat off-screen until the admin scrolled sideways to find it. */}
+        <SidebarInset className="min-w-0" style={{ backgroundColor: "#f8f9fa" }}>
           <DashboardTopNav />
-          <div className="flex-1 flex flex-col overflow-auto">
-            <main className="flex-1 w-full" style={{ padding: "2.5rem 2rem" }}>
-              <div className="mx-auto" style={{ maxWidth: "1280px" }}>
+          <div className="flex min-w-0 flex-1 flex-col overflow-auto">
+            <main className="w-full min-w-0 flex-1" style={{ padding: "2.5rem 2rem" }}>
+              <div className="mx-auto w-full min-w-0" style={{ maxWidth: "1280px" }}>
                 {children}
               </div>
             </main>

@@ -78,7 +78,7 @@ export default function PageContentForm({ page, onSuccess, onCancel }) {
             value={formData.slug}
             onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
             placeholder="about"
-            className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
+            className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
             dir="ltr"
             disabled={!!page?.id}
             required
@@ -104,7 +104,7 @@ export default function PageContentForm({ page, onSuccess, onCancel }) {
               value={formData.titleEn}
               onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
               placeholder="About Us"
-              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
               dir="ltr"
               required
             />
@@ -129,24 +129,25 @@ export default function PageContentForm({ page, onSuccess, onCancel }) {
             value={formData.contentEn}
             onChange={(e) => setFormData({ ...formData, contentEn: e.target.value })}
             placeholder="Page content here (supports HTML)..."
-            className="min-h-[150px] p-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-left leading-relaxed"
+            className="min-h-[150px] p-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start leading-relaxed"
             dir="ltr"
           />
         </div>
 
-        <div className="flex items-center justify-between mt-2 p-4 bg-muted/20 rounded-xl border border-border/50">
-          <div className="space-y-0.5">
+        <div className="mt-2 flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">
+          <div className="min-w-0 space-y-0.5">
             <Label className="text-sm font-bold">تفعيل الصفحة</Label>
             <p className="text-xs text-muted-foreground">هل ترغب بعرض هذه الصفحة في الموقع؟</p>
           </div>
           <Switch
+            className="shrink-0"
             checked={formData.isActive}
             onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3 mt-8 pt-4 border-t border-border/50">
+      <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-border/50 pt-4">
         <Button
           type="button"
           variant="outline"

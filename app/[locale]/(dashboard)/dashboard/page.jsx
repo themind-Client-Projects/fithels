@@ -47,7 +47,7 @@ export default function DashboardOverviewPage() {
   // Shared formatter — these four files each had their own copy that
   // hardcoded $ and en-US, so the dashboard showed a different figure
   // than the storefront for the same order.
-  const formatCurrency = (amount) => formatMoney(amount, "USD");
+  const formatCurrency = (amount) => formatMoney(amount, "IQD");
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("ar-SA", {

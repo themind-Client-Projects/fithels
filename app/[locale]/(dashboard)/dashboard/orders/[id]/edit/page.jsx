@@ -223,7 +223,7 @@ export default function EditOrderPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("total")}</span>
-                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{formatMoney(order.total, "USD")}</span>
+                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{formatMoney(order.total, "IQD")}</span>
               </div>
             </div>
           </div>
