@@ -74,6 +74,17 @@ model Product {
   slug       String      @unique
   descEn     String?
   descAr     String?
+  /// Per-product sizing notes shown under the size guide on the product page.
+  /// Optional: the page always renders the shop-wide EU/UK/US conversion table,
+  /// and this only adds anything specific to the shoe ("runs small, take a size
+  /// up"). Null means the table is shown on its own.
+  sizeGuideEn String?
+  sizeGuideAr String?
+  /// Delivery and returns copy for this product. Optional, and the section is
+  /// HIDDEN when it is empty rather than falling back to invented boilerplate —
+  /// a shipping promise the shop has not actually made is worse than no section.
+  deliveryEn String?
+  deliveryAr String?
   price      Float
   salePrice  Float?
   images     String[]

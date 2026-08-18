@@ -19,6 +19,10 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [titleAr, setTitleAr] = useState(product?.titleAr || "");
   const [descEn, setDescEn] = useState(product?.descEn || "");
   const [descAr, setDescAr] = useState(product?.descAr || "");
+  const [sizeGuideEn, setSizeGuideEn] = useState(product?.sizeGuideEn || "");
+  const [sizeGuideAr, setSizeGuideAr] = useState(product?.sizeGuideAr || "");
+  const [deliveryEn, setDeliveryEn] = useState(product?.deliveryEn || "");
+  const [deliveryAr, setDeliveryAr] = useState(product?.deliveryAr || "");
   const [price, setPrice] = useState(product?.price?.toString() || "");
   const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
@@ -144,6 +148,10 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       titleAr,
       descEn,
       descAr,
+      sizeGuideEn,
+      sizeGuideAr,
+      deliveryEn,
+      deliveryAr,
       price,
       salePrice: salePrice || null,
       categoryId,
@@ -234,6 +242,32 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
               rows={3}
             />
           </div>
+          {/* Both optional. The product page always shows the shop-wide size
+              conversion table, so this only adds notes specific to the shoe; and
+              the delivery section is hidden entirely when left blank rather than
+              falling back to boilerplate the shop has not committed to. */}
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="sizeGuideEn" className="text-start text-sm font-bold text-foreground">{t("sizeGuideEn")}</Label>
+            <Textarea
+              id="sizeGuideEn"
+              value={sizeGuideEn}
+              onChange={(e) => setSizeGuideEn(e.target.value)}
+              placeholder="e.g. Runs small — we suggest taking one size up"
+              className="!px-4 !text-start py-3 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              rows={2}
+            />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="deliveryEn" className="text-start text-sm font-bold text-foreground">{t("deliveryEn")}</Label>
+            <Textarea
+              id="deliveryEn"
+              value={deliveryEn}
+              onChange={(e) => setDeliveryEn(e.target.value)}
+              placeholder="Delivery and returns for this product"
+              className="!px-4 !text-start py-3 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              rows={3}
+            />
+          </div>
         </TabsContent>
         <TabsContent value="ar" className="flex flex-col gap-6 mt-6">
           <div className="flex flex-col gap-2.5" dir="rtl">
@@ -254,6 +288,28 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
               value={descAr}
               onChange={(e) => setDescAr(e.target.value)}
               placeholder="وصف المنتج بالعربية"
+              className="!px-4 !text-start py-3 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              rows={3}
+            />
+          </div>
+          <div className="flex flex-col gap-2.5" dir="rtl">
+            <Label htmlFor="sizeGuideAr" className="text-start text-sm font-bold text-foreground">{t("sizeGuideAr")}</Label>
+            <Textarea
+              id="sizeGuideAr"
+              value={sizeGuideAr}
+              onChange={(e) => setSizeGuideAr(e.target.value)}
+              placeholder="مثال: المقاس صغير قليلًا — ننصح باختيار مقاس أكبر"
+              className="!px-4 !text-start py-3 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              rows={2}
+            />
+          </div>
+          <div className="flex flex-col gap-2.5" dir="rtl">
+            <Label htmlFor="deliveryAr" className="text-start text-sm font-bold text-foreground">{t("deliveryAr")}</Label>
+            <Textarea
+              id="deliveryAr"
+              value={deliveryAr}
+              onChange={(e) => setDeliveryAr(e.target.value)}
+              placeholder="تفاصيل التوصيل والإرجاع لهذا المنتج"
               className="!px-4 !text-start py-3 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
               rows={3}
             />

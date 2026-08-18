@@ -21,6 +21,26 @@ export const CANONICAL_SIZES: readonly string[] = [
   "42",
 ];
 
+/**
+ * EU → UK → US conversion for the size guide.
+ *
+ * Kept as data rather than markup so the table and the size pills cannot drift
+ * apart: the EU column is exactly CANONICAL_SIZES. Women's shoe sizing, which is
+ * what this shop sells.
+ */
+export type SizeConversion = { eu: string; uk: string; us: string };
+
+export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
+  { eu: "35", uk: "2", us: "4" },
+  { eu: "36", uk: "3", us: "5" },
+  { eu: "37", uk: "4", us: "6" },
+  { eu: "38", uk: "5", us: "7" },
+  { eu: "39", uk: "6", us: "8" },
+  { eu: "40", uk: "7", us: "9" },
+  { eu: "41", uk: "8", us: "10" },
+  { eu: "42", uk: "9", us: "11" },
+];
+
 export type SizeOption = {
   /** The size label, exactly as it is stored on the product. */
   size: string;

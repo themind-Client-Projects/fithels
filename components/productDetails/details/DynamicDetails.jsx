@@ -1,11 +1,21 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { resolveColor } from "@/lib/products/colors";
 import { buildSizeOptions } from "@/lib/products/sizes";
+import {
+  parseStoredSelections,
+  selectionStorageKey,
+} from "@/lib/products/selection";
+import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
 
 /**
  * Product detail.
@@ -23,31 +33,98 @@ import { buildSizeOptions } from "@/lib/products/sizes";
  * entered their details.
  */
 export default function DynamicDetails({ product, locale = "ar" }) {
-  const router = useRouter();
   const ar = locale === "ar";
 
   const [activeImage, setActiveImage] = useState(product.images?.[0] || "");
   const [activeColor, setActiveColor] = useState(product.colors?.[0] || "");
-  /** Rows of { size, color, quantity } the shopper has chosen. */
-  const [selections, setSelections] = useState([]);
   const [notice, setNotice] = useState("");
 
   const { addVariantsToCart } = useContextElement();
 
   const title = ar ? product.titleAr : product.titleEn;
-  const desc = ar ? product.descAr : product.descEn;
   const hasDiscount = product.salePrice && product.salePrice < product.price;
   const unitPrice = product.salePrice || product.price;
+  const stock = Number(product.stock) || 0;
+  const inStock = stock > 0;
 
   const sizeOptions = useMemo(
     () => buildSizeOptions(product.sizes),
     [product.sizes]
   );
 
+  const storageKey = selectionStorageKey(product.slug);
+
+  /**
+   * Restore the in-progress selection after a reload, without a hydration
+   * mismatch.
+   *
+   * Reading sessionStorage during render would make the client's first render
+   * disagree with the server HTML, which React reports as a hydration error. An
+   * effect calling setState would dodge that, but it queues a second render on
+   * every visit and trips react-hooks/set-state-in-effect. useSyncExternalStore
+   * is the supported way to read a browser-only store: it serves `null` for the
+   * server render and during hydration, then swaps to the real value once
+   * hydration has committed.
+   *
+   * getSnapshot returns the RAW string on purpose — React requires it to be
+   * referentially stable between calls, and a freshly parsed array never is. The
+   * parsing happens in the memo below instead.
+   */
+  const subscribeToStorage = useCallback((onStoreChange) => {
+    window.addEventListener("storage", onStoreChange);
+    return () => window.removeEventListener("storage", onStoreChange);
+  }, []);
+
+  const readStorage = useCallback(() => {
+    try {
+      return window.sessionStorage.getItem(storageKey);
+    } catch {
+      // Private browsing and blocked storage should cost the shopper nothing.
+      return null;
+    }
+  }, [storageKey]);
+
+  const storedRaw = useSyncExternalStore(
+    subscribeToStorage,
+    readStorage,
+    () => null
+  );
+
+  const restored = useMemo(
+    () =>
+      parseStoredSelections(storedRaw, {
+        sizes: product.sizes,
+        colors: product.colors,
+        stock,
+      }),
+    [storedRaw, product.sizes, product.colors, stock]
+  );
+
+  /**
+   * `null` until the shopper touches a picker; their edits win from then on.
+   * Keeping the two apart is what lets the restored value arrive after hydration
+   * without overwriting anything already clicked.
+   */
+  const [edited, setEdited] = useState(null);
+  const selections = edited ?? restored;
+
   const totalUnits = selections.reduce((sum, row) => sum + row.quantity, 0);
-  const stock = Number(product.stock) || 0;
   const remaining = Math.max(0, stock - totalUnits);
-  const inStock = stock > 0;
+
+  // Write-through. No setState here, so this stays a pure side effect. The
+  // `storage` event does not fire in the document that wrote the value, so this
+  // cannot feed back into the subscription above.
+  useEffect(() => {
+    try {
+      if (selections.length) {
+        window.sessionStorage.setItem(storageKey, JSON.stringify(selections));
+      } else {
+        window.sessionStorage.removeItem(storageKey);
+      }
+    } catch {
+      /* storage unavailable — the page still works, it just will not remember */
+    }
+  }, [storageKey, selections]);
 
   const keyOf = (size, color) => `${size}::${color ?? ""}`;
 
@@ -70,7 +147,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
     // of what is currently selected.
     if (index !== -1) {
       setNotice("");
-      setSelections((prev) => prev.filter((_, i) => i !== index));
+      setEdited(selections.filter((_, i) => i !== index));
       return;
     }
 
@@ -80,10 +157,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
     }
 
     setNotice("");
-    setSelections((prev) => [
-      ...prev,
-      { size, color: activeColor || null, quantity: 1 },
-    ]);
+    setEdited([...selections, { size, color: activeColor || null, quantity: 1 }]);
   };
 
   const changeQuantity = (index, delta) => {
@@ -95,7 +169,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
     // Stepping below one removes the row rather than leaving a zero behind.
     if (next < 1) {
       setNotice("");
-      setSelections((prev) => prev.filter((_, i) => i !== index));
+      setEdited(selections.filter((_, i) => i !== index));
       return;
     }
 
@@ -105,14 +179,16 @@ export default function DynamicDetails({ product, locale = "ar" }) {
     }
 
     setNotice("");
-    setSelections((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, quantity: next } : item))
+    setEdited(
+      selections.map((item, i) =>
+        i === index ? { ...item, quantity: next } : item
+      )
     );
   };
 
   const removeSelection = (index) => {
     setNotice("");
-    setSelections((prev) => prev.filter((_, i) => i !== index));
+    setEdited(selections.filter((_, i) => i !== index));
   };
 
   /**
@@ -153,23 +229,12 @@ export default function DynamicDetails({ product, locale = "ar" }) {
 
   const handleAddToCart = () => {
     if (!inStock || !requireSelection()) return;
-    // isModal opens the cart drawer, which is where "continue shopping" lives.
+    // isModal opens the cart drawer, which is where continue-shopping and the
+    // route to checkout both live.
     addVariantsToCart(cartSource, selections, { isModal: true });
-    setSelections([]);
-  };
-
-  /**
-   * Buy now routes through the cart rather than the old
-   * `/checkout?product=&qty=&size=&color=` express path. Those query params can
-   * only describe ONE size and ONE colour, so they cannot express a multi-row
-   * selection; the cart already carries one line per variant and the checkout
-   * already reads it.
-   */
-  const handleBuyNow = () => {
-    if (!inStock || !requireSelection()) return;
-    addVariantsToCart(cartSource, selections, { isModal: false });
-    setSelections([]);
-    router.push(`/${locale}/checkout`);
+    // Clearing also wipes the saved selection, via the write-through effect —
+    // the picks now live in the cart and should not come back on reload.
+    setEdited([]);
   };
 
   const selectedKeys = new Set(
@@ -328,19 +393,9 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                 )}
               </div>
 
-              {desc && (
-                <p
-                  style={{
-                    color: "#495057",
-                    lineHeight: "1.6",
-                    marginBottom: "32px",
-                    fontSize: "15px",
-                  }}
-                >
-                  {desc}
-                </p>
-              )}
-
+              {/* The description now lives in the accordion below the buy
+                  button, with the size guide and delivery, instead of pushing
+                  the pickers down the page. */}
               <hr style={{ borderColor: "#f1f3f5", margin: "24px 0" }} />
 
               {/* Colour — picks the colour that the next size click attaches to */}
@@ -681,29 +736,13 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                 </div>
               )}
 
-              <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
+              {/* Add to cart is the only action now. Buy It Now was removed: it
+                  bypassed the cart, and with several variants selectable there
+                  is no longer a single thing for it to buy — it had to add the
+                  rows to the cart first anyway, which is what this does. */}
+              <div style={{ marginBottom: "16px" }}>
                 <button
                   onClick={handleAddToCart}
-                  disabled={!inStock}
-                  style={{
-                    width: "100%",
-                    backgroundColor: "#fff",
-                    color: inStock ? "#111" : "#adb5bd",
-                    border: `1px solid ${inStock ? "#111" : "#ced4da"}`,
-                    padding: "16px 24px",
-                    fontSize: "14px",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    fontWeight: "700",
-                    borderRadius: "8px",
-                    cursor: inStock ? "pointer" : "not-allowed",
-                  }}
-                >
-                  {ar ? "أضف إلى السلة" : "Add to cart"}
-                </button>
-
-                <button
-                  onClick={handleBuyNow}
                   disabled={!inStock}
                   style={{
                     width: "100%",
@@ -726,9 +765,11 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                     if (inStock) e.currentTarget.style.backgroundColor = "#111";
                   }}
                 >
-                  {ar ? "اشتري الآن" : "Buy It Now"}
+                  {ar ? "أضف إلى السلة" : "Add to cart"}
                 </button>
               </div>
+
+              <ProductInfoAccordion product={product} locale={locale} />
             </div>
           </div>
         </div>
@@ -768,23 +809,6 @@ export default function DynamicDetails({ product, locale = "ar" }) {
           onClick={handleAddToCart}
           disabled={!inStock}
           style={{
-            flexShrink: 0,
-            background: "#fff",
-            color: inStock ? "#111" : "#adb5bd",
-            border: `1px solid ${inStock ? "#111" : "#ced4da"}`,
-            padding: "14px 16px",
-            fontSize: "13px",
-            fontWeight: "700",
-            borderRadius: "8px",
-            cursor: inStock ? "pointer" : "not-allowed",
-          }}
-        >
-          {ar ? "السلة" : "Cart"}
-        </button>
-        <button
-          onClick={handleBuyNow}
-          disabled={!inStock}
-          style={{
             flex: 1,
             backgroundColor: inStock ? "#111" : "#ced4da",
             color: "#fff",
@@ -799,7 +823,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
             transition: "background-color 0.3s ease",
           }}
         >
-          {ar ? "اشتري الآن" : "Buy It Now"}
+          {ar ? "أضف إلى السلة" : "Add to cart"}
         </button>
       </div>
     </section>

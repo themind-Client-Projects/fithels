@@ -67,6 +67,10 @@ export async function PUT(
       titleAr,
       descEn,
       descAr,
+      sizeGuideEn,
+      sizeGuideAr,
+      deliveryEn,
+      deliveryAr,
       price,
       salePrice,
       categoryId,
@@ -127,6 +131,12 @@ export async function PUT(
         ...(titleAr !== undefined && { titleAr }),
         ...(descEn !== undefined && { descEn }),
         ...(descAr !== undefined && { descAr }),
+        // `|| null` so clearing the textarea actually clears the column. Writing
+        // '' would leave the storefront rendering an empty accordion section.
+        ...(sizeGuideEn !== undefined && { sizeGuideEn: sizeGuideEn || null }),
+        ...(sizeGuideAr !== undefined && { sizeGuideAr: sizeGuideAr || null }),
+        ...(deliveryEn !== undefined && { deliveryEn: deliveryEn || null }),
+        ...(deliveryAr !== undefined && { deliveryAr: deliveryAr || null }),
         ...(parsedPrice !== undefined && { price: parsedPrice }),
         ...(parsedSalePrice !== undefined && { salePrice: parsedSalePrice }),
         ...(categoryId !== undefined && { categoryId }),

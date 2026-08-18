@@ -177,5 +177,9 @@
   "orderChangedElsewhere": "تم تعديل هذا الطلب من مكان آخر.",
   "reloadToContinue": "أعد تحميل الصفحة ثم حاول مجددًا.",
   "saveFailed": "تعذّر حفظ التعديلات.",
-  "connectionFailed": "تعذّر الاتصال بالخادم."
+  "connectionFailed": "تعذّر الاتصال بالخادم.",
+  "sizeGuideEn": "دليل المقاسات (إنجليزي)",
+  "sizeGuideAr": "دليل المقاسات (عربي)",
+  "deliveryEn": "التوصيل والإرجاع (إنجليزي)",
+  "deliveryAr": "التوصيل والإرجاع (عربي)"
 }

@@ -92,6 +92,10 @@ export async function POST(request: NextRequest) {
       titleAr,
       descEn,
       descAr,
+      sizeGuideEn,
+      sizeGuideAr,
+      deliveryEn,
+      deliveryAr,
       price,
       salePrice,
       categoryId,
@@ -150,6 +154,12 @@ export async function POST(request: NextRequest) {
         slug,
         descEn: descEn || null,
         descAr: descAr || null,
+        // Empty is stored as NULL, not '', so the storefront's "hide the section
+        // when there is nothing to say" check is a single falsy test.
+        sizeGuideEn: sizeGuideEn || null,
+        sizeGuideAr: sizeGuideAr || null,
+        deliveryEn: deliveryEn || null,
+        deliveryAr: deliveryAr || null,
         price: parsedPrice,
         salePrice: parsedSalePrice,
         categoryId,

@@ -177,5 +177,9 @@
   "orderChangedElsewhere": "This order was changed elsewhere.",
   "reloadToContinue": "Reload the page and try again.",
   "saveFailed": "Could not save your changes.",
-  "connectionFailed": "Could not reach the server."
+  "connectionFailed": "Could not reach the server.",
+  "sizeGuideEn": "Size guide (English)",
+  "sizeGuideAr": "Size guide (Arabic)",
+  "deliveryEn": "Delivery & returns (English)",
+  "deliveryAr": "Delivery & returns (Arabic)"
 }
