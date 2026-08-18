@@ -188,6 +188,14 @@ export async function POST(request: NextRequest) {
     let subtotal = 0
     const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
     const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
+    /**
+     * Units requested per product across ALL lines of this order.
+     *
+     * Stock is one counter per product, while a basket may now hold several
+     * lines of that product (different size or colour), so availability has to
+     * be judged on the sum.
+     */
+    const requestedByProduct = new Map<string, number>()
 
     // Validate the shapes before touching the database, so a malformed basket
     // costs nothing.
@@ -239,12 +247,33 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      if (product.stock < quantity) {
+      // Accumulate demand per PRODUCT, not per line.
+      //
+      // One product can legitimately appear on several lines now — the product
+      // page lets a shopper take size 38 and size 39 of the same shoe, and
+      // `Product.stock` is a single counter covering every size and colour.
+      // Checking each line against the untouched `product.stock` let two lines
+      // of one unit each both pass with only one unit in stock; the conditional
+      // decrement inside the transaction then refused the second line and the
+      // whole order rolled back as a 409 reading "one of the items just went out
+      // of stock", after the order row and coupon claim had already been
+      // written. Nothing had gone out of stock — the basket was never fulfillable
+      // and this check should have said so.
+      //
+      // This stays advisory: the conditional `updateMany` further down is what
+      // actually prevents overselling under concurrency. This only makes the
+      // rejection accurate and early.
+      const alreadyClaimed = requestedByProduct.get(productId) ?? 0
+      const totalRequested = alreadyClaimed + quantity
+
+      if (product.stock < totalRequested) {
         return noStoreJson(
           { error: `Insufficient stock for ${product.titleEn}. Available: ${product.stock}` },
           { status: 400 }
         )
       }
+
+      requestedByProduct.set(productId, totalRequested)
 
       const itemPrice = product.salePrice ?? product.price
       subtotal += itemPrice * quantity
@@ -257,8 +286,16 @@ export async function POST(request: NextRequest) {
         color: color || null,
       })
 
+      // The variant belongs in the label. Wayle's hosted page lists one row per
+      // line, so two sizes of the same shoe rendered as the same name twice with
+      // nothing to tell them apart. Labels take no part in the amount
+      // arithmetic, so this cannot disturb the sum Wayle validates.
+      const variantLabel = [size, color].filter(Boolean).join(" / ")
+
       lineItemSources.push({
-        label: product.titleAr || product.titleEn,
+        label: variantLabel
+          ? `${product.titleAr || product.titleEn} — ${variantLabel}`
+          : product.titleAr || product.titleEn,
         amountUsd: itemPrice * quantity,
         image: product.images?.[0] ?? null,
       })

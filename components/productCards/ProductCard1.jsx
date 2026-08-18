@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function ProductCard1({
   product,
@@ -15,18 +15,10 @@ export default function ProductCard1({
 }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
   const locale = useLocale();
-  const tShop = useTranslations("shop");
 
-  const {
-    setQuickAddItem,
-    addToWishlist,
-    isAddedtoWishlist,
-    addToCompareItem,
-    isAddedtoCompareItem,
-    setQuickViewItem,
-    addProductToCart,
-    isAddedToCartProducts,
-  } = useContextElement();
+  // Only quick view remains on the card; the wishlist, compare and add-to-cart
+  // handlers went with their buttons.
+  const { setQuickViewItem } = useContextElement();
 
   useEffect(() => {
     setCurrentImage(product.imgSrc);
@@ -192,32 +184,17 @@ export default function ProductCard1({
         ) : (
           ""
         )}
+        {/* Wishlist and compare were removed from the card deliberately, along
+            with the add-to-cart button.
+            Add-to-cart could not honour what it promised: a shoe has a size and
+            a colour, and the card has neither picker, so it added whichever
+            variant the fallback happened to choose. Buying now goes through the
+            product page, where the shopper picks the combinations they want.
+            Quick view is kept — it is the one action on the card that only
+            shows information rather than committing to a purchase.
+            The wishlist and compare features themselves are untouched; they are
+            still reachable from the quick view and quick add modals. */}
         <div className="list-product-btn">
-          <a
-            onClick={() => addToWishlist(product.id)}
-            className="box-icon wishlist btn-icon-action"
-          >
-            <span className="icon icon-heart" />
-            <span className="tooltip">
-              {isAddedtoWishlist(product.id)
-                ? "Already Wishlished"
-                : "Wishlist"}
-            </span>
-          </a>
-          <a
-            href="#compare"
-            data-bs-toggle="offcanvas"
-            aria-controls="compare"
-            onClick={() => addToCompareItem(product.id)}
-            className="box-icon compare btn-icon-action"
-          >
-            <span className="icon icon-gitDiff" />
-            <span className="tooltip">
-              {isAddedtoCompareItem(product.id)
-                ? "Already compared"
-                : "Compare"}
-            </span>
-          </a>
           <a
             href="#quickView"
             onClick={() => setQuickViewItem(product)}
@@ -227,27 +204,6 @@ export default function ProductCard1({
             <span className="icon icon-eye" />
             <span className="tooltip">Quick View</span>
           </a>
-        </div>
-        <div className="list-btn-main">
-          {product.addToCart == "Quick Add" ? (
-            <a
-              className="btn-main-product"
-              href="#quickAdd"
-              onClick={() => setQuickAddItem(product)}
-              data-bs-toggle="modal"
-            >
-              Quick Add
-            </a>
-          ) : (
-            <a
-              className="btn-main-product"
-              onClick={() => addProductToCart(product)}
-            >
-              {isAddedToCartProducts(product.id)
-                ? tShop("alreadyAdded")
-                : tShop("addToCart")}
-            </a>
-          )}
         </div>
       </div>
       <div className="card-product-info">

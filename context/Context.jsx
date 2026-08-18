@@ -113,6 +113,81 @@ export default function Context({ children }) {
     return true;
   };
 
+  /**
+   * Add several size/colour combinations of ONE product in a single update.
+   *
+   * `addProductToCart` cannot be called in a loop to do this. It reads
+   * `cartProducts` from the render closure, so every call in the same tick sees
+   * the state as it was BEFORE any of them ran: its duplicate check is blind to
+   * the lines its siblings just added, and each call queues its own
+   * `[...pre, item]`. Adding three sizes at once would therefore mis-detect
+   * duplicates rather than reject them.
+   *
+   * This does the whole batch inside ONE functional update, so each selection
+   * sees the lines added by the ones before it. It also MERGES quantities on an
+   * existing line instead of returning false — picking size 38 when 38 is
+   * already in the cart should raise the count, not silently do nothing. That
+   * differs from `addProductToCart` on purpose; that function's `false` return
+   * is a documented contract ReorderButton depends on, so it is left untouched.
+   *
+   * Quantities are floored to whole numbers here. The provider otherwise stores
+   * `qty` verbatim, and a string quantity would concatenate rather than add on
+   * the merge path below.
+   */
+  const addVariantsToCart = (source, selections, { isModal = true } = {}) => {
+    if (!source || typeof source !== "object") return false;
+    if (!Array.isArray(selections) || selections.length === 0) return false;
+
+    // Same catalogue guard as addProductToCart — a line without the real
+    // database id is rejected by /api/orders and poisons the persisted cart.
+    if (!source.dbId) {
+      console.warn(
+        "Ignoring add-to-cart for a product that is not in the catalogue:",
+        source.title ?? source.id
+      );
+      return false;
+    }
+
+    const cleaned = selections
+      .map((selection) => ({
+        size: selection?.size ?? null,
+        color: selection?.color ?? null,
+        quantity: Math.max(1, Math.floor(Number(selection?.quantity)) || 1),
+      }))
+      .filter((selection) => selection.quantity > 0);
+
+    if (!cleaned.length) return false;
+
+    setCartProducts((pre) => {
+      const next = [...pre];
+      for (const selection of cleaned) {
+        const lineKey = cartLineKey(source.id, selection.size, selection.color);
+        const index = next.findIndex((elm) => elm.lineKey === lineKey);
+        if (index === -1) {
+          next.push({
+            ...source,
+            quantity: selection.quantity,
+            selectedSize: selection.size,
+            selectedColor: selection.color,
+            lineKey,
+          });
+        } else {
+          next[index] = {
+            ...next[index],
+            quantity:
+              (Number(next[index].quantity) || 0) + selection.quantity,
+          };
+        }
+      }
+      return next;
+    });
+
+    if (isModal) {
+      openCartModal();
+    }
+    return true;
+  };
+
   const updateQuantity = (idOrKey, qty) => {
     // Immutable update. The old version mutated the item object held in state
     // and then reassigned it into a copied array, so the item's identity never
@@ -207,6 +282,7 @@ export default function Context({ children }) {
     setCartProducts,
     totalPrice,
     addProductToCart,
+    addVariantsToCart,
     isAddedToCartProducts,
     removeFromWishlist,
     addToWishlist,

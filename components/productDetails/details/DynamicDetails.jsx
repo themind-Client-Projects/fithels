@@ -1,63 +1,196 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { resolveColor } from "@/lib/products/colors";
+import { buildSizeOptions } from "@/lib/products/sizes";
 
+/**
+ * Product detail.
+ *
+ * The shopper builds a basket of (colour, size, quantity) rows for this one
+ * product before committing, so buying two sizes of the same colour — or the
+ * same size in two colours — is one trip through the page instead of several.
+ *
+ * IMPORTANT, and the reason the quantities are capped the way they are:
+ * `Product.stock` is a single Int covering EVERY size and colour
+ * (prisma/schema.prisma:84). There is no per-variant inventory in the schema.
+ * So the cap has to apply to the SUM of every selected row, not to each row —
+ * otherwise a product with one unit left would happily accept "size 38 x1 and
+ * size 39 x1" and the order would be rejected at checkout after the shopper had
+ * entered their details.
+ */
 export default function DynamicDetails({ product, locale = "ar" }) {
   const router = useRouter();
+  const ar = locale === "ar";
+
   const [activeImage, setActiveImage] = useState(product.images?.[0] || "");
-  const [quantity, setQuantity] = useState(1);
-  const [activeSize, setActiveSize] = useState(product.sizes?.[0] || "");
   const [activeColor, setActiveColor] = useState(product.colors?.[0] || "");
+  /** Rows of { size, color, quantity } the shopper has chosen. */
+  const [selections, setSelections] = useState([]);
+  const [notice, setNotice] = useState("");
 
-  const { addProductToCart } = useContextElement();
+  const { addVariantsToCart } = useContextElement();
 
-  const title = locale === "ar" ? product.titleAr : product.titleEn;
-  const desc = locale === "ar" ? product.descAr : product.descEn;
+  const title = ar ? product.titleAr : product.titleEn;
+  const desc = ar ? product.descAr : product.descEn;
   const hasDiscount = product.salePrice && product.salePrice < product.price;
+  const unitPrice = product.salePrice || product.price;
 
-  const handleBuyNow = () => {
-    // Redirect to simple checkout page with query params
-    const params = new URLSearchParams({
-      product: product.slug,
-      qty: quantity.toString(),
-      size: activeSize,
-      color: activeColor,
-    });
-    router.push(`/${locale}/checkout?${params.toString()}`);
+  const sizeOptions = useMemo(
+    () => buildSizeOptions(product.sizes),
+    [product.sizes]
+  );
+
+  const totalUnits = selections.reduce((sum, row) => sum + row.quantity, 0);
+  const stock = Number(product.stock) || 0;
+  const remaining = Math.max(0, stock - totalUnits);
+  const inStock = stock > 0;
+
+  const keyOf = (size, color) => `${size}::${color ?? ""}`;
+
+  const capMessage = ar
+    ? `لا يمكن اختيار أكثر من ${stock} قطعة — هذا كل المتوفر.`
+    : `You cannot pick more than ${stock} — that is all we have.`;
+
+  // Both handlers decide from the CURRENT `selections` before calling setState,
+  // rather than deciding inside the updater. A state updater has to be pure —
+  // React may run it more than once — so raising the "out of stock" notice from
+  // inside one would fire the message twice and make the guard order-dependent.
+  // These run from a click, one at a time, so reading state directly is sound.
+  const toggleSize = (size) => {
+    const key = keyOf(size, activeColor || null);
+    const index = selections.findIndex(
+      (row) => keyOf(row.size, row.color) === key
+    );
+
+    // Clicking a chosen size again removes it, so the grid doubles as the list
+    // of what is currently selected.
+    if (index !== -1) {
+      setNotice("");
+      setSelections((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    if (totalUnits >= stock) {
+      setNotice(capMessage);
+      return;
+    }
+
+    setNotice("");
+    setSelections((prev) => [
+      ...prev,
+      { size, color: activeColor || null, quantity: 1 },
+    ]);
+  };
+
+  const changeQuantity = (index, delta) => {
+    const row = selections[index];
+    if (!row) return;
+
+    const next = row.quantity + delta;
+
+    // Stepping below one removes the row rather than leaving a zero behind.
+    if (next < 1) {
+      setNotice("");
+      setSelections((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    if (totalUnits - row.quantity + next > stock) {
+      setNotice(capMessage);
+      return;
+    }
+
+    setNotice("");
+    setSelections((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, quantity: next } : item))
+    );
+  };
+
+  const removeSelection = (index) => {
+    setNotice("");
+    setSelections((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * The cart expects the card-shaped object the listing pages build, not the raw
+   * Prisma row: `id` must be the SLUG (cart line keys are built from it, so the
+   * detail page and the listing pages have to agree or the same variant becomes
+   * two lines), and `dbId` must be the real database id or the provider rejects
+   * the item outright and checkout never sees it.
+   */
+  const cartSource = useMemo(
+    () => ({
+      id: product.slug,
+      dbId: product.id,
+      title,
+      price: unitPrice,
+      oldPrice: hasDiscount ? product.price : null,
+      imgSrc: product.images?.[0] || "",
+      imgHover: product.images?.[1] || product.images?.[0] || "",
+      isOnSale: Boolean(hasDiscount),
+      sizes: product.sizes,
+      filterColor: product.colors,
+      inStock,
+    }),
+    [product, title, unitPrice, hasDiscount, inStock]
+  );
+
+  const requireSelection = () => {
+    if (selections.length === 0) {
+      setNotice(
+        ar
+          ? "اختر مقاسًا واحدًا على الأقل قبل المتابعة."
+          : "Pick at least one size before continuing."
+      );
+      return false;
+    }
+    return true;
   };
 
   const handleAddToCart = () => {
-    // Adding DB product shape mapped to Context expectation
-    const cartItem = {
-      id: product.id,
-      title: title,
-      price: product.salePrice || product.price,
-      oldPrice: hasDiscount ? product.price : null,
-      imgSrc: product.images?.[0],
-      quantity: quantity,
-      size: activeSize,
-      color: activeColor,
-    };
-    // The cart logic expects `addProductToCart(id, qty)` to find item in allProducts, 
-    // but since we bypass it, we might need to modify cart context later. 
-    // For now we just push.
-    // Wait, addProductToCart pulls from allProducts by ID. 
-    // Since we're doing simple checkout for "Buy It Now", that's the priority.
-    handleBuyNow(); 
+    if (!inStock || !requireSelection()) return;
+    // isModal opens the cart drawer, which is where "continue shopping" lives.
+    addVariantsToCart(cartSource, selections, { isModal: true });
+    setSelections([]);
   };
+
+  /**
+   * Buy now routes through the cart rather than the old
+   * `/checkout?product=&qty=&size=&color=` express path. Those query params can
+   * only describe ONE size and ONE colour, so they cannot express a multi-row
+   * selection; the cart already carries one line per variant and the checkout
+   * already reads it.
+   */
+  const handleBuyNow = () => {
+    if (!inStock || !requireSelection()) return;
+    addVariantsToCart(cartSource, selections, { isModal: false });
+    setSelections([]);
+    router.push(`/${locale}/checkout`);
+  };
+
+  const selectedKeys = new Set(
+    selections.map((row) => keyOf(row.size, row.color))
+  );
 
   return (
     <section className="flat-spacing">
       <div className="container">
         <div className="row">
-          {/* Images Section */}
+          {/* Images */}
           <div className="col-md-6 mb-4 mb-md-0">
             <div style={{ position: "sticky", top: "100px" }}>
-              <div style={{ borderRadius: "16px", overflow: "hidden", marginBottom: "16px", border: "1px solid #f1f3f5" }}>
+              <div
+                style={{
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  marginBottom: "16px",
+                  border: "1px solid #f1f3f5",
+                }}
+              >
                 {activeImage ? (
                   <Image
                     src={activeImage}
@@ -67,11 +200,24 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                     style={{ width: "100%", height: "auto", objectFit: "cover" }}
                   />
                 ) : (
-                  <div style={{ width: "100%", paddingBottom: "100%", backgroundColor: "#f8f9fa" }}></div>
+                  <div
+                    style={{
+                      width: "100%",
+                      paddingBottom: "100%",
+                      backgroundColor: "#f8f9fa",
+                    }}
+                  />
                 )}
               </div>
               {product.images?.length > 1 && (
-                <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "10px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    overflowX: "auto",
+                    paddingBottom: "10px",
+                  }}
+                >
                   {product.images.map((img, i) => (
                     <button
                       key={i}
@@ -80,12 +226,15 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                         width: "80px",
                         height: "80px",
                         flexShrink: 0,
-                        border: activeImage === img ? "2px solid #111" : "1px solid #e9ecef",
+                        border:
+                          activeImage === img
+                            ? "2px solid #111"
+                            : "1px solid #e9ecef",
                         borderRadius: "8px",
                         overflow: "hidden",
                         padding: 0,
                         background: "none",
-                        cursor: "pointer"
+                        cursor: "pointer",
                       }}
                     >
                       <Image
@@ -93,7 +242,11 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                         alt={`${title} - ${i + 1}`}
                         width={80}
                         height={80}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     </button>
                   ))}
@@ -102,73 +255,144 @@ export default function DynamicDetails({ product, locale = "ar" }) {
             </div>
           </div>
 
-          {/* Details Section */}
+          {/* Details */}
           <div className="col-md-6">
             <div style={{ padding: "0 15px" }}>
               {product.category && (
-                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#6c757d", marginBottom: "8px", fontWeight: "600" }}>
-                  {locale === "ar" ? product.category.nameAr : product.category.nameEn}
+                <div
+                  style={{
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    color: "#6c757d",
+                    marginBottom: "8px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {ar ? product.category.nameAr : product.category.nameEn}
                 </div>
               )}
-              
-              <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#1a1a2e", marginBottom: "16px" }}>
+
+              <h1
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "700",
+                  color: "#1a1a2e",
+                  marginBottom: "16px",
+                }}
+              >
                 {title}
               </h1>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                <span style={{ fontSize: "24px", fontWeight: "700", color: hasDiscount ? "#dc2626" : "#1a1a2e" }}>
-                  <CurrencyFormatter price={product.salePrice || product.price} />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "24px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "700",
+                    color: hasDiscount ? "#dc2626" : "#1a1a2e",
+                  }}
+                >
+                  <CurrencyFormatter price={unitPrice} />
                 </span>
                 {hasDiscount && (
-                  <span style={{ fontSize: "18px", color: "#6c757d", textDecoration: "line-through" }}>
-                    <CurrencyFormatter price={product.price} />
-                  </span>
-                )}
-                {hasDiscount && (
-                  <span style={{ background: "#dc2626", color: "#fff", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>
-                    SALE
-                  </span>
+                  <>
+                    <span
+                      style={{
+                        fontSize: "18px",
+                        color: "#6c757d",
+                        textDecoration: "line-through",
+                      }}
+                    >
+                      <CurrencyFormatter price={product.price} />
+                    </span>
+                    <span
+                      style={{
+                        background: "#dc2626",
+                        color: "#fff",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      SALE
+                    </span>
+                  </>
                 )}
               </div>
 
               {desc && (
-                <p style={{ color: "#495057", lineHeight: "1.6", marginBottom: "32px", fontSize: "15px" }}>
+                <p
+                  style={{
+                    color: "#495057",
+                    lineHeight: "1.6",
+                    marginBottom: "32px",
+                    fontSize: "15px",
+                  }}
+                >
                   {desc}
                 </p>
               )}
 
               <hr style={{ borderColor: "#f1f3f5", margin: "24px 0" }} />
 
-              {/* Colors */}
+              {/* Colour — picks the colour that the next size click attaches to */}
               {product.colors?.length > 0 && (
                 <div style={{ marginBottom: "24px" }}>
-                  <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "12px", color: "#1a1a2e" }}>
-                    {locale === "ar" ? "اللون:" : "Color:"} <span style={{ color: "#6c757d", fontWeight: "normal" }}>{activeColor}</span>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "12px",
+                      color: "#1a1a2e",
+                    }}
+                  >
+                    {ar ? "اللون:" : "Color:"}{" "}
+                    <span style={{ color: "#6c757d", fontWeight: "normal" }}>
+                      {activeColor}
+                    </span>
                   </div>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    {product.colors.map(color => {
+                    {product.colors.map((color) => {
                       // The name alone left the shopper guessing what "بيج" or
                       // "وردي داكن" actually looks like; the dot answers that.
                       const swatch = resolveColor(color);
                       const isActive = activeColor === color;
+                      // How many units of this colour are already chosen, so the
+                      // shopper can see their basket while switching colours.
+                      const chosen = selections
+                        .filter((row) => row.color === color)
+                        .reduce((sum, row) => sum + row.quantity, 0);
                       return (
                         <button
                           key={color}
-                          onClick={() => setActiveColor(color)}
+                          onClick={() => {
+                            setActiveColor(color);
+                            setNotice("");
+                          }}
                           aria-pressed={isActive}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "8px",
                             padding: "8px 16px",
-                            border: isActive ? "2px solid #111" : "1px solid #ced4da",
+                            border: isActive
+                              ? "2px solid #111"
+                              : "1px solid #ced4da",
                             borderRadius: "40px",
                             background: isActive ? "#f8f9fa" : "#fff",
                             color: "#111",
                             fontSize: "14px",
                             fontWeight: isActive ? "600" : "400",
                             cursor: "pointer",
-                            transition: "all 0.2s"
+                            transition: "all 0.2s",
                           }}
                         >
                           <span
@@ -185,6 +409,25 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                             }}
                           />
                           {color}
+                          {chosen > 0 && (
+                            <span
+                              style={{
+                                background: "#111",
+                                color: "#fff",
+                                borderRadius: "999px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                minWidth: "18px",
+                                height: "18px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0 5px",
+                              }}
+                            >
+                              {chosen}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -192,99 +435,308 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                 </div>
               )}
 
-              {/* Sizes */}
-              {product.sizes?.length > 0 && (
-                <div style={{ marginBottom: "24px" }}>
-                  <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "12px", color: "#1a1a2e", display: "flex", justifyContent: "space-between" }}>
-                    <span>{locale === "ar" ? "المقاس:" : "Size:"} <span style={{ color: "#6c757d", fontWeight: "normal" }}>{activeSize}</span></span>
-                  </div>
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    {product.sizes.map(size => (
+              {/* Sizes — the whole run, with the ones we do not carry struck out */}
+              <div style={{ marginBottom: "24px" }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    marginBottom: "12px",
+                    color: "#1a1a2e",
+                  }}
+                >
+                  {ar ? "المقاس:" : "Size:"}{" "}
+                  <span style={{ color: "#6c757d", fontWeight: "normal" }}>
+                    {ar
+                      ? "اختر مقاسًا أو أكثر"
+                      : "pick one or more"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  {sizeOptions.map(({ size, available }) => {
+                    const isSelected = selectedKeys.has(
+                      keyOf(size, activeColor || null)
+                    );
+                    return (
                       <button
                         key={size}
-                        onClick={() => setActiveSize(size)}
+                        onClick={() => available && toggleSize(size)}
+                        disabled={!available || !inStock}
+                        aria-pressed={isSelected}
+                        title={
+                          available
+                            ? undefined
+                            : ar
+                            ? "غير متوفر"
+                            : "Not available"
+                        }
                         style={{
+                          position: "relative",
                           minWidth: "48px",
                           height: "48px",
                           padding: "0 12px",
-                          border: activeSize === size ? "2px solid #111" : "1px solid #ced4da",
+                          border: isSelected
+                            ? "2px solid #111"
+                            : "1px solid #ced4da",
                           borderRadius: "8px",
-                          background: activeSize === size ? "#111" : "#fff",
-                          color: activeSize === size ? "#fff" : "#1a1a2e",
+                          background: isSelected
+                            ? "#111"
+                            : available
+                            ? "#fff"
+                            : "#f8f9fa",
+                          color: isSelected
+                            ? "#fff"
+                            : available
+                            ? "#1a1a2e"
+                            : "#adb5bd",
                           fontSize: "14px",
                           fontWeight: "600",
-                          cursor: "pointer",
-                          transition: "all 0.2s"
+                          cursor: available && inStock ? "pointer" : "not-allowed",
+                          // A struck-through label reads as "we do not have this"
+                          // rather than "this button is broken".
+                          textDecoration: available ? "none" : "line-through",
+                          transition: "all 0.2s",
                         }}
                       >
                         {size}
                       </button>
-                    ))}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* What the shopper has chosen so far */}
+              {selections.length > 0 && (
+                <div
+                  style={{
+                    marginBottom: "20px",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {selections.map((row, index) => (
+                    <div
+                      key={keyOf(row.size, row.color)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "12px 14px",
+                        borderBottom:
+                          index === selections.length - 1
+                            ? "none"
+                            : "1px solid #f1f3f5",
+                      }}
+                    >
+                      <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                        <div style={{ fontSize: "14px", fontWeight: 600 }}>
+                          {ar ? "المقاس" : "Size"} {row.size}
+                          {row.color ? ` · ${row.color}` : ""}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#6c757d" }}>
+                          <CurrencyFormatter price={unitPrice * row.quantity} />
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          border: "1px solid #ced4da",
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          height: "36px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <button
+                          onClick={() => changeQuantity(index, -1)}
+                          aria-label={ar ? "إنقاص" : "Decrease"}
+                          style={{
+                            width: "36px",
+                            background: "#f8f9fa",
+                            border: "none",
+                            fontSize: "16px",
+                            cursor: "pointer",
+                            color: "#495057",
+                          }}
+                        >
+                          -
+                        </button>
+                        <span
+                          style={{
+                            width: "44px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderLeft: "1px solid #ced4da",
+                            borderRight: "1px solid #ced4da",
+                            fontWeight: 600,
+                            fontSize: "14px",
+                          }}
+                        >
+                          {row.quantity}
+                        </span>
+                        <button
+                          onClick={() => changeQuantity(index, 1)}
+                          aria-label={ar ? "زيادة" : "Increase"}
+                          disabled={remaining <= 0}
+                          style={{
+                            width: "36px",
+                            background: "#f8f9fa",
+                            border: "none",
+                            fontSize: "16px",
+                            cursor: remaining > 0 ? "pointer" : "not-allowed",
+                            color: remaining > 0 ? "#495057" : "#ced4da",
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => removeSelection(index)}
+                        style={{
+                          flexShrink: 0,
+                          border: "none",
+                          background: "none",
+                          color: "#adb5bd",
+                          fontSize: "12px",
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {ar ? "إزالة" : "Remove"}
+                      </button>
+                    </div>
+                  ))}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px 14px",
+                      background: "#f8f9fa",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span>
+                      {ar
+                        ? `${totalUnits} قطعة`
+                        : `${totalUnits} item${totalUnits === 1 ? "" : "s"}`}
+                    </span>
+                    <CurrencyFormatter price={unitPrice * totalUnits} />
                   </div>
                 </div>
               )}
 
-              {/* Quantity */}
-              <div style={{ marginBottom: "32px" }}>
-                <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "12px", color: "#1a1a2e" }}>
-                  {locale === "ar" ? "الكمية:" : "Quantity:"}
-                </div>
-                <div style={{ display: "inline-flex", border: "1px solid #ced4da", borderRadius: "8px", overflow: "hidden", height: "48px" }}>
-                  <button 
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    style={{ width: "48px", background: "#f8f9fa", border: "none", fontSize: "18px", cursor: "pointer", color: "#495057" }}
-                  >-</button>
-                  <input 
-                    type="text" 
-                    value={quantity} 
-                    readOnly
-                    style={{ width: "60px", textAlign: "center", border: "none", borderLeft: "1px solid #ced4da", borderRight: "1px solid #ced4da", fontWeight: "600", fontSize: "15px", color: "#1a1a2e" }}
-                  />
-                  <button 
-                    onClick={() => setQuantity(q => q + 1)}
-                    style={{ width: "48px", background: "#f8f9fa", border: "none", fontSize: "18px", cursor: "pointer", color: "#495057" }}
-                  >+</button>
-                </div>
-                <span style={{ marginLeft: "16px", fontSize: "13px", color: product.stock > 0 ? "#059669" : "#dc2626", fontWeight: "600" }}>
-                  {product.stock > 0 
-                    ? (locale === "ar" ? `${product.stock} متوفر في المخزون` : `${product.stock} in stock`)
-                    : (locale === "ar" ? "نفدت الكمية" : "Out of stock")}
+              {/* Stock, and how much of it is still selectable */}
+              <div style={{ marginBottom: "16px" }}>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: inStock ? "#059669" : "#dc2626",
+                    fontWeight: "600",
+                  }}
+                >
+                  {inStock
+                    ? ar
+                      ? `${stock} متوفر في المخزون`
+                      : `${stock} in stock`
+                    : ar
+                    ? "نفدت الكمية"
+                    : "Out of stock"}
                 </span>
+                {inStock && totalUnits > 0 && (
+                  <span
+                    style={{
+                      marginInlineStart: "12px",
+                      fontSize: "13px",
+                      color: "#6c757d",
+                    }}
+                  >
+                    {ar
+                      ? `يمكنك إضافة ${remaining} أخرى`
+                      : `${remaining} more available`}
+                  </span>
+                )}
               </div>
 
-              {/* Buy Now Button */}
-              <button
-                onClick={handleBuyNow}
-                disabled={product.stock <= 0}
-                style={{
-                  width: "100%",
-                  backgroundColor: product.stock > 0 ? "#111" : "#ced4da",
-                  color: "#fff",
-                  border: "none",
-                  padding: "18px 24px",
-                  fontSize: "14px",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  fontWeight: "700",
-                  borderRadius: "8px",
-                  cursor: product.stock > 0 ? "pointer" : "not-allowed",
-                  transition: "background-color 0.3s ease",
-                  marginBottom: "16px"
-                }}
-                onMouseOver={(e) => { if(product.stock > 0) e.currentTarget.style.backgroundColor = '#333' }}
-                onMouseOut={(e) => { if(product.stock > 0) e.currentTarget.style.backgroundColor = '#111' }}
-              >
-                {locale === "ar" ? "اشتري الآن" : "Buy It Now"}
-              </button>
+              {notice && (
+                <div
+                  role="status"
+                  style={{
+                    marginBottom: "16px",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    background: "#fff4f4",
+                    border: "1px solid #f5c2c2",
+                    color: "#b42318",
+                    fontSize: "13px",
+                  }}
+                >
+                  {notice}
+                </div>
+              )}
 
+              <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!inStock}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#fff",
+                    color: inStock ? "#111" : "#adb5bd",
+                    border: `1px solid ${inStock ? "#111" : "#ced4da"}`,
+                    padding: "16px 24px",
+                    fontSize: "14px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    borderRadius: "8px",
+                    cursor: inStock ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {ar ? "أضف إلى السلة" : "Add to cart"}
+                </button>
+
+                <button
+                  onClick={handleBuyNow}
+                  disabled={!inStock}
+                  style={{
+                    width: "100%",
+                    backgroundColor: inStock ? "#111" : "#ced4da",
+                    color: "#fff",
+                    border: "none",
+                    padding: "18px 24px",
+                    fontSize: "14px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    borderRadius: "8px",
+                    cursor: inStock ? "pointer" : "not-allowed",
+                    transition: "background-color 0.3s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    if (inStock) e.currentTarget.style.backgroundColor = "#333";
+                  }}
+                  onMouseOut={(e) => {
+                    if (inStock) e.currentTarget.style.backgroundColor = "#111";
+                  }}
+                >
+                  {ar ? "اشتري الآن" : "Buy It Now"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Sticky Buy Button */}
-      <div 
-        className="d-md-none" 
+      {/* Mobile sticky bar */}
+      <div
+        className="d-md-none"
         style={{
           position: "fixed",
           bottom: 0,
@@ -297,18 +749,44 @@ export default function DynamicDetails({ product, locale = "ar" }) {
           zIndex: 50,
           display: "flex",
           gap: "12px",
-          alignItems: "center"
+          alignItems: "center",
         }}
       >
-        <div style={{ flexShrink: 0, fontWeight: "700", fontSize: "18px", color: hasDiscount ? "#dc2626" : "#1a1a2e" }}>
-          <CurrencyFormatter price={product.salePrice || product.price} />
+        <div
+          style={{
+            flexShrink: 0,
+            fontWeight: "700",
+            fontSize: "18px",
+            color: hasDiscount ? "#dc2626" : "#1a1a2e",
+          }}
+        >
+          <CurrencyFormatter
+            price={totalUnits > 0 ? unitPrice * totalUnits : unitPrice}
+          />
         </div>
         <button
+          onClick={handleAddToCart}
+          disabled={!inStock}
+          style={{
+            flexShrink: 0,
+            background: "#fff",
+            color: inStock ? "#111" : "#adb5bd",
+            border: `1px solid ${inStock ? "#111" : "#ced4da"}`,
+            padding: "14px 16px",
+            fontSize: "13px",
+            fontWeight: "700",
+            borderRadius: "8px",
+            cursor: inStock ? "pointer" : "not-allowed",
+          }}
+        >
+          {ar ? "السلة" : "Cart"}
+        </button>
+        <button
           onClick={handleBuyNow}
-          disabled={product.stock <= 0}
+          disabled={!inStock}
           style={{
             flex: 1,
-            backgroundColor: product.stock > 0 ? "#111" : "#ced4da",
+            backgroundColor: inStock ? "#111" : "#ced4da",
             color: "#fff",
             border: "none",
             padding: "14px 20px",
@@ -317,11 +795,11 @@ export default function DynamicDetails({ product, locale = "ar" }) {
             textTransform: "uppercase",
             fontWeight: "700",
             borderRadius: "8px",
-            cursor: product.stock > 0 ? "pointer" : "not-allowed",
-            transition: "background-color 0.3s ease"
+            cursor: inStock ? "pointer" : "not-allowed",
+            transition: "background-color 0.3s ease",
           }}
         >
-          {locale === "ar" ? "اشتري الآن" : "Buy It Now"}
+          {ar ? "اشتري الآن" : "Buy It Now"}
         </button>
       </div>
     </section>
