@@ -5,6 +5,7 @@ import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { useLocale } from "next-intl";
+import { buildSizeOptions } from "@/lib/products/sizes";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function ProductCard1({
   product,
@@ -156,8 +157,23 @@ export default function ProductCard1({
         {product.sizes && (
           <div className="variant-wrap size-list">
             <ul className="variant-box">
-              {product.sizes.map((size) => (
-                <li key={size} className="size-item">
+              {/* The whole size run, not only the sizes this product carries, so
+                  a gap reads as "sold out in that size" rather than as a size
+                  the shop has never heard of. Availability comes straight from
+                  Product.sizes; buildSizeOptions only decides what to show and
+                  in what order, and never hides a size the product does have. */}
+              {buildSizeOptions(product.sizes).map(({ size, available }) => (
+                <li
+                  key={size}
+                  className={`size-item${available ? "" : " size-item--out"}`}
+                  title={
+                    available
+                      ? undefined
+                      : locale === "ar"
+                      ? "غير متوفر"
+                      : "Not available"
+                  }
+                >
                   {size}
                 </li>
               ))}

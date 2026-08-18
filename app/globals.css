@@ -737,3 +737,18 @@ tr:hover > .tbl-pin-cell {
   font-size: 13px;
   color: rgba(24, 24, 24, 0.55);
 }
+
+/* Sizes a product does not carry, in the card's hover size strip.
+ *
+ * The strip lists the whole run (see lib/products/sizes.ts) so a missing size
+ * reads as sold out rather than as one the shop never made. Struck through and
+ * dimmed rather than hidden — and left non-interactive, since the strip is
+ * informational on the card; choosing a size happens on the product page.
+ *
+ * Scoped under .card-product so it cannot reach the size pills anywhere else,
+ * and unlayered to beat the template's own .size-item rule. */
+.card-product .size-item--out {
+  color: rgba(24, 24, 24, 0.32);
+  text-decoration: line-through;
+  pointer-events: none;
+}
