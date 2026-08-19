@@ -74,12 +74,18 @@ export default function CartModal() {
                       className="mini-cart__item"
                       key={product.lineKey ?? `${product.id}-${i}`}
                     >
-                      {/* Dismissing on navigate: without it the drawer stays
-                          open over the page the shopper just asked for. */}
+                      {/* No data-bs-dismiss on any link in here. Bootstrap's
+                          data-API click handler calls preventDefault() on every
+                          <a>/<area> carrying it (bootstrap.esm.js:2869), and a
+                          next/link Link renders an <a> — so the attribute
+                          silently cancelled the navigation it was meant to
+                          accompany. That is what left the checkout button doing
+                          nothing at all.
+                          The drawer still closes on navigate: ClientProviders
+                          hides every open modal whenever the pathname changes. */}
                       <Link
                         href={href}
                         className="mini-cart__thumb"
-                        data-bs-dismiss="modal"
                       >
                         <Image
                           src={product.imgSrc}
@@ -92,7 +98,6 @@ export default function CartModal() {
                         <Link
                           href={href}
                           className="mini-cart__name"
-                          data-bs-dismiss="modal"
                         >
                           {product.title}
                         </Link>
@@ -127,7 +132,6 @@ export default function CartModal() {
                   <Link
                     className="btn-line"
                     href={`/${locale}/shop-default-grid`}
-                    data-bs-dismiss="modal"
                   >
                     {tShop("exploreProducts")}
                   </Link>
@@ -146,14 +150,12 @@ export default function CartModal() {
                 <Link
                   href={`/${locale}/checkout`}
                   className="tf-btn w-100 btn-fill radius-4"
-                  data-bs-dismiss="modal"
                 >
                   <span className="text">{tNav("checkout")}</span>
                 </Link>
                 <Link
                   className="mini-cart__continue"
                   href={`/${locale}/shop-default-grid`}
-                  data-bs-dismiss="modal"
                 >
                   {tShop("continueShopping")}
                 </Link>
