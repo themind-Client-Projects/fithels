@@ -25,5 +25,15 @@
   "bestSeller": "الأكثر مبيعًا",
   "onSale": "عروض",
   "addToCart": "أضيفي إلى السلة",
-  "alreadyAdded": "مضاف بالفعل"
+  "alreadyAdded": "مضاف بالفعل",
+  "sortBy": "الترتيب حسب:",
+  "sortDefault": "الترتيب (افتراضي)",
+  "sortTitleAsc": "الاسم: أ إلى ي",
+  "sortTitleDesc": "الاسم: ي إلى أ",
+  "sortPriceAsc": "السعر: من الأقل",
+  "sortPriceDesc": "السعر: من الأعلى",
+  "productsFound": "{count, plural, zero {منتج} one {منتج} two {منتجان} few {منتجات} many {منتجًا} other {منتج}}",
+  "removeAll": "إزالة الكل",
+  "saleOnly": "المخفّضة فقط",
+  "resetFilters": "إعادة تعيين الفلاتر"
 }

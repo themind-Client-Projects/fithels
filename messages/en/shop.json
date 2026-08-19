@@ -25,5 +25,15 @@
   "bestSeller": "Best Seller",
   "onSale": "On Sale",
   "addToCart": "Add to cart",
-  "alreadyAdded": "Already added"
+  "alreadyAdded": "Already added",
+  "sortBy": "Sort by:",
+  "sortDefault": "Sort by (Default)",
+  "sortTitleAsc": "Title: A to Z",
+  "sortTitleDesc": "Title: Z to A",
+  "sortPriceAsc": "Price: low to high",
+  "sortPriceDesc": "Price: high to low",
+  "productsFound": "{count, plural, one {product found} other {products found}}",
+  "removeAll": "Remove all",
+  "saleOnly": "Sale items only",
+  "resetFilters": "Reset filters"
 }

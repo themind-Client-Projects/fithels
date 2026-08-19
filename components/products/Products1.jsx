@@ -8,8 +8,10 @@ import { useEffect, useReducer, useState } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import FilterMeta from "./FilterMeta";
+import { useTranslations } from "next-intl";
 
 export default function Products1({ parentClass = "flat-spacing", products = [] }) {
+  const t = useTranslations("shop");
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
   const {
@@ -155,7 +157,7 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
                 className="tf-btn-filter"
               >
                 <span className="icon icon-filter" />
-                <span className="text">Filters</span>
+                <span className="text">{t("filters")}</span>
               </a>
               <div
                 onClick={allProps.toggleFilterWithOnSale}
@@ -164,7 +166,7 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
                 }`}
               >
                 <i className="icon icon-checkCircle" />
-                <p className="text-caption-1">Shop sale items only</p>
+                <p className="text-caption-1">{t("saleOnly")}</p>
               </div>
             </div>
             <ul className="tf-control-layout">
@@ -174,7 +176,7 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
               />
             </ul>
             <div className="tf-control-sorting">
-              <p className="d-none d-lg-block text-caption-1">Sort by:</p>
+              <p className="d-none d-lg-block text-caption-1">{t("sortBy")}</p>
               <Sorting allProps={allProps} />
             </div>
           </div>

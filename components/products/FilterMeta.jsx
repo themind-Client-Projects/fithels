@@ -1,10 +1,19 @@
+"use client";
 import React from "react";
+import { useTranslations } from "next-intl";
 
 export default function FilterMeta({ allProps, productLength }) {
+  const t = useTranslations("shop");
+
   return (
     <div className="meta-filter-shop" style={{}}>
       <div id="product-count-grid" className="count-text">
-        <span className="count">{productLength}</span> Products Found
+        {/* The number stays outside the message so it keeps its own styling,
+            and the noun is pluralised through ICU — Arabic has six plural
+            categories, so "منتج / منتجان / منتجات / منتجًا" cannot be picked
+            with a simple count > 1 test. */}
+        <span className="count">{productLength}</span>{" "}
+        {t("productsFound", { count: productLength })}
       </div>
 
       <div id="applied-filters">
@@ -66,7 +75,7 @@ export default function FilterMeta({ allProps, productLength }) {
           className="remove-all-filters text-btn-uppercase"
           onClick={allProps.clearFilter}
         >
-          REMOVE ALL <i className="icon icon-close" />
+          {t("removeAll")} <i className="icon icon-close" />
         </button>
       ) : (
         ""

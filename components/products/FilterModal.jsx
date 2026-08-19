@@ -173,7 +173,7 @@ export default function FilterModal({ allProps, products = [] }) {
             onClick={allProps.clearFilter}
             className="tf-btn btn-reset"
           >
-            Reset Filters
+            {t("resetFilters")}
           </button>
         </div>
       </div>
