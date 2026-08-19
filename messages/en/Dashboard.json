@@ -185,5 +185,10 @@
   "sizesHint": "Tick the sizes you stock — an empty box means that size is unavailable",
   "sizeNotStocked": "Not available",
   "sizeCustom": "Custom size",
-  "storefront": "Storefront"
+  "storefront": "Storefront",
+  "placement": "Home page placement",
+  "placementHint": "Where this banner appears. Point its link at a product to send shoppers straight to it.",
+  "placementHERO": "Hero carousel",
+  "placementCATALOG": "Product panels",
+  "placementCOLLECTION": "Collection strip"
 }

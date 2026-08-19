@@ -8,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import { Upload, X } from "lucide-react";
+import {
+  BANNER_PLACEMENTS,
+  DEFAULT_BANNER_PLACEMENT,
+} from "@/lib/banners/placement";
 
 export default function BannerForm({ banner, onSuccess, onCancel }) {
   const t = useTranslations("Dashboard");
@@ -23,6 +27,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
     link: "",
     order: 0,
     isActive: true,
+    placement: DEFAULT_BANNER_PLACEMENT,
   });
 
   useEffect(() => {
@@ -36,6 +41,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
         link: banner.link || "",
         order: banner.order || 0,
         isActive: banner.isActive !== undefined ? banner.isActive : true,
+        placement: banner.placement || DEFAULT_BANNER_PLACEMENT,
       });
     }
   }, [banner]);
@@ -246,6 +252,40 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
             />
           </div>
+        </div>
+
+        {/* Which part of the home page this banner belongs to. Buttons rather
+            than a select: there are only three, and seeing all of them makes it
+            obvious that the catalogue panels are editable at all — they were
+            hardcoded in the component before this existed.
+            type="button" matters — a bare <button> inside a form submits it. */}
+        <div className="grid gap-2">
+          <Label className="text-start text-sm font-semibold text-muted-foreground">
+            {t("placement")}
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {BANNER_PLACEMENTS.map((value) => {
+              const active = formData.placement === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, placement: value })}
+                  aria-pressed={active}
+                  className={`rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-muted/30 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {t(`placement${value}`)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-start text-xs text-muted-foreground">
+            {t("placementHint")}
+          </p>
         </div>
 
         <div className="mt-2 flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">

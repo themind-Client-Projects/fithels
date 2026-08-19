@@ -111,6 +111,21 @@ export default function BannersPage() {
       ),
     },
     {
+      // Which part of the home page this banner drives. Without it the list is
+      // three interchangeable rows and there is no way to tell a hero slide from
+      // a catalogue panel.
+      header: t("placement"),
+      accessorKey: "placement",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="font-bold border-muted-foreground/30 !h-auto !py-1.5 !px-4 text-sm rounded-full shadow-sm"
+        >
+          {t(`placement${row.placement || "HERO"}`)}
+        </Badge>
+      ),
+    },
+    {
       header: "الحالة",
       accessorKey: "isActive",
       cell: ({ row }) => (

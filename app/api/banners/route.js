@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-utils";
+import {
+  parseBannerPlacement,
+  DEFAULT_BANNER_PLACEMENT,
+} from "@/lib/banners/placement";
 
 export async function GET(request) {
   try {
@@ -43,6 +47,10 @@ export async function POST(request) {
         link: data.link || "#",
         isActive: data.isActive !== undefined ? data.isActive : true,
         order: data.order || 0,
+        // Unrecognised values fall back to the schema default rather than being
+        // written through, so a bad payload cannot invent a placement.
+        placement:
+          parseBannerPlacement(data.placement) ?? DEFAULT_BANNER_PLACEMENT,
       },
     });
 

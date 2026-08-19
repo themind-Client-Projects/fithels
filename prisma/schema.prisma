@@ -299,6 +299,22 @@ model Permission {
   updatedAt DateTime @updatedAt
 }
 
+/// Where on the home page a banner is shown.
+///
+/// Every banner used to feed the hero carousel AND the collection strip at the
+/// bottom, while the four side-by-side catalogue panels were hardcoded image
+/// paths in the component with no way to edit them. This is what lets one admin
+/// screen manage all three areas.
+enum BannerPlacement {
+  /// Full-width carousel at the top.
+  HERO
+  /// The paired image panels — two per row, linking wherever the admin points
+  /// them, which is how a panel can lead to a specific product.
+  CATALOG
+  /// The grid strip near the foot of the page.
+  COLLECTION
+}
+
 model Banner {
   id        String   @id @default(cuid())
   titleEn   String?
@@ -309,8 +325,13 @@ model Banner {
   link      String
   isActive  Boolean  @default(true)
   order     Int      @default(0)
+  /// Defaults to HERO so every existing banner keeps behaving exactly as it did
+  /// before this column existed.
+  placement BannerPlacement @default(HERO)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([placement, isActive, order])
 }
 
 model PageContent {

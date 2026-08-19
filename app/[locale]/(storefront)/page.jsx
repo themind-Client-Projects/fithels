@@ -80,16 +80,30 @@ export default async function HomePage({ params }) {
       btnTextEn: true,
       image: true,
       link: true,
+      placement: true,
     },
   });
+
+  // Split by placement. Every banner used to feed the hero AND the collection
+  // strip at once, so the same three images appeared twice on one page, and the
+  // catalogue panels between them were hardcoded and could not be edited at all.
+  const heroBanners = banners.filter((b) => b.placement === "HERO");
+  const catalogBanners = banners.filter((b) => b.placement === "CATALOG");
+  const collectionBanners = banners.filter((b) => b.placement === "COLLECTION");
 
   return (
     <>
       <Topbar />
       <Header1 />
-      <Hero banners={banners} />
-      <Catalog />
+      <Hero banners={heroBanners} />
+      {/* Four catalogue panels in two rows. The first two CATALOG banners fill
+          the first row and the next two the second; each row keeps its original
+          artwork as a fallback, so the page looks unchanged until banners are
+          assigned to it in the admin. */}
+      <Catalog banners={catalogBanners.slice(0, 2)} locale={locale} />
       <Catalog
+        banners={catalogBanners.slice(2, 4)}
+        locale={locale}
         leftImage="/images/banner/catalog2-left.png"
         rightImage="/images/banner/catalog2-right.png"
         leftAlt="Evening Collection"
@@ -101,7 +115,7 @@ export default async function HomePage({ params }) {
       />
       <Showcase />
       <Products products={mappedProducts} />
-      <BannerCollection banners={banners} locale={locale} />
+      <BannerCollection banners={collectionBanners} locale={locale} />
       <Footer1 />
     </>
   );

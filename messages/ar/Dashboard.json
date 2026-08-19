@@ -185,5 +185,10 @@
   "sizesHint": "حدّد المقاسات المتوفرة — المربع الفارغ يعني أن المقاس غير متوفر",
   "sizeNotStocked": "غير متوفر",
   "sizeCustom": "مقاس مخصص",
-  "storefront": "المتجر"
+  "storefront": "المتجر",
+  "placement": "الموضع في الصفحة الرئيسية",
+  "placementHint": "يحدّد مكان ظهور هذا البانر. اربط الرابط بمنتج ليصل إليه الزبون مباشرة.",
+  "placementHERO": "الشريط الرئيسي",
+  "placementCATALOG": "لوحات المنتجات",
+  "placementCOLLECTION": "شريط المجموعة"
 }

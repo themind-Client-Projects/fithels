@@ -4,10 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 
 /**
- * Reusable Catalog section — two side-by-side clickable image panels.
- * Props will come from backend later (Prisma/Supabase).
+ * Two side-by-side clickable image panels.
+ *
+ * These are editable now. Pass up to two banners with placement CATALOG and each
+ * panel takes its image, title, button text and — the point of the exercise —
+ * its link from the admin, so a panel can lead straight to a product instead of
+ * to the shop listing.
+ *
+ * The hardcoded props remain as fallbacks so the section still renders before
+ * any catalogue banner has been created; a home page with two blank panels
+ * would be a worse default than the artwork that shipped with it.
  */
 export default function Catalog({
+  banners = [],
+  locale = "ar",
   leftImage = "/images/banner/catalog-left.png",
   rightImage = "/images/banner/catalog-right.png",
   leftAlt = "Fit Women Heels Collection",
@@ -19,6 +29,39 @@ export default function Catalog({
   leftHref = "/shop-default-grid",
   rightHref = "/shop-default-grid",
 }) {
+  const resolvePanel = (banner, fallback) => {
+    const title = locale === "ar" ? banner?.titleAr : banner?.titleEn;
+    const cta = locale === "ar" ? banner?.btnTextAr : banner?.btnTextEn;
+    const href = banner?.link || fallback.href;
+    return {
+      image: banner?.image || fallback.image,
+      alt: title || fallback.alt,
+      label: title || fallback.label,
+      cta: cta || fallback.cta,
+      // Admin links are stored site-relative ("/product-detail/slug"), and the
+      // built-in fallbacks carry no locale either. Prefixing here means the
+      // click lands directly instead of bouncing through a locale redirect.
+      href:
+        /^https?:\/\//.test(href) || href.startsWith(`/${locale}`)
+          ? href
+          : `/${locale}${href.startsWith("/") ? "" : "/"}${href}`,
+    };
+  };
+
+  const left = resolvePanel(banners[0], {
+    image: leftImage,
+    alt: leftAlt,
+    label: leftLabel,
+    cta: leftCta,
+    href: leftHref,
+  });
+  const right = resolvePanel(banners[1], {
+    image: rightImage,
+    alt: rightAlt,
+    label: rightLabel,
+    cta: rightCta,
+    href: rightHref,
+  });
   return (
     <section
       style={{
@@ -38,7 +81,7 @@ export default function Catalog({
       >
         {/* Left Panel */}
         <Link
-          href={leftHref}
+          href={left.href}
           style={{
             position: "relative",
             flex: "1 1 50%",
@@ -50,22 +93,22 @@ export default function Catalog({
           className="catalog-panel"
         >
           <Image
-            src={leftImage}
-            alt={leftAlt}
+            src={left.image}
+            alt={left.alt}
             fill
             style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
             sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className="catalog-label">{leftLabel}</span>
-            <span className="catalog-cta">{leftCta}</span>
+            <span className="catalog-label">{left.label}</span>
+            <span className="catalog-cta">{left.cta}</span>
           </div>
         </Link>
 
         {/* Right Panel */}
         <Link
-          href={rightHref}
+          href={right.href}
           style={{
             position: "relative",
             flex: "1 1 50%",
@@ -77,16 +120,16 @@ export default function Catalog({
           className="catalog-panel"
         >
           <Image
-            src={rightImage}
-            alt={rightAlt}
+            src={right.image}
+            alt={right.alt}
             fill
             style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
             sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className="catalog-label">{rightLabel}</span>
-            <span className="catalog-cta">{rightCta}</span>
+            <span className="catalog-label">{right.label}</span>
+            <span className="catalog-cta">{right.cta}</span>
           </div>
         </Link>
       </div>

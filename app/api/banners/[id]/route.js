@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-utils";
+import { parseBannerPlacement } from "@/lib/banners/placement";
 
 export async function PUT(request, { params }) {
   try {
@@ -23,6 +24,9 @@ export async function PUT(request, { params }) {
         link: data.link !== undefined ? data.link : undefined,
         isActive: data.isActive !== undefined ? data.isActive : undefined,
         order: data.order !== undefined ? data.order : undefined,
+        // undefined when the value is missing OR unrecognised, so a bad payload
+        // leaves the column as it was instead of relocating the banner.
+        placement: parseBannerPlacement(data.placement),
       },
     });
 
