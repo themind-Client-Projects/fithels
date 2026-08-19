@@ -15,11 +15,15 @@ import { resolveProductColors } from "@/lib/products/colors";
  * Same-category first, because that is the useful sense of "similar" the data
  * actually supports — there is no tagging or embedding to do better with. If the
  * category is thin, the list is topped up with recent products so the section is
- * either properly filled or not rendered at all; four cards and two gaps looks
- * broken.
+ * either properly filled or not rendered at all; a half-empty row looks broken.
+ *
+ * Both queries select only PRODUCT_CARD_SELECT, so widening the row costs a few
+ * more rows of narrow columns rather than ten full product records.
  */
 export default async function RelatedProducts({ product, locale }) {
-  const LIMIT = 4;
+  // Ten fills the grid at every breakpoint the switcher offers without leaving a
+  // short last row: 2, 3 and 4 columns all divide into 10 with at most two gaps.
+  const LIMIT = 10;
 
   const sameCategory = await prisma.product.findMany({
     where: {

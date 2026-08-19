@@ -21,42 +21,6 @@ export default function MobileMenu() {
       <div className="mb-canvas-content">
         <div className="mb-body">
           <div className="mb-content-top">
-            <form className="form-search" onSubmit={(e) => e.preventDefault()}>
-              <fieldset className="text">
-                <input
-                  type="text"
-                  placeholder="What are you looking for?"
-                  className=""
-                  name="text"
-                  tabIndex={0}
-                  defaultValue=""
-                  aria-required="true"
-                  required
-                />
-              </fieldset>
-              <button className="" type="submit">
-                <svg
-                  width={24}
-                  height={24}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z"
-                    stroke="#181818"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M20.9984 20.9999L16.6484 16.6499"
-                    stroke="#181818"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </form>
             <ul className="nav-ul-mb" id="wrapper-menu-navigation">
               <li className="nav-mb-item">
                 <Link
@@ -145,18 +109,21 @@ export default function MobileMenu() {
                 {tNav('needHelp')}
               </Link>
             </div>
-            <div className="mb-contact">
-              {siteContact.address && (
+            {/* Directions need somewhere to direct to. With no address set this
+                button pointed at the contact page under a label promising a
+                route, so it is hidden until siteContact.address is filled in. */}
+            {siteContact.address && (
+              <div className="mb-contact">
                 <p className="text-caption-1">{siteContact.address}</p>
-              )}
-              <Link
-                href={`/${locale}/contact`}
-                className="tf-btn-default text-btn-uppercase"
-              >
-                {tNav('getDirection')}
-                <i className="icon-arrowUpRight" />
-              </Link>
-            </div>
+                <Link
+                  href={`/${locale}/contact`}
+                  className="tf-btn-default text-btn-uppercase"
+                >
+                  {tNav('getDirection')}
+                  <i className="icon-arrowUpRight" />
+                </Link>
+              </div>
+            )}
             <ul className="mb-info">
               {siteContact.email ? (
                 <li>
@@ -167,10 +134,30 @@ export default function MobileMenu() {
                 </li>
               ) : siteContact.handle ? (
                 <li>
-                  <i className="icon icon-mail" />
+                  {/* A social handle, not an address — icon-mail beside it read
+                      as an email that could be written to. */}
+                  <i className="icon icon-instagram" />
                   <p>{siteContact.handle}</p>
                 </li>
               ) : null}
+              {siteContact.whatsapp && (
+                <li>
+                  <i className="icon icon-whatsapp" />
+                  {/* A label, not the number again. WhatsApp uses the same
+                      line as the phone above it, so printing it twice read as
+                      the list being broken rather than as two ways to reach the
+                      shop. */}
+                  <p>
+                    <a
+                      href={`https://wa.me/${siteContact.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {tNav('whatsapp')}
+                    </a>
+                  </p>
+                </li>
+              )}
               {siteContact.phone && (
                 <li>
                   <i className="icon icon-phone" />

@@ -1313,3 +1313,27 @@ tr:hover > .tbl-pin-cell {
   color: var(--color-text, #1a1a2e);
   direction: ltr;
 }
+
+/* Mobile menu contact rows.
+ *
+ * The template spaces the icon with `margin-right: 12px` — a physical side. In
+ * this RTL storefront the icon sits at the inline start, i.e. on the right, so
+ * that margin pushed it away from the panel edge and left it touching its own
+ * text. The class is repeated to clear the template's (0,2,1); globals.css loads
+ * first here, so matching its weight would not have been enough.
+ */
+.mb-info li .icon.icon {
+  margin-right: 0;
+  margin-left: 0;
+  margin-inline-end: 12px;
+}
+
+/* A little more air between the rows than the template's 8px, and the links
+   inherit rather than turning template-blue. */
+.mb-info li:not(:last-child) {
+  margin-bottom: 12px;
+}
+
+.mb-info li a {
+  color: inherit;
+}
