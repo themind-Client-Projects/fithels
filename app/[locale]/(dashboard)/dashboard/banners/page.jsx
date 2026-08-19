@@ -86,6 +86,10 @@ export default function BannersPage() {
               src={row.image}
               alt={row.titleAr || "Banner"}
               fill
+              // The box is a fixed 96px thumbnail (w-24). Without this the
+              // optimiser assumes the image spans the viewport and ships a
+              // full-width source for a cell in a table.
+              sizes="96px"
               className="object-cover"
             />
           ) : (

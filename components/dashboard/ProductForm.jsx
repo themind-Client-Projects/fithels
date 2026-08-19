@@ -324,7 +324,16 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         <div className="flex flex-wrap gap-4">
           {images.map((img, idx) => (
             <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-border">
-              <Image src={img} alt={`Product image ${idx}`} fill style={{ objectFit: 'cover' }} />
+              {/* Fixed 96px preview (w-24); without `sizes` the optimiser
+                  assumes full viewport width and downloads the largest source
+                  for a thumbnail. */}
+              <Image
+                src={img}
+                alt={`Product image ${idx}`}
+                fill
+                sizes="96px"
+                style={{ objectFit: "cover" }}
+              />
               <button
                 type="button"
                 onClick={() => removeImage(idx)}
