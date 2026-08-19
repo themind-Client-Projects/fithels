@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import ColorMultiSelect from "@/components/dashboard/ColorMultiSelect";
+import { DEFAULT_PRODUCT_SIZES } from "@/lib/products/sizes";
 
 export default function ProductForm({ product, onSuccess, onCancel }) {
   const isEditing = !!product;
@@ -26,7 +27,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [price, setPrice] = useState(product?.price?.toString() || "");
   const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
-  const [sizes, setSizes] = useState(product?.sizes?.join(", ") || "");
+  // Seeded only when creating. On edit the product's own sizes are shown as
+  // they are — including an empty list, which is a deliberate state and must not
+  // be silently repopulated with defaults.
+  const [sizes, setSizes] = useState(
+    isEditing
+      ? product?.sizes?.join(", ") || ""
+      : DEFAULT_PRODUCT_SIZES.join(", ")
+  );
   // Array, not a comma-joined string: the colour picker owns the vocabulary
   // now, so there is nothing to parse back out of a text field.
   const [colors, setColors] = useState(product?.colors ?? []);
@@ -419,7 +427,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
             id="sizes"
             value={sizes}
             onChange={(e) => setSizes(e.target.value)}
-            placeholder="S, M, L, XL"
+            placeholder="36, 37, 38, 39, 40, 41"
             className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
           />
         </div>

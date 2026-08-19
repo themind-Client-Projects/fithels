@@ -57,6 +57,28 @@ export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
   { eu: "42", uk: "9", us: "11", cm: "27" },
 ];
 
+/**
+ * What a NEW product's size field starts out holding in the admin form.
+ *
+ * Deliberately narrower than CANONICAL_SIZES. That constant is the full run the
+ * storefront DISPLAYS, with the gaps struck through; this is the run the shop
+ * actually stocks by default, and it matches what almost every product in the
+ * catalogue already carries. 35 and 42 are left out because stocking them is
+ * the exception — an admin who has them types them in, which is a smaller
+ * error than every new product silently claiming sizes the shop does not hold.
+ *
+ * Only ever used to seed the create form. Editing an existing product always
+ * shows that product's own sizes, including none.
+ */
+export const DEFAULT_PRODUCT_SIZES: readonly string[] = [
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+];
+
 export type SizeOption = {
   /** The size label, exactly as it is stored on the product. */
   size: string;
