@@ -6,6 +6,7 @@ import Hero from "@/components/homes/home-1/Hero";
 import Catalog from "@/components/homes/home-1/Catalog";
 import Products from "@/components/common/Products3";
 import Showcase from "@/components/homes/home-1/Showcase";
+import HomeInfo from "@/components/homes/home-1/HomeInfo";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
@@ -121,6 +122,7 @@ export default async function HomePage({ params }) {
       <Showcase banner={showcaseBanner} />
       <Products products={mappedProducts} />
       <BannerCollection banners={collectionBanners} locale={locale} />
+      <HomeInfo />
       <Footer1 />
     </>
   );

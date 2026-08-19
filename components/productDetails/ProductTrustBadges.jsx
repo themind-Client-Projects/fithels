@@ -52,7 +52,15 @@ const TruckIcon = () => (
   </svg>
 );
 
-export default function ProductTrustBadges() {
+/**
+ * `variant` picks the layout, not the content — the three claims and their
+ * wording live here once, so the product page and the home page cannot drift
+ * apart on what the shop promises.
+ *
+ *   "rows"    — compact list, used beside the buy button
+ *   "stacked" — icon above centred text, used as a full-width band
+ */
+export default function ProductTrustBadges({ variant = "rows" }) {
   const t = useTranslations("shop");
 
   const items = [
@@ -62,7 +70,7 @@ export default function ProductTrustBadges() {
   ];
 
   return (
-    <ul className="pdp-trust">
+    <ul className={`pdp-trust pdp-trust--${variant}`}>
       {items.map(({ Icon, title, text }) => (
         <li className="pdp-trust__item" key={title}>
           <span className="pdp-trust__icon">

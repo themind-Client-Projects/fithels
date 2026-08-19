@@ -14,7 +14,7 @@ import { SIZE_CONVERSIONS } from "@/lib/products/sizes";
  *
  * Behaviour comes from the @base-ui/react accordion (keyboard support, correct
  * heading/region semantics, and the --accordion-panel-height variable that lets
- * the panel actually animate open). The look comes from plain `.pdp-acc__*`
+ * the panel actually animate open). The look comes from plain `.acc__*`
  * classes in globals.css rather than Tailwind utilities, because the storefront
  * loads the template stylesheet AFTER globals and its unlayered bare-element
  * rules outrank any Tailwind utility — a trigger is a <button>, and the template
@@ -33,7 +33,7 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
 
   return (
     <Accordion
-      className="pdp-acc"
+      className="acc"
       // base-ui's prop is `multiple`, and it defaults to false — one open
       // section would close another. Passing the wrong name did not just fail
       // silently: unknown props fall through the Root to the underlying div, so
@@ -42,28 +42,28 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
       defaultValue={description ? ["description"] : []}
     >
       {description && (
-        <AccordionItem className="pdp-acc__item" value="description">
-          <AccordionTrigger className="pdp-acc__head">
+        <AccordionItem className="acc__item" value="description">
+          <AccordionTrigger className="acc__head">
             <span>{ar ? "الوصف" : "Description"}</span>
-            <span className="pdp-acc__icon" aria-hidden="true" />
+            <span className="acc__icon" aria-hidden="true" />
           </AccordionTrigger>
-          <AccordionPanel className="pdp-acc__panel">
-            <div className="pdp-acc__body">
-              <p className="pdp-acc__text">{description}</p>
+          <AccordionPanel className="acc__panel">
+            <div className="acc__body">
+              <p className="acc__text">{description}</p>
             </div>
           </AccordionPanel>
         </AccordionItem>
       )}
 
-      <AccordionItem className="pdp-acc__item" value="size-guide">
-        <AccordionTrigger className="pdp-acc__head">
+      <AccordionItem className="acc__item" value="size-guide">
+        <AccordionTrigger className="acc__head">
           <span>{ar ? "دليل المقاسات" : "Size guide"}</span>
-          <span className="pdp-acc__icon" aria-hidden="true" />
+          <span className="acc__icon" aria-hidden="true" />
         </AccordionTrigger>
-        <AccordionPanel className="pdp-acc__panel">
-          <div className="pdp-acc__body">
-            <div className="pdp-acc__tablewrap">
-              <table className="pdp-acc__table">
+        <AccordionPanel className="acc__panel">
+          <div className="acc__body">
+            <div className="acc__tablewrap">
+              <table className="acc__table">
                 <thead>
                   <tr>
                     <th scope="col">{ar ? "أوروبي" : "EU"}</th>
@@ -105,20 +105,20 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                 </tbody>
               </table>
             </div>
-            {sizeNote && <p className="pdp-acc__text">{sizeNote}</p>}
+            {sizeNote && <p className="acc__text">{sizeNote}</p>}
           </div>
         </AccordionPanel>
       </AccordionItem>
 
       {delivery && (
-        <AccordionItem className="pdp-acc__item" value="delivery">
-          <AccordionTrigger className="pdp-acc__head">
+        <AccordionItem className="acc__item" value="delivery">
+          <AccordionTrigger className="acc__head">
             <span>{ar ? "التوصيل والإرجاع" : "Delivery & returns"}</span>
-            <span className="pdp-acc__icon" aria-hidden="true" />
+            <span className="acc__icon" aria-hidden="true" />
           </AccordionTrigger>
-          <AccordionPanel className="pdp-acc__panel">
-            <div className="pdp-acc__body">
-              <p className="pdp-acc__text">{delivery}</p>
+          <AccordionPanel className="acc__panel">
+            <div className="acc__body">
+              <p className="acc__text">{delivery}</p>
             </div>
           </AccordionPanel>
         </AccordionItem>
