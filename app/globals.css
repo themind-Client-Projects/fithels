@@ -955,3 +955,27 @@ tr:hover > .tbl-pin-cell {
   background: #f8f9fa;
   color: #181818;
 }
+
+/* Card price pair: what you pay, then what it was.
+ *
+ * Outranks the template's `.card-product .card-product-info .old-price`
+ * (0,3,0), which globals.css cannot beat on order — the template stylesheet is
+ * imported by the nested storefront layout and so loads second. Adding `.price`
+ * takes this to (0,4,0).
+ *
+ * The template sets `margin-right: 8px`. That is a PHYSICAL side, so on this
+ * RTL storefront the gap landed after the struck price instead of before it,
+ * leaving the two numbers touching — "IQD 3,300IQD 3,900". The physical margins
+ * are zeroed first and then re-stated logically, so the gap follows the text
+ * direction. Order matters: margin-inline-start resolves to margin-right in RTL,
+ * so it has to come after the reset, not before.
+ */
+.card-product .card-product-info .price .old-price {
+  margin-right: 0;
+  margin-left: 0;
+  margin-inline-start: 8px;
+  /* Secondary information, so it no longer matches the real price for size. */
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+}

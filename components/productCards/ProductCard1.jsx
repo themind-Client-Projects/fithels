@@ -235,11 +235,18 @@ export default function ProductCard1({
         >
           {product.title}
         </Link>
+        {/* The price actually charged comes FIRST in the DOM, the struck-through
+            one after it. Inline order follows the text direction, so in this
+            RTL storefront that puts what the shopper pays on the right — read
+            first — and the old price to its left. The template had them the
+            other way round, so the eye landed on the crossed-out number. */}
         <span className="price">
-          {product.oldPrice && (
-            <span className="old-price"><CurrencyFormatter price={product.oldPrice} /></span>
-          )}{" "}
           <CurrencyFormatter price={product.price} />
+          {product.oldPrice && (
+            <span className="old-price">
+              <CurrencyFormatter price={product.oldPrice} />
+            </span>
+          )}
         </span>
         {product.colors?.length > 0 && (
           <ul className="list-color-product">
