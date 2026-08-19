@@ -181,5 +181,8 @@
   "sizeGuideEn": "Size guide (English)",
   "sizeGuideAr": "Size guide (Arabic)",
   "deliveryEn": "Delivery & returns (English)",
-  "deliveryAr": "Delivery & returns (Arabic)"
+  "deliveryAr": "Delivery & returns (Arabic)",
+  "sizesHint": "Tick the sizes you stock — an empty box means that size is unavailable",
+  "sizeNotStocked": "Not available",
+  "sizeCustom": "Custom size"
 }

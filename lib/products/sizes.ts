@@ -58,26 +58,18 @@ export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
 ];
 
 /**
- * What a NEW product's size field starts out holding in the admin form.
+ * Which sizes are ticked when a NEW product is created.
  *
- * Deliberately narrower than CANONICAL_SIZES. That constant is the full run the
- * storefront DISPLAYS, with the gaps struck through; this is the run the shop
- * actually stocks by default, and it matches what almost every product in the
- * catalogue already carries. 35 and 42 are left out because stocking them is
- * the exception — an admin who has them types them in, which is a smaller
- * error than every new product silently claiming sizes the shop does not hold.
+ * Currently the whole run. Aliased rather than retyped so the two lists cannot
+ * drift apart; the separate name is kept because the two answer different
+ * questions — CANONICAL_SIZES is what the storefront DISPLAYS (gaps struck
+ * through), this is what a new product is assumed to STOCK. If the shop ever
+ * stops carrying one end of the run, only this changes.
  *
  * Only ever used to seed the create form. Editing an existing product always
  * shows that product's own sizes, including none.
  */
-export const DEFAULT_PRODUCT_SIZES: readonly string[] = [
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-];
+export const DEFAULT_PRODUCT_SIZES: readonly string[] = CANONICAL_SIZES;
 
 export type SizeOption = {
   /** The size label, exactly as it is stored on the product. */

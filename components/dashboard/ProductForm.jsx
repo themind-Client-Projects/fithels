@@ -10,7 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import ColorMultiSelect from "@/components/dashboard/ColorMultiSelect";
-import { DEFAULT_PRODUCT_SIZES } from "@/lib/products/sizes";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  CANONICAL_SIZES,
+  DEFAULT_PRODUCT_SIZES,
+  SIZE_CONVERSIONS,
+} from "@/lib/products/sizes";
 
 export default function ProductForm({ product, onSuccess, onCancel }) {
   const isEditing = !!product;
@@ -27,14 +32,33 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [price, setPrice] = useState(product?.price?.toString() || "");
   const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
-  // Seeded only when creating. On edit the product's own sizes are shown as
-  // they are — including an empty list, which is a deliberate state and must not
-  // be silently repopulated with defaults.
-  const [sizes, setSizes] = useState(
+  // An array, not a comma-separated string. The field is a checklist now, and
+  // round-tripping through free text is what allowed values like "S, M, L, XL"
+  // — and, in one case, a paragraph of lorem ipsum — into the sizes column.
+  //
+  // Seeded only when creating. On edit the product's own sizes are shown as they
+  // are, including an empty list: clearing the sizes is a deliberate state and
+  // must not be silently repopulated with defaults.
+  const [sizes, setSizes] = useState(() =>
     isEditing
-      ? product?.sizes?.join(", ") || ""
-      : DEFAULT_PRODUCT_SIZES.join(", ")
+      ? (product?.sizes ?? []).map((size) => String(size).trim()).filter(Boolean)
+      : [...DEFAULT_PRODUCT_SIZES]
   );
+
+  // Sizes this product already carries that fall outside the canonical run get
+  // their own rows, so opening an older product in the new picker cannot quietly
+  // discard them. Derived from the product rather than from the live selection,
+  // so unticking one does not make its row disappear mid-edit.
+  const extraSizes = (isEditing ? (product?.sizes ?? []) : [])
+    .map((size) => String(size).trim())
+    .filter((size) => size && !CANONICAL_SIZES.includes(size));
+
+  const sizeRows = [...CANONICAL_SIZES, ...extraSizes];
+
+  const toggleSize = (size) =>
+    setSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
   // Array, not a comma-joined string: the colour picker owns the vocabulary
   // now, so there is nothing to parse back out of a text field.
   const [colors, setColors] = useState(product?.colors ?? []);
@@ -163,9 +187,9 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       price,
       salePrice: salePrice || null,
       categoryId,
-      sizes: sizes
-        ? sizes.split(",").map((s) => s.trim()).filter(Boolean)
-        : [],
+      // Emitted in canonical order whatever order the boxes were ticked in, so
+      // the stored array is stable and diffs stay readable.
+      sizes: sizeRows.filter((size) => sizes.includes(size)),
       colors: Array.isArray(colors) ? colors : [],
       stock,
       isActive,
@@ -422,14 +446,51 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
 
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-2.5">
-          <Label htmlFor="sizes" className="text-start text-sm font-bold text-foreground">{t("sizes")}</Label>
-          <Input
-            id="sizes"
-            value={sizes}
-            onChange={(e) => setSizes(e.target.value)}
-            placeholder="36, 37, 38, 39, 40, 41"
-            className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
-          />
+          <Label className="text-start text-sm font-bold text-foreground">{t("sizes")}</Label>
+          <p className="text-start text-xs text-muted-foreground">{t("sizesHint")}</p>
+          {/* One row per size, stacked. A label wraps each row so the whole row
+              is the hit target, not just the 16px box — and so the checkbox and
+              its size stay associated for screen readers without an htmlFor/id
+              pair per row. Spacing is logical (ms-auto), so the meta column
+              sits on the correct side in Arabic and English alike. */}
+          <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-muted/20 p-2">
+            {sizeRows.map((size) => {
+              const checked = sizes.includes(size);
+              const isExtra = !CANONICAL_SIZES.includes(size);
+              const cm = SIZE_CONVERSIONS.find((row) => row.eu === size)?.cm;
+              return (
+                <label
+                  key={size}
+                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                    checked
+                      ? "border-primary/40 bg-background"
+                      : "border-transparent bg-background/40"
+                  }`}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={() => toggleSize(size)}
+                  />
+                  <span
+                    className={`text-sm font-bold ${
+                      checked ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {size}
+                  </span>
+                  <span className="ms-auto text-xs text-muted-foreground">
+                    {isExtra
+                      ? t("sizeCustom")
+                      : checked
+                      ? cm
+                        ? `${cm} cm`
+                        : ""
+                      : t("sizeNotStocked")}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </div>
         <div className="flex flex-col gap-2.5">
           <Label htmlFor="colors" className="text-start text-sm font-bold text-foreground">{t("colors")}</Label>
