@@ -22,23 +22,39 @@ export const CANONICAL_SIZES: readonly string[] = [
 ];
 
 /**
- * EU → UK → US conversion for the size guide.
+ * EU → UK → US → foot length conversion for the size guide.
  *
  * Kept as data rather than markup so the table and the size pills cannot drift
  * apart: the EU column is exactly CANONICAL_SIZES. Women's shoe sizing, which is
  * what this shop sells.
+ *
+ * `cm` is the FOOT length the size fits, not the shoe's outer length — it is the
+ * number a shopper gets by standing on a ruler, which is the whole point of the
+ * column.
+ *
+ * Five of the eight cm values are taken verbatim from the supplier chart:
+ * 36→22.5, 38→24, 39→25, 40→25.5, 41→26.5. That chart lists half sizes this shop
+ * does not stock (35.5, 36.5, 37.5, 38.5, 40.5), so 35, 37 and 42 are
+ * interpolated from the rows either side of them and are the ones to correct
+ * first if the supplier disagrees.
  */
-export type SizeConversion = { eu: string; uk: string; us: string };
+export type SizeConversion = {
+  eu: string;
+  uk: string;
+  us: string;
+  /** Foot length in centimetres. */
+  cm: string;
+};
 
 export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
-  { eu: "35", uk: "2", us: "4" },
-  { eu: "36", uk: "3", us: "5" },
-  { eu: "37", uk: "4", us: "6" },
-  { eu: "38", uk: "5", us: "7" },
-  { eu: "39", uk: "6", us: "8" },
-  { eu: "40", uk: "7", us: "9" },
-  { eu: "41", uk: "8", us: "10" },
-  { eu: "42", uk: "9", us: "11" },
+  { eu: "35", uk: "2", us: "4", cm: "21.5" },
+  { eu: "36", uk: "3", us: "5", cm: "22.5" },
+  { eu: "37", uk: "4", us: "6", cm: "23.5" },
+  { eu: "38", uk: "5", us: "7", cm: "24" },
+  { eu: "39", uk: "6", us: "8", cm: "25" },
+  { eu: "40", uk: "7", us: "9", cm: "25.5" },
+  { eu: "41", uk: "8", us: "10", cm: "26.5" },
+  { eu: "42", uk: "9", us: "11", cm: "27" },
 ];
 
 export type SizeOption = {

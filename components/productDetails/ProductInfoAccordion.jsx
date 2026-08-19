@@ -93,6 +93,14 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                       <td key={row.eu}>{row.us}</td>
                     ))}
                   </tr>
+                  {/* Foot length — the one row a shopper can check against a
+                      ruler rather than against another country's numbering. */}
+                  <tr>
+                    <th scope="row">{ar ? "سم" : "CM"}</th>
+                    {SIZE_CONVERSIONS.map((row) => (
+                      <td key={row.eu}>{row.cm}</td>
+                    ))}
+                  </tr>
                   <tr>
                     <th scope="row">{ar ? "متوفر" : "In stock"}</th>
                     {SIZE_CONVERSIONS.map((row) => {
