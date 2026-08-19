@@ -34,7 +34,6 @@ import {
   Package,
   ShoppingCart,
   Users,
-  Settings,
   Tags,
   LogOut,
   ChevronsUpDown,
@@ -66,7 +65,6 @@ export default function DashboardSidebar() {
     { title: t("customers"), url: `/${locale}/dashboard/customers`, icon: Users, permission: PERMISSIONS.VIEW_CUSTOMERS },
     { title: "البانرات", url: `/${locale}/dashboard/banners`, icon: Sparkles, permission: PERMISSIONS.VIEW_SETTINGS },
     { title: "الكوبونات", url: `/${locale}/dashboard/coupons`, icon: TicketPercent, permission: PERMISSIONS.VIEW_SETTINGS },
-    { title: "الصفحات", url: `/${locale}/dashboard/pages`, icon: LayoutDashboard, permission: PERMISSIONS.VIEW_SETTINGS },
   ];
 
   const visibleItems = navItems.filter((item) => hasPermission(dbUser, item.permission));
@@ -131,21 +129,26 @@ export default function DashboardSidebar() {
         </SidebarGroup>
 
         <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2" style={{ paddingRight: "1rem", paddingLeft: "1rem" }}>
-            {t("settings")}
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" render={<Link href={`/${locale}/dashboard/settings`} />} tooltip={t("settings")} className="rounded-xl transition-all duration-200" style={{ paddingRight: "1rem", paddingLeft: "1rem" }}>
-                  <Settings className="size-5 me-3 text-muted-foreground group-hover/menu-button:text-primary" />
-                  <span className="text-sm font-medium">{t("settings")}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton size="lg" render={<Link href={`/${locale}`} />} tooltip="المتجر" className="rounded-xl transition-all duration-200" style={{ paddingRight: "1rem", paddingLeft: "1rem" }}>
+                {/* A plain <a>, not a Link, deliberately — the mirror of the
+                    dashboard link in the storefront header.
+                    Next keeps a route's stylesheet in the document across
+                    client-side navigations. Soft-navigating out to the store
+                    would load the template stylesheet on top of the dashboard's,
+                    and it would still be there on the next soft navigation back
+                    in — reintroducing exactly the mis-styled dashboard this
+                    pair of hard links exists to prevent. */}
+                <SidebarMenuButton
+                  size="lg"
+                  render={<a href={`/${locale}`} />}
+                  tooltip={t("storefront")}
+                  className="rounded-xl transition-all duration-200"
+                  style={{ paddingRight: "1rem", paddingLeft: "1rem" }}
+                >
                   <Store className="size-5 me-3 text-muted-foreground group-hover/menu-button:text-primary" />
-                  <span className="text-sm font-medium">المتجر</span>
+                  <span className="text-sm font-medium">{t("storefront")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

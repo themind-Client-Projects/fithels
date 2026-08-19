@@ -184,5 +184,6 @@
   "deliveryAr": "Delivery & returns (Arabic)",
   "sizesHint": "Tick the sizes you stock — an empty box means that size is unavailable",
   "sizeNotStocked": "Not available",
-  "sizeCustom": "Custom size"
+  "sizeCustom": "Custom size",
+  "storefront": "Storefront"
 }
