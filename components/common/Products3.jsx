@@ -66,7 +66,11 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
     <section className={parentClass}>
       <div className="container">
         <div className="flat-animate-tab">
-          <ul className="tab-product justify-content-sm-center" role="tablist">
+          {/* Tabs and the column switcher share one row. The switcher used to sit
+              on its own line inside the tab panel, which left it stranded under
+              the tabs and against the opposite edge. */}
+          <div className="products-toolbar">
+          <ul className="tab-product products-toolbar__tabs" role="tablist">
             {tabItems.map((item) => (
               <li key={item.value} className="nav-tab-item">
                 <a
@@ -82,18 +86,19 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
               </li>
             ))}
           </ul>
+          <ul className="tf-control-layout products-toolbar__layout">
+            <LayoutHandler
+              activeLayout={activeLayout}
+              setActiveLayout={setActiveLayout}
+            />
+          </ul>
+          </div>
           <div className="tab-content">
             <div
               className="tab-pane active show tabFilter filtered"
               id="newArrivals"
               role="tabpanel"
             >
-              <ul className="tf-control-layout justify-content-center mb_16">
-                <LayoutHandler
-                  activeLayout={activeLayout}
-                  setActiveLayout={setActiveLayout}
-                />
-              </ul>
               <div className={`tf-grid-layout ${gridClass}`}>
                 {selectedItems.map((product, i) => (
                   <ProductCard1 key={i} product={product} />

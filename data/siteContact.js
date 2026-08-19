@@ -25,8 +25,17 @@ export const siteContact = {
   /** A real address, if there is one. Rendered as a mailto link when set. */
   email: "",
 
-  /** TODO: the shop's real number, in international form, e.g. "+964 770 000 0000". */
-  phone: "",
+  /** The shop's number, in international form. */
+  phone: "+964 772 993 9937",
+
+  /**
+   * The same number as WhatsApp expects it: digits only, country code first,
+   * no leading zero and no punctuation. wa.me silently fails on anything else,
+   * which is why this is stored separately rather than stripped at the call
+   * site — "0772..." would produce a link that opens WhatsApp on a number that
+   * does not exist.
+   */
+  whatsapp: "9647729939937",
 
   /** TODO: the shop's real street address. */
   address: "",

@@ -6,6 +6,7 @@ import React, { cache } from "react";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import RelatedProducts from "@/components/productDetails/RelatedProducts";
 
 /**
  * Read the product straight from the database.
@@ -84,6 +85,7 @@ export default async function ProductDetailPage({ params }) {
       <Topbar />
       <Header1 />
       <DynamicDetails product={product} locale={locale} />
+      <RelatedProducts product={product} locale={locale} />
       <Footer1 hasPaddingBottom />
     </>
   );

@@ -12,6 +12,7 @@ import SizeGuide from "@/components/modals/SizeGuide";
 import Wishlist from "@/components/modals/Wishlist";
 import Categories from "@/components/modals/Categories";
 import AuthModal from "@/components/auth/AuthModal";
+import WhatsAppButton from "@/components/common/WhatsAppButton";
 
 /**
  * Overlays mounted on every storefront page.
@@ -46,6 +47,7 @@ export default function StorefrontProviders({ children }) {
       <Wishlist />
       <Categories />
       <AuthModal />
+      <WhatsAppButton />
     </>
   );
 }
