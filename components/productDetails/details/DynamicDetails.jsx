@@ -447,7 +447,11 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                             fontSize: "14px",
                             fontWeight: isActive ? "600" : "400",
                             cursor: "pointer",
-                            transition: "all 0.2s",
+                            // Named properties rather than `all`: `all` makes the
+                            // browser watch every animatable property on the
+                            // element, including ones that force layout.
+                            transition:
+                              "border-color 160ms ease, background-color 160ms ease",
                           }}
                         >
                           <span
@@ -550,7 +554,8 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                           // A struck-through label reads as "we do not have this"
                           // rather than "this button is broken".
                           textDecoration: available ? "none" : "line-through",
-                          transition: "all 0.2s",
+                          transition:
+                            "border-color 160ms ease, background-color 160ms ease, color 160ms ease",
                         }}
                       >
                         {size}

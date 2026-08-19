@@ -40,7 +40,11 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
   return (
     <Accordion
       className="pdp-acc"
-      openMultiple
+      // base-ui's prop is `multiple`, and it defaults to false — one open
+      // section would close another. Passing the wrong name did not just fail
+      // silently: unknown props fall through the Root to the underlying div, so
+      // React warned about an unrecognised DOM attribute.
+      multiple
       defaultValue={description ? ["description"] : []}
     >
       {description && (

@@ -806,13 +806,17 @@ tr:hover > .tbl-pin-cell {
   outline-offset: 2px;
 }
 
-/* A "+" drawn in css, rotated into "x" while the section is open. */
+/* A "+" drawn in css that becomes a "−" while the section is open.
+ *
+ * Only the upright bar moves, and it moves with `transform` — the one property
+ * the compositor can animate without re-laying out or repainting anything. The
+ * earlier version rotated the whole icon 135deg into an "×", which reads as
+ * "close this page" rather than "collapse this section". */
 .pdp-acc__icon {
   position: relative;
   flex: none;
   width: 13px;
   height: 13px;
-  transition: transform 0.28s ease;
 }
 
 .pdp-acc__icon::before,
@@ -829,10 +833,11 @@ tr:hover > .tbl-pin-cell {
 
 .pdp-acc__icon::after {
   transform: translateY(-50%) rotate(90deg);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.pdp-acc__head[data-panel-open] .pdp-acc__icon {
-  transform: rotate(135deg);
+.pdp-acc__head[data-panel-open] .pdp-acc__icon::after {
+  transform: translateY(-50%) rotate(0deg);
 }
 
 /* base-ui measures the panel and publishes the result as
@@ -841,7 +846,12 @@ tr:hover > .tbl-pin-cell {
 .pdp-acc .pdp-acc__panel {
   height: var(--accordion-panel-height);
   overflow: hidden;
-  transition: height 0.28s ease;
+  /* `height` is named explicitly — never `all`, which would make the browser
+     watch every animatable property on the element. Height is the one thing
+     here that cannot be done on the compositor, so it is the only such
+     transition on the page, and the easing is the standard decelerate curve so
+     the panel settles rather than stops dead. */
+  transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pdp-acc .pdp-acc__panel[data-starting-style],
@@ -851,7 +861,8 @@ tr:hover > .tbl-pin-cell {
 
 @media (prefers-reduced-motion: reduce) {
   .pdp-acc .pdp-acc__panel,
-  .pdp-acc__icon {
+  .pdp-acc .pdp-acc__head,
+  .pdp-acc__icon::after {
     transition: none;
   }
 }
