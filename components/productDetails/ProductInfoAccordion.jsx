@@ -31,12 +31,6 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
   const sizeNote = ar ? product.sizeGuideAr : product.sizeGuideEn;
   const delivery = ar ? product.deliveryAr : product.deliveryEn;
 
-  // Which rows of the conversion table this shoe is actually made in, so the
-  // guide reflects the product instead of being a generic chart bolted on.
-  const stocked = new Set(
-    (product.sizes ?? []).map((size) => String(size).trim())
-  );
-
   return (
     <Accordion
       className="pdp-acc"
@@ -94,38 +88,19 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                     ))}
                   </tr>
                   {/* Foot length — the one row a shopper can check against a
-                      ruler rather than against another country's numbering. */}
+                      ruler rather than against another country's numbering.
+                      Labelled "CM" in both locales, like UK and US: the unit is
+                      read as a symbol, not translated.
+
+                      There is no availability row here. The size pills above
+                      already strike through what this product does not carry,
+                      and repeating it in the guide meant two places to keep in
+                      step for no extra information. */}
                   <tr>
-                    <th scope="row">{ar ? "سم" : "CM"}</th>
+                    <th scope="row">CM</th>
                     {SIZE_CONVERSIONS.map((row) => (
                       <td key={row.eu}>{row.cm}</td>
                     ))}
-                  </tr>
-                  <tr>
-                    <th scope="row">{ar ? "متوفر" : "In stock"}</th>
-                    {SIZE_CONVERSIONS.map((row) => {
-                      const has = stocked.has(row.eu);
-                      return (
-                        <td
-                          key={row.eu}
-                          className={has ? "pdp-acc__yes" : "pdp-acc__no"}
-                        >
-                          {/* The meaning is carried in text as well as the
-                              glyph — colour and a tick alone would not reach a
-                              screen reader. */}
-                          <span className="visually-hidden">
-                            {has
-                              ? ar
-                                ? "متوفر"
-                                : "Available"
-                              : ar
-                              ? "غير متوفر"
-                              : "Not available"}
-                          </span>
-                          <span aria-hidden="true">{has ? "✓" : "—"}</span>
-                        </td>
-                      );
-                    })}
                   </tr>
                 </tbody>
               </table>

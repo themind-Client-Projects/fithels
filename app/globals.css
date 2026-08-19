@@ -911,17 +911,8 @@ tr:hover > .tbl-pin-cell {
   text-align: center;
 }
 
-.pdp-acc__yes {
-  color: #059669;
-  font-weight: 700;
-}
-
-.pdp-acc__no {
-  color: #adb5bd;
-}
-
-/* Bootstrap ships this on the storefront, but the table's meaning must not
-   depend on that stylesheet being present. */
+/* Bootstrap ships this on the storefront, but the storefront's loading state
+   must not depend on that stylesheet being present. */
 .visually-hidden {
   position: absolute !important;
   width: 1px;

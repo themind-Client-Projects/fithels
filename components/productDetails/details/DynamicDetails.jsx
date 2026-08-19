@@ -744,8 +744,12 @@ export default function DynamicDetails({ product, locale = "ar" }) {
               {/* Add to cart is the only action now. Buy It Now was removed: it
                   bypassed the cart, and with several variants selectable there
                   is no longer a single thing for it to buy — it had to add the
-                  rows to the cart first anyway, which is what this does. */}
-              <div style={{ marginBottom: "16px" }}>
+                  rows to the cart first anyway, which is what this does.
+
+                  Hidden below md: the sticky bar at the foot of the screen
+                  already carries this button on phones, and two of them meant
+                  the shopper scrolled past one to reach an identical one. */}
+              <div className="d-none d-md-block" style={{ marginBottom: "16px" }}>
                 <button
                   onClick={handleAddToCart}
                   disabled={!inStock}
