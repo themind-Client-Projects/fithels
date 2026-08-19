@@ -1,5 +1,6 @@
 "use client";
 import ProductCard1 from "@/components/productCards/ProductCard1";
+import LayoutHandler from "@/components/products/LayoutHandler";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -18,6 +19,11 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
   const t = useTranslations("shop");
   const [activeItem, setActiveItem] = useState(tabItems[0].value); // Default the first item as active
 
+  // Column count, same control the shop page uses. 4 matches what this grid
+  // rendered before it was switchable. LayoutHandler clamps it down on narrow
+  // viewports, so a phone cannot be left on a 4-across grid.
+  const [activeLayout, setActiveLayout] = useState(4);
+
   // Derived, not state. This used to start as `[]` and fill from a 300ms
   // setTimeout inside an effect, which meant the grid was EMPTY in the server
   // HTML and for 300ms after hydration — the whole lower half of the home page
@@ -26,6 +32,18 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
     () => products.filter((elm) => elm.tabFilterOptions2?.includes(activeItem)),
     [products, activeItem]
   );
+
+  // The template drives columns through these classes, so the switcher maps on
+  // to them rather than setting grid-template-columns itself — that keeps the
+  // responsive step-downs baked into the template stylesheet intact.
+  const gridClass =
+    activeLayout === 1
+      ? "tf-col-1"
+      : activeLayout === 2
+        ? "tf-col-2"
+        : activeLayout === 3
+          ? "tf-col-2 lg-col-3"
+          : "tf-col-2 lg-col-3 xl-col-4";
 
   // The fade is now purely cosmetic and only runs when the shopper switches
   // tab. `didMount` keeps it off the first paint, so the initial grid is
@@ -70,7 +88,13 @@ export default function Products3({ parentClass = "flat-spacing-3", products = [
               id="newArrivals"
               role="tabpanel"
             >
-              <div className="tf-grid-layout tf-col-2 lg-col-3 xl-col-4">
+              <ul className="tf-control-layout justify-content-center mb_16">
+                <LayoutHandler
+                  activeLayout={activeLayout}
+                  setActiveLayout={setActiveLayout}
+                />
+              </ul>
+              <div className={`tf-grid-layout ${gridClass}`}>
                 {selectedItems.map((product, i) => (
                   <ProductCard1 key={i} product={product} />
                 ))}

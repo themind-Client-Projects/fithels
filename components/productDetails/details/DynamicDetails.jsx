@@ -17,6 +17,7 @@ import {
   selectionStorageKey,
 } from "@/lib/products/selection";
 import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
+import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
 
 /**
  * Product detail.
@@ -794,6 +795,8 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                   {ar ? "أضف إلى السلة" : "Add to cart"}
                 </button>
               </div>
+
+              <ProductTrustBadges />
 
               <ProductInfoAccordion product={product} locale={locale} />
             </div>

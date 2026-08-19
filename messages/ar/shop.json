@@ -35,5 +35,11 @@
   "productsFound": "{count, plural, zero {منتج} one {منتج} two {منتجان} few {منتجات} many {منتجًا} other {منتج}}",
   "removeAll": "إزالة الكل",
   "saleOnly": "المخفّضة فقط",
-  "resetFilters": "إعادة تعيين الفلاتر"
+  "resetFilters": "إعادة تعيين الفلاتر",
+  "trustSecureTitle": "دفع إلكتروني آمن",
+  "trustSecureText": "يتم الدفع عبر مزوّد دفع موثوق، ولا نحتفظ ببيانات بطاقتك.",
+  "trustCodTitle": "الدفع عند الاستلام",
+  "trustCodText": "يمكنك الدفع نقدًا عند وصول طلبك.",
+  "trustDeliveryTitle": "التوصيل والإرجاع",
+  "trustDeliveryText": "التفاصيل في قسم التوصيل والإرجاع أدناه."
 }

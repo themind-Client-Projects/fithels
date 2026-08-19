@@ -35,5 +35,11 @@
   "productsFound": "{count, plural, one {product found} other {products found}}",
   "removeAll": "Remove all",
   "saleOnly": "Sale items only",
-  "resetFilters": "Reset filters"
+  "resetFilters": "Reset filters",
+  "trustSecureTitle": "Secure online payment",
+  "trustSecureText": "Handled by a trusted payment provider. We never store your card details.",
+  "trustCodTitle": "Cash on delivery",
+  "trustCodText": "Pay in cash when your order arrives.",
+  "trustDeliveryTitle": "Delivery & returns",
+  "trustDeliveryText": "See the delivery and returns section below."
 }
