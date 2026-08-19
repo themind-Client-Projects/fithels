@@ -16,13 +16,13 @@ import { useTranslations } from "next-intl";
  *  - Secure payment  — orders go through Wayle's hosted page; no card details
  *                      ever reach this application.
  *  - Cash on delivery — PaymentMethod.COD is a real option at checkout.
- *  - Delivery         — points at the accordion below, whose copy the admin
- *                      writes per product, rather than stating terms here that
- *                      no one has set.
+ *  - Delivery         — 48 hours from order confirmation, the shop's stated
+ *                      policy. It replaced a line that pointed at the accordion
+ *                      because no one had set a term yet.
  *
- * If the shop does offer free shipping over a threshold, or a returns window,
- * the honest place to say so is the delivery field on the product, which already
- * feeds that section.
+ * Anything product-specific — a returns window, a longer lead time on one item —
+ * belongs in that product's delivery field, which feeds the accordion below.
+ * This row is the shop-wide promise and applies to everything.
  *
  * Icons are inline svg rather than an icon package: this renders on every
  * product page and three glyphs are not worth a client-side dependency.

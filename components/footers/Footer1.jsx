@@ -25,8 +25,13 @@ export default function Footer1({ hasPaddingBottom = false }) {
       style={{ paddingBottom: hasPaddingBottom ? "96px" : undefined }}
     >
       <div className="container">
+        {/* The brand line names the shop, so the notice below does not repeat
+            it — "Fit Women Heels" twice in four words read as a mistake. The
+            name sits directly above, which is what the © still refers to.
+            Latin in both locales: this is the brand, not copy to translate. */}
+        <p className="site-footer__brand">Fit Women Heels &amp; more</p>
         <p className="site-footer__line">
-          © {new Date().getFullYear()} Fit Women Heels
+          © {new Date().getFullYear()}
           <span className="site-footer__sep" aria-hidden="true">
             ·
           </span>

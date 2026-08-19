@@ -40,7 +40,7 @@
   "trustSecureText": "Handled by a trusted payment provider. We never store your card details.",
   "trustCodTitle": "Cash on delivery",
   "trustCodText": "Pay in cash when your order arrives.",
-  "trustDeliveryTitle": "Delivery & returns",
-  "trustDeliveryText": "See the delivery and returns section below.",
+  "trustDeliveryTitle": "Delivery",
+  "trustDeliveryText": "Within 48 hours of order confirmation.",
   "youMayAlsoLike": "You may also like"
 }

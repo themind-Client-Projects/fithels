@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
-import { useContextElement } from "@/context/Context";
 import { useLocale } from "next-intl";
 import { buildSizeOptions } from "@/lib/products/sizes";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
@@ -16,10 +15,6 @@ export default function ProductCard1({
 }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
   const locale = useLocale();
-
-  // Only quick view remains on the card; the wishlist, compare and add-to-cart
-  // handlers went with their buttons.
-  const { setQuickViewItem } = useContextElement();
 
   useEffect(() => {
     setCurrentImage(product.imgSrc);
@@ -200,27 +195,6 @@ export default function ProductCard1({
         ) : (
           ""
         )}
-        {/* Wishlist and compare were removed from the card deliberately, along
-            with the add-to-cart button.
-            Add-to-cart could not honour what it promised: a shoe has a size and
-            a colour, and the card has neither picker, so it added whichever
-            variant the fallback happened to choose. Buying now goes through the
-            product page, where the shopper picks the combinations they want.
-            Quick view is kept — it is the one action on the card that only
-            shows information rather than committing to a purchase.
-            The wishlist and compare features themselves are untouched; they are
-            still reachable from the quick view and quick add modals. */}
-        <div className="list-product-btn">
-          <a
-            href="#quickView"
-            onClick={() => setQuickViewItem(product)}
-            data-bs-toggle="modal"
-            className="box-icon quickview tf-btn-loading"
-          >
-            <span className="icon icon-eye" />
-            <span className="tooltip">Quick View</span>
-          </a>
-        </div>
       </div>
       <div className="card-product-info">
         {/* card-stretch-link paints an overlay across the whole card (see

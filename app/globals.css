@@ -1025,7 +1025,12 @@ tr:hover > .tbl-pin-cell {
   border-radius: 0;
 }
 
-.card-product .list-color-product .swatch-value {
+/* Four classes deep on purpose. The template's own rule is
+ * `.list-color-product .list-color-item .swatch-value` — (0,3,0), the same
+ * weight as the obvious three-class override — and its stylesheet loads second,
+ * so the tie went to it. Its `width: 100%` then resolved against a parent this
+ * file had just collapsed to `auto`, and the square vanished entirely. */
+.card-product .list-color-product .list-color-item .swatch-value {
   display: block;
   width: 16px;
   height: 16px;
@@ -1295,4 +1300,16 @@ tr:hover > .tbl-pin-cell {
   .wa-fab {
     transition: none;
   }
+}
+
+/* The brand line above the copyright. Same LTR direction as the line below it,
+   since both are Latin whatever locale the page is in. */
+.site-footer__brand {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text, #1a1a2e);
+  direction: ltr;
 }
