@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -35,9 +36,42 @@ import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordi
 export default function DynamicDetails({ product, locale = "ar" }) {
   const ar = locale === "ar";
 
-  const [activeImage, setActiveImage] = useState(product.images?.[0] || "");
   const [activeColor, setActiveColor] = useState(product.colors?.[0] || "");
   const [notice, setNotice] = useState("");
+
+  /**
+   * Gallery carousel.
+   *
+   * The track is a scroll-snap container, so swiping, momentum and keyboard
+   * scrolling are the browser's own — no carousel library, no extra javascript
+   * shipped, and every image stays in the document for crawlers. The only state
+   * is which dot is lit, derived from the scroll position rather than driving
+   * it, which is what keeps the dots honest when the shopper swipes instead of
+   * tapping.
+   */
+  const gallery = product.images ?? [];
+  const trackRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleTrackScroll = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    // Round to the nearest slide so a half-swipe still lights the dot the
+    // shopper is looking at.
+    const index = Math.round(track.scrollLeft / track.clientWidth);
+    const clamped = Math.min(Math.max(Math.abs(index), 0), gallery.length - 1);
+    setActiveIndex((prev) => (prev === clamped ? prev : clamped));
+  };
+
+  const scrollToSlide = (index) => {
+    const track = trackRef.current;
+    if (!track) return;
+    // Signed by direction: in RTL the track scrolls negatively, so a positive
+    // offset would jump to the wrong end.
+    const direction = getComputedStyle(track).direction === "rtl" ? -1 : 1;
+    track.scrollTo({ left: direction * index * track.clientWidth, behavior: "smooth" });
+    setActiveIndex(index);
+  };
 
   const { addVariantsToCart } = useContextElement();
 
@@ -245,77 +279,58 @@ export default function DynamicDetails({ product, locale = "ar" }) {
     <section className="flat-spacing">
       <div className="container">
         <div className="row">
-          {/* Images */}
+          {/* Images — a swipeable full-bleed carousel with dots.
+              Native scroll-snap rather than a carousel library: it gives real
+              touch swiping, keyboard scrolling and momentum for free, keeps the
+              images in the document for the crawler, and adds no javascript to
+              the bundle. The dots are the only state. */}
           <div className="col-md-6 mb-4 mb-md-0">
             <div style={{ position: "sticky", top: "100px" }}>
-              <div
-                style={{
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  marginBottom: "16px",
-                  border: "1px solid #f1f3f5",
-                }}
-              >
-                {activeImage ? (
-                  <Image
-                    src={activeImage}
-                    alt={title}
-                    width={800}
-                    height={800}
-                    style={{ width: "100%", height: "auto", objectFit: "cover" }}
-                  />
-                ) : (
+              {gallery.length > 0 ? (
+                <>
                   <div
-                    style={{
-                      width: "100%",
-                      paddingBottom: "100%",
-                      backgroundColor: "#f8f9fa",
-                    }}
-                  />
-                )}
-              </div>
-              {product.images?.length > 1 && (
+                    ref={trackRef}
+                    onScroll={handleTrackScroll}
+                    className="pdp-gallery"
+                  >
+                    {gallery.map((img, i) => (
+                      <div className="pdp-gallery__slide" key={img + i}>
+                        <Image
+                          src={img}
+                          alt={`${title} — ${i + 1}`}
+                          width={900}
+                          height={1200}
+                          // First slide is the LCP candidate on this page.
+                          priority={i === 0}
+                          sizes="(max-width: 767px) 100vw, 50vw"
+                          className="pdp-gallery__img"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {gallery.length > 1 && (
+                    <div className="pdp-dots" role="tablist" aria-label={title}>
+                      {gallery.map((img, i) => (
+                        <button
+                          key={img + i}
+                          type="button"
+                          role="tab"
+                          aria-selected={i === activeIndex}
+                          aria-label={`${i + 1} / ${gallery.length}`}
+                          onClick={() => scrollToSlide(i)}
+                          className={`pdp-dot${
+                            i === activeIndex ? " is-active" : ""
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    overflowX: "auto",
-                    paddingBottom: "10px",
-                  }}
-                >
-                  {product.images.map((img, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImage(img)}
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        flexShrink: 0,
-                        border:
-                          activeImage === img
-                            ? "2px solid #111"
-                            : "1px solid #e9ecef",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                        padding: 0,
-                        background: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Image
-                        src={img}
-                        alt={`${title} - ${i + 1}`}
-                        width={80}
-                        height={80}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
+                  style={{ width: "100%", paddingBottom: "133%", background: "#f8f9fa" }}
+                />
               )}
             </div>
           </div>
@@ -441,7 +456,9 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                             border: isActive
                               ? "2px solid #111"
                               : "1px solid #ced4da",
-                            borderRadius: "40px",
+                            // Square, matching the card swatches and the
+                            // rest of the squared-off product surfaces.
+                            borderRadius: 0,
                             background: isActive ? "#f8f9fa" : "#fff",
                             color: "#111",
                             fontSize: "14px",
@@ -459,7 +476,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                             style={{
                               width: "16px",
                               height: "16px",
-                              borderRadius: "50%",
+                              borderRadius: 0,
                               backgroundColor: swatch.hex,
                               // Pale swatches need their own outline or they
                               // vanish against the white pill.

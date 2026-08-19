@@ -979,3 +979,139 @@ tr:hover > .tbl-pin-cell {
   line-height: 20px;
   font-weight: 400;
 }
+
+/* Product cards, squared off.
+ *
+ * The template rounds the image wrapper to 8px and rounds every colour dot to a
+ * circle. Scoped overrides rather than edits to the scss, for the usual reason:
+ * globals.css loads from the root layout and the template from the nested
+ * storefront layout, so these need the extra specificity to win.
+ */
+.card-product .card-product-wrapper,
+.card-product .card-product-wrapper img {
+  border-radius: 0;
+}
+
+/* Square swatches, and the "+N" that replaces the rest of the row. */
+.card-product .list-color-product {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-product .list-color-product .list-color-item {
+  border-radius: 0;
+}
+
+.card-product .list-color-product .swatch-value {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  /* Pale colours need their own outline or they vanish against the card. */
+  box-shadow: inset 0 0 0 1px rgba(24, 24, 24, 0.22);
+}
+
+.card-product .card-swatch-more {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: rgba(24, 24, 24, 0.55);
+  /* Not a swatch, so it must not inherit the swatch box. */
+  width: auto;
+  height: auto;
+  background: none;
+  cursor: default;
+}
+
+/* Product grids sit almost edge to edge.
+ *
+ * :has() scopes this to grids that actually hold product cards — the same
+ * .tf-grid-layout class also lays out the banner collection, which still wants
+ * its original spacing. The row gap stays generous because the title and price
+ * live in that space; only the columns close up.
+ */
+.tf-grid-layout:has(> .card-product) {
+  column-gap: 2px;
+  row-gap: 28px;
+}
+
+/* Product detail gallery — full-bleed carousel with dots.
+ *
+ * A scroll-snap track rather than a carousel library: swipe, momentum and
+ * keyboard scrolling come from the browser, nothing extra ships to the client,
+ * and every image stays in the markup. Squared off to match the cards.
+ */
+.pdp-gallery {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* The dots are the affordance; a scrollbar under the photo is noise. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Momentum scrolling on iOS. */
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0;
+}
+
+.pdp-gallery::-webkit-scrollbar {
+  display: none;
+}
+
+.pdp-gallery__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.pdp-gallery__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* 3:4 is the shape the product photography is shot in; fixing it here stops
+     the dots jumping as each slide loads at its own intrinsic height. */
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.pdp-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0 4px;
+}
+
+.pdp-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(24, 24, 24, 0.22);
+  cursor: pointer;
+  /* Only background-color animates — nothing here forces layout. */
+  transition: background-color 180ms ease;
+  /* The dot is 7px but the tap target has to clear 24px, so the hit area is
+     grown with a pseudo-element instead of by making the dot itself bigger. */
+  position: relative;
+}
+
+.pdp-dot::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+
+.pdp-dot.is-active {
+  background: #181818;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdp-gallery {
+    scroll-behavior: auto;
+  }
+  .pdp-dot {
+    transition: none;
+  }
+}

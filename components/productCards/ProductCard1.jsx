@@ -249,39 +249,50 @@ export default function ProductCard1({
           )}
         </span>
         {product.colors?.length > 0 && (
+          // One square swatch and a count, rather than a row of dots. A card
+          // showing five circles spends more of the eye's attention on colour
+          // chips than on the product; the count says the same thing in less
+          // space, and the full set is on the product page where it can be
+          // chosen. Colours arrive resolved from lib/products/colors — the
+          // swatch is painted inline because the stored names are Arabic, so
+          // there is no utility class to reach for.
           <ul className="list-color-product">
-            {product.colors.map((color, index) => {
-              // Colours arrive resolved from lib/products/colors. The swatch is
-              // painted inline because the stored names are Arabic, so there is
-              // no utility class to reach for — the previous `bg-main` class
-              // rendered every colour of a product as the same black dot.
-              const label = locale === "en" ? color.nameEn : color.nameAr;
+            {(() => {
+              const [first, ...rest] = product.colors;
+              const label = locale === "en" ? first.nameEn : first.nameAr;
               return (
-                <li
-                  key={color.key ?? index}
-                  className={`list-color-item color-swatch ${
-                    currentImage == color.imgSrc ? "active" : ""
-                  } ${color.isLight ? "line" : ""}`}
-                  onMouseOver={() => color.imgSrc && setCurrentImage(color.imgSrc)}
-                  title={label}
-                >
-                  <span
-                    className="swatch-value"
-                    style={{ backgroundColor: color.hex }}
-                    aria-label={label}
-                  />
-                  {color.imgSrc && (
-                    <Image
-                      className="lazyload"
-                      src={color.imgSrc}
-                      alt={label}
-                      width={600}
-                      height={800}
+                <>
+                  <li
+                    key={first.key ?? "first"}
+                    className={`list-color-item color-swatch ${
+                      currentImage == first.imgSrc ? "active" : ""
+                    } ${first.isLight ? "line" : ""}`}
+                    onMouseOver={() =>
+                      first.imgSrc && setCurrentImage(first.imgSrc)
+                    }
+                    title={label}
+                  >
+                    <span
+                      className="swatch-value"
+                      style={{ backgroundColor: first.hex }}
+                      aria-label={label}
                     />
+                  </li>
+                  {rest.length > 0 && (
+                    <li
+                      className="list-color-item card-swatch-more"
+                      // The remaining colours are named for screen readers; the
+                      // "+2" alone would tell them nothing.
+                      title={rest
+                        .map((c) => (locale === "en" ? c.nameEn : c.nameAr))
+                        .join("، ")}
+                    >
+                      +{rest.length}
+                    </li>
                   )}
-                </li>
+                </>
               );
-            })}
+            })()}
           </ul>
         )}
       </div>
