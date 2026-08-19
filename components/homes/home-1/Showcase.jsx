@@ -4,9 +4,35 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 
-export default function Showcase() {
+/**
+ * The single full-bleed feature panel.
+ *
+ * Editable now: pass a banner with placement SHOWCASE and it supplies the image,
+ * the kicker, the heading, the button text and — the point — the link, so the
+ * panel can lead to a specific product instead of the shop listing.
+ *
+ * Everything falls back to what shipped (the bundled artwork and the
+ * home.showcase translations), so the section still renders before any showcase
+ * banner exists rather than going blank.
+ */
+export default function Showcase({ banner = null }) {
   const locale = useLocale();
   const t = useTranslations("home.showcase");
+
+  const ar = locale === "ar";
+  const image = banner?.image || "/images/banner/showcase-banner.png";
+  const subtitle = (ar ? banner?.subtitleAr : banner?.subtitleEn) || t("subtitle");
+  const title = (ar ? banner?.titleAr : banner?.titleEn) || t("title");
+  const cta = (ar ? banner?.btnTextAr : banner?.btnTextEn) || t("btn");
+
+  // Admin links are stored site-relative; prefix the locale so the click lands
+  // directly rather than bouncing through a redirect.
+  const rawHref = banner?.link || "/shop-default-grid";
+  const href =
+    /^https?:\/\//.test(rawHref) || rawHref.startsWith(`/${locale}`)
+      ? rawHref
+      : `/${locale}${rawHref.startsWith("/") ? "" : "/"}${rawHref}`;
+
   return (
     <section
       style={{
@@ -16,7 +42,7 @@ export default function Showcase() {
       }}
     >
       <Link
-        href={`/${locale}/shop-default-grid`}
+        href={href}
         style={{
           display: "block",
           position: "relative",
@@ -29,8 +55,8 @@ export default function Showcase() {
         className="showcase-link"
       >
         <Image
-          src="/images/banner/showcase-banner.png"
-          alt="Fit Women Heels - Exclusive Collection"
+          src={image}
+          alt={title}
           fill
           style={{ objectFit: "cover", transition: "transform 0.8s ease" }}
           sizes="100vw"
@@ -39,9 +65,9 @@ export default function Showcase() {
         />
         {/* Centered overlay text */}
         <div className="showcase-overlay">
-          <span className="showcase-subtitle">{t("subtitle")}</span>
-          <span className="showcase-title">{t("title")}</span>
-          <span className="showcase-btn">{t("btn")}</span>
+          <span className="showcase-subtitle">{subtitle}</span>
+          <span className="showcase-title">{title}</span>
+          <span className="showcase-btn">{cta}</span>
         </div>
       </Link>
 

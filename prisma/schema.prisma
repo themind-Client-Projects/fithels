@@ -313,6 +313,8 @@ enum BannerPlacement {
   CATALOG
   /// The grid strip near the foot of the page.
   COLLECTION
+  /// The single full-bleed panel with the centred heading.
+  SHOWCASE
 }
 
 model Banner {
@@ -321,6 +323,10 @@ model Banner {
   titleAr   String?
   btnTextEn String?
   btnTextAr String?
+  /// Small line above the heading. Only the showcase panel renders it today;
+  /// null everywhere else, which is why it is optional rather than defaulted.
+  subtitleEn String?
+  subtitleAr String?
   image     String
   link      String
   isActive  Boolean  @default(true)

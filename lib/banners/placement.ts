@@ -6,7 +6,12 @@
  * a placement added to the schema but forgotten in one of those three is the
  * failure this prevents.
  */
-export const BANNER_PLACEMENTS = ["HERO", "CATALOG", "COLLECTION"] as const;
+export const BANNER_PLACEMENTS = [
+  "HERO",
+  "CATALOG",
+  "COLLECTION",
+  "SHOWCASE",
+] as const;
 
 export type BannerPlacement = (typeof BANNER_PLACEMENTS)[number];
 

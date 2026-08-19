@@ -190,5 +190,8 @@
   "placementHint": "Where this banner appears. Point its link at a product to send shoppers straight to it.",
   "placementHERO": "Hero carousel",
   "placementCATALOG": "Product panels",
-  "placementCOLLECTION": "Collection strip"
+  "placementCOLLECTION": "Collection strip",
+  "placementSHOWCASE": "Feature panel",
+  "subtitleAr": "Kicker line (Arabic)",
+  "subtitleEn": "Kicker line (English)"
 }

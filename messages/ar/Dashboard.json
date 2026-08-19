@@ -190,5 +190,8 @@
   "placementHint": "يحدّد مكان ظهور هذا البانر. اربط الرابط بمنتج ليصل إليه الزبون مباشرة.",
   "placementHERO": "الشريط الرئيسي",
   "placementCATALOG": "لوحات المنتجات",
-  "placementCOLLECTION": "شريط المجموعة"
+  "placementCOLLECTION": "شريط المجموعة",
+  "placementSHOWCASE": "اللوحة المميزة",
+  "subtitleAr": "سطر علوي (عربي)",
+  "subtitleEn": "سطر علوي (إنجليزي)"
 }

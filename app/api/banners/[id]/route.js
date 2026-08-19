@@ -20,6 +20,8 @@ export async function PUT(request, { params }) {
         titleAr: data.titleAr !== undefined ? data.titleAr : undefined,
         btnTextEn: data.btnTextEn !== undefined ? data.btnTextEn : undefined,
         btnTextAr: data.btnTextAr !== undefined ? data.btnTextAr : undefined,
+        subtitleEn: data.subtitleEn !== undefined ? data.subtitleEn || null : undefined,
+        subtitleAr: data.subtitleAr !== undefined ? data.subtitleAr || null : undefined,
         image: data.image !== undefined ? data.image : undefined,
         link: data.link !== undefined ? data.link : undefined,
         isActive: data.isActive !== undefined ? data.isActive : undefined,

@@ -43,6 +43,8 @@ export async function POST(request) {
         titleAr: data.titleAr || null,
         btnTextEn: data.btnTextEn || null,
         btnTextAr: data.btnTextAr || null,
+        subtitleEn: data.subtitleEn || null,
+        subtitleAr: data.subtitleAr || null,
         image: data.image || "",
         link: data.link || "#",
         isActive: data.isActive !== undefined ? data.isActive : true,

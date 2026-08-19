@@ -23,6 +23,8 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
     titleAr: "",
     btnTextEn: "",
     btnTextAr: "",
+    subtitleEn: "",
+    subtitleAr: "",
     image: "",
     link: "",
     order: 0,
@@ -37,6 +39,8 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
         titleAr: banner.titleAr || "",
         btnTextEn: banner.btnTextEn || "",
         btnTextAr: banner.btnTextAr || "",
+        subtitleEn: banner.subtitleEn || "",
+        subtitleAr: banner.subtitleAr || "",
         image: banner.image || "",
         link: banner.link || "",
         order: banner.order || 0,
@@ -220,6 +224,32 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
               value={formData.btnTextEn}
               onChange={(e) => setFormData({ ...formData, btnTextEn: e.target.value })}
               placeholder="Shop Now"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
+              dir="ltr"
+            />
+          </div>
+        </div>
+
+        {/* Only the feature panel renders the kicker line today, so both fields
+            are optional and blank is stored as NULL. */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="subtitleAr" className="text-start text-sm font-semibold text-muted-foreground">{t("subtitleAr")}</Label>
+            <Input
+              id="subtitleAr"
+              value={formData.subtitleAr}
+              onChange={(e) => setFormData({ ...formData, subtitleAr: e.target.value })}
+              placeholder="حصري"
+              className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="subtitleEn" className="text-start text-sm font-semibold text-muted-foreground">{t("subtitleEn")}</Label>
+            <Input
+              id="subtitleEn"
+              value={formData.subtitleEn}
+              onChange={(e) => setFormData({ ...formData, subtitleEn: e.target.value })}
+              placeholder="Exclusive"
               className="h-12 px-4 bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl text-start"
               dir="ltr"
             />

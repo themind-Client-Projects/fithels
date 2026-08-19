@@ -81,6 +81,8 @@ export default async function HomePage({ params }) {
       image: true,
       link: true,
       placement: true,
+      subtitleAr: true,
+      subtitleEn: true,
     },
   });
 
@@ -90,6 +92,9 @@ export default async function HomePage({ params }) {
   const heroBanners = banners.filter((b) => b.placement === "HERO");
   const catalogBanners = banners.filter((b) => b.placement === "CATALOG");
   const collectionBanners = banners.filter((b) => b.placement === "COLLECTION");
+  // One panel, so the lowest `order` wins if more than one is marked SHOWCASE.
+  const showcaseBanner =
+    banners.find((b) => b.placement === "SHOWCASE") ?? null;
 
   return (
     <>
@@ -113,7 +118,7 @@ export default async function HomePage({ params }) {
         leftCta="Discover →"
         rightCta="View All →"
       />
-      <Showcase />
+      <Showcase banner={showcaseBanner} />
       <Products products={mappedProducts} />
       <BannerCollection banners={collectionBanners} locale={locale} />
       <Footer1 />
