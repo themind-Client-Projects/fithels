@@ -6,7 +6,7 @@
  * row — the shopper could not tell whether 36 was sold out or had never been
  * made. Showing the full run and marking the gaps answers that.
  *
- * Sizes are stored as strings ('35'…'41' in the seed), so everything here
+ * Sizes are stored as strings ('35'…'41'), so everything here
  * compares strings. Values are trimmed on the way in because they are typed by
  * hand in the admin form.
  */
@@ -18,7 +18,6 @@ export const CANONICAL_SIZES: readonly string[] = [
   "39",
   "40",
   "41",
-  "42",
 ];
 
 /**
@@ -34,9 +33,9 @@ export const CANONICAL_SIZES: readonly string[] = [
  *
  * Five of the eight cm values are taken verbatim from the supplier chart:
  * 36→22.5, 38→24, 39→25, 40→25.5, 41→26.5. That chart lists half sizes this shop
- * does not stock (35.5, 36.5, 37.5, 38.5, 40.5), so 35, 37 and 42 are
- * interpolated from the rows either side of them and are the ones to correct
- * first if the supplier disagrees.
+ * does not stock (35.5, 36.5, 37.5, 38.5, 40.5), so 35 and 37 are interpolated
+ * from the rows either side of them and are the ones to correct first if the
+ * supplier disagrees.
  */
 export type SizeConversion = {
   eu: string;
@@ -54,7 +53,6 @@ export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
   { eu: "39", uk: "6", us: "8", cm: "25" },
   { eu: "40", uk: "7", us: "9", cm: "25.5" },
   { eu: "41", uk: "8", us: "10", cm: "26.5" },
-  { eu: "42", uk: "9", us: "11", cm: "27" },
 ];
 
 /**

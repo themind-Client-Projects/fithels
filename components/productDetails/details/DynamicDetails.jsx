@@ -449,11 +449,13 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                             setNotice("");
                           }}
                           aria-pressed={isActive}
+                          aria-label={color}
+                          title={color}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "8px",
-                            padding: "8px 16px",
+                            padding: "10px",
                             border: isActive
                               ? "2px solid #111"
                               : "1px solid #ced4da",
@@ -485,7 +487,13 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                               flexShrink: 0,
                             }}
                           />
-                          {color}
+                          {/* The name is deliberately not printed here — the
+                              "Color: <name>" line above already says which one
+                              is selected, and repeating it in every pill made
+                              the row three times wider than the swatches need.
+                              aria-label and title carry it instead, so the
+                              button still has an accessible name and the colour
+                              is identifiable on hover. */}
                           {chosen > 0 && (
                             <span
                               style={{
