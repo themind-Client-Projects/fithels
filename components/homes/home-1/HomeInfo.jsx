@@ -23,23 +23,36 @@ import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
  * page uses; the class was named after that page until this second caller made
  * the name misleading.
  *
- * Copy lives in the shop namespace, so it is translated and editable in both
- * locales. It is not admin-editable — the pages section was removed from the
- * dashboard — so the FAQ text is a developer edit for now.
+ * The three claims and the ordering answer both come from the TrustBadge rows,
+ * so a wording change in the dashboard reaches every surface at once. The
+ * about-us and customer-care answers are still translation strings.
  */
-export default function HomeInfo() {
+export default function HomeInfo({ badges = [], locale = "ar" }) {
   const t = useTranslations("shop");
+
+  const ar = locale === "ar";
+
+  // The ordering answer is BUILT from the same badge rows the band above renders
+  // — it used to restate "within 48 hours" in its own translated string, so
+  // editing the delivery badge in the dashboard changed the band and left the
+  // FAQ contradicting it. Now there is one place to edit and no way to disagree.
+  const orderText = [
+    t("faqOrderIntro"),
+    ...badges.map((badge) => (ar ? badge.textAr : badge.textEn)),
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const faqs = [
     { value: "about", title: t("faqAboutTitle"), text: t("faqAboutText") },
     { value: "care", title: t("faqCareTitle"), text: t("faqCareText") },
-    { value: "order", title: t("faqOrderTitle"), text: t("faqOrderText") },
+    { value: "order", title: t("faqOrderTitle"), text: orderText },
   ];
 
   return (
     <section className="home-info">
       <div className="container">
-        <ProductTrustBadges variant="stacked" />
+        <ProductTrustBadges badges={badges} locale={locale} variant="stacked" />
 
         <div className="home-info__faq">
           <h2 className="home-info__title">{t("faqTitle")}</h2>

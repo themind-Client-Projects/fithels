@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { getTranslations } from "next-intl/server";
+import { getTrustBadges } from "@/lib/settings/trustBadges";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -87,6 +88,10 @@ export default async function HomePage({ params }) {
     },
   });
 
+  // Shop-wide reassurance copy, edited in the dashboard. Read here so the client
+  // components below stay presentational.
+  const trustBadges = await getTrustBadges();
+
   // Split by placement. Every banner used to feed the hero AND the collection
   // strip at once, so the same three images appeared twice on one page, and the
   // catalogue panels between them were hardcoded and could not be edited at all.
@@ -122,7 +127,7 @@ export default async function HomePage({ params }) {
       <Showcase banner={showcaseBanner} />
       <Products products={mappedProducts} />
       <BannerCollection banners={collectionBanners} locale={locale} />
-      <HomeInfo />
+      <HomeInfo badges={trustBadges} locale={locale} />
       <Footer1 />
     </>
   );

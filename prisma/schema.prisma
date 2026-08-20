@@ -478,3 +478,32 @@ model Subscriber {
 
   @@index([createdAt])
 }
+
+/// Shop-wide reassurance copy: the payment / cash-on-delivery / delivery trio
+/// shown under the buy button and again above the footer.
+///
+/// One row per slot, and `slot` is unique, so the set cannot grow a fourth or
+/// carry two rows for the same thing. The icon is NOT stored — it is chosen in
+/// code from the slot, so an admin cannot pair a truck with the payment line.
+///
+/// This exists because the copy was written into the translation files, which
+/// made every wording change a developer edit and, worse, meant the shop could
+/// state one delivery term on the product page and another on the home page.
+/// Both surfaces read these rows now.
+model TrustBadge {
+  id       String  @id @default(cuid())
+  /// PAYMENT | COD | DELIVERY — validated against lib/settings/trustBadges.
+  slot     String  @unique
+  titleAr  String
+  titleEn  String
+  textAr   String
+  textEn   String
+  /// Hidden rather than deleted, so turning a claim off does not lose its copy.
+  isActive Boolean @default(true)
+  order    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, order])
+}

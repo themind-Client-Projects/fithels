@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
 
 /**
  * Reassurance strip under the buy button: how payment works, and where the
  * delivery terms are.
  *
- * Every line here is something the code actually does. That constraint is
+ * The copy comes from the TrustBadge rows, edited in the dashboard, so the two
+ * places it appears cannot drift apart and a wording change is not a deploy.
+ * The defaults it falls back to are still constrained to what the code does.
+ * That constraint is
  * deliberate — the cart used to carry a "Congratulations! You've got free
  * shipping!" bar wired to nothing, and the home page a features strip promising
  * free delivery the checkout never applied. Both were removed for saying things
@@ -60,25 +62,44 @@ const TruckIcon = () => (
  *   "rows"    — compact list, used beside the buy button
  *   "stacked" — icon above centred text, used as a full-width band
  */
-export default function ProductTrustBadges({ variant = "rows" }) {
-  const t = useTranslations("shop");
+/** Icon per slot, chosen here rather than stored, so an admin editing the copy
+ *  cannot pair the truck with the payment line. */
+const ICONS = {
+  PAYMENT: ShieldIcon,
+  COD: CashIcon,
+  DELIVERY: TruckIcon,
+};
 
-  const items = [
-    { Icon: ShieldIcon, title: t("trustSecureTitle"), text: t("trustSecureText") },
-    { Icon: CashIcon, title: t("trustCodTitle"), text: t("trustCodText") },
-    { Icon: TruckIcon, title: t("trustDeliveryTitle"), text: t("trustDeliveryText") },
-  ];
+export default function ProductTrustBadges({
+  badges = [],
+  locale = "ar",
+  variant = "rows",
+}) {
+  const ar = locale === "ar";
+
+  const items = badges
+    .map((badge) => ({
+      key: badge.slot,
+      Icon: ICONS[badge.slot],
+      title: ar ? badge.titleAr : badge.titleEn,
+      text: ar ? badge.textAr : badge.textEn,
+    }))
+    // A slot the code does not know how to draw is skipped rather than rendered
+    // without an icon.
+    .filter((item) => item.Icon && item.title);
+
+  if (items.length === 0) return null;
 
   return (
     <ul className={`pdp-trust pdp-trust--${variant}`}>
-      {items.map(({ Icon, title, text }) => (
-        <li className="pdp-trust__item" key={title}>
+      {items.map(({ key, Icon, title, text }) => (
+        <li className="pdp-trust__item" key={key}>
           <span className="pdp-trust__icon">
             <Icon />
           </span>
           <span className="pdp-trust__copy">
             <span className="pdp-trust__title">{title}</span>
-            <span className="pdp-trust__text">{text}</span>
+            {text && <span className="pdp-trust__text">{text}</span>}
           </span>
         </li>
       ))}

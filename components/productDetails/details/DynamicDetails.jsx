@@ -34,7 +34,7 @@ import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
  * size 39 x1" and the order would be rejected at checkout after the shopper had
  * entered their details.
  */
-export default function DynamicDetails({ product, locale = "ar" }) {
+export default function DynamicDetails({ product, locale = "ar", trustBadges = [] }) {
   const ar = locale === "ar";
 
   const [activeColor, setActiveColor] = useState(product.colors?.[0] || "");
@@ -796,7 +796,7 @@ export default function DynamicDetails({ product, locale = "ar" }) {
                 </button>
               </div>
 
-              <ProductTrustBadges />
+              <ProductTrustBadges badges={trustBadges} locale={locale} />
 
               <ProductInfoAccordion product={product} locale={locale} />
             </div>

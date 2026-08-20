@@ -193,5 +193,14 @@
   "placementCOLLECTION": "شريط المجموعة",
   "placementSHOWCASE": "اللوحة المميزة",
   "subtitleAr": "سطر علوي (عربي)",
-  "subtitleEn": "سطر علوي (إنجليزي)"
+  "subtitleEn": "سطر علوي (إنجليزي)",
+  "trustSectionHint": "هذه العبارات تظهر في صفحة المنتج وفي أسفل الصفحة الرئيسية. تعديلها هنا يغيّرها في كل مكان.",
+  "trustSlotPAYMENT": "الدفع الإلكتروني",
+  "trustSlotCOD": "الدفع عند الاستلام",
+  "trustSlotDELIVERY": "التوصيل",
+  "trustTitleAr": "العنوان (عربي)",
+  "trustTitleEn": "العنوان (إنجليزي)",
+  "trustTextAr": "الوصف (عربي)",
+  "trustTextEn": "الوصف (إنجليزي)",
+  "trustSaved": "تم الحفظ"
 }

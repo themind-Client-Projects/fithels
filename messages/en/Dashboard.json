@@ -193,5 +193,14 @@
   "placementCOLLECTION": "Collection strip",
   "placementSHOWCASE": "Feature panel",
   "subtitleAr": "Kicker line (Arabic)",
-  "subtitleEn": "Kicker line (English)"
+  "subtitleEn": "Kicker line (English)",
+  "trustSectionHint": "These lines appear on the product page and at the foot of the home page. Editing them here changes them everywhere.",
+  "trustSlotPAYMENT": "Online payment",
+  "trustSlotCOD": "Cash on delivery",
+  "trustSlotDELIVERY": "Delivery",
+  "trustTitleAr": "Title (Arabic)",
+  "trustTitleEn": "Title (English)",
+  "trustTextAr": "Description (Arabic)",
+  "trustTextEn": "Description (English)",
+  "trustSaved": "Saved"
 }

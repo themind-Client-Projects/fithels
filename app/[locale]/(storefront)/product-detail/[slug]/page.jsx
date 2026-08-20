@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RelatedProducts from "@/components/productDetails/RelatedProducts";
+import { getTrustBadges } from "@/lib/settings/trustBadges";
 
 /**
  * Read the product straight from the database.
@@ -80,11 +81,18 @@ export default async function ProductDetailPage({ params }) {
     );
   }
 
+  // Same rows the home page reads, so both surfaces state the same terms.
+  const trustBadges = await getTrustBadges();
+
   return (
     <>
       <Topbar />
       <Header1 />
-      <DynamicDetails product={product} locale={locale} />
+      <DynamicDetails
+        product={product}
+        locale={locale}
+        trustBadges={trustBadges}
+      />
       <RelatedProducts product={product} locale={locale} />
       <Footer1 hasPaddingBottom />
     </>

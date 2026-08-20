@@ -38,6 +38,7 @@ import {
   LogOut,
   ChevronsUpDown,
   Store,
+  Settings,
   Sparkles,
   TicketPercent,
 } from "lucide-react";
@@ -131,6 +132,18 @@ export default function DashboardSidebar() {
         <SidebarGroup className="mt-4">
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  render={<Link href={`/${locale}/dashboard/settings`} />}
+                  tooltip={t("settings")}
+                  className="rounded-xl transition-all duration-200"
+                  style={{ paddingRight: "1rem", paddingLeft: "1rem" }}
+                >
+                  <Settings className="size-5 me-3 text-muted-foreground group-hover/menu-button:text-primary" />
+                  <span className="text-sm font-medium">{t("settings")}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 {/* A plain <a>, not a Link, deliberately — the mirror of the
                     dashboard link in the storefront header.
