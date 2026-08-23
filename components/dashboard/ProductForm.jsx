@@ -32,6 +32,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [price, setPrice] = useState(product?.price?.toString() || "");
   const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
+  /**
+   * Which section is showing in the first picker.
+   *
+   * Derived from the product's category on edit — the product stores only the
+   * category, so the section is looked up once the category list arrives rather
+   * than being a second column on Product that could disagree with it.
+   */
+  const [sectionId, setSectionId] = useState("");
   // An array, not a comma-separated string. The field is a checklist now, and
   // round-tripping through free text is what allowed values like "S, M, L, XL"
   // — and, in one case, a paragraph of lorem ipsum — into the sizes column.
@@ -87,6 +95,25 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     }
     fetchCategories();
   }, []);
+
+  // Both lists are DERIVED from the one categories fetch — no second request and
+  // no second copy of the tree to keep in step.
+  const sections = categories.filter((c) => !c.parentId);
+
+  /**
+   * The section actually shown.
+   *
+   * On edit the product knows only its category, so the section comes from that
+   * category's parent until the admin picks a different one. Deriving it beats
+   * syncing it in an effect: no second render pass, and no window in which the
+   * two pickers disagree.
+   */
+  const chosenCategory = categories.find((c) => c.id === categoryId);
+  const effectiveSectionId = sectionId || chosenCategory?.parentId || "";
+
+  const categoriesInSection = categories.filter(
+    (c) => c.parentId && c.parentId === effectiveSectionId
+  );
 
   // The dialog scrolls, and the banner is its first child — an admin who
   // scrolled down to reach Save never saw the message they had just triggered.
@@ -426,22 +453,53 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <Label htmlFor="categoryId" className="text-start text-sm font-bold text-foreground">{t("category")}</Label>
-        <select
-          id="categoryId"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="flex h-12 w-full rounded-xl border border-input bg-muted/30 px-4 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-primary/20 transition-all"
-          required
-        >
-          <option value="">{t("selectCategory")}</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.nameAr || cat.nameEn}
+      {/* Section first, then the category inside it. Two pickers rather than one
+          long flat list: with a section chosen the second list is short enough to
+          read, and it makes the tree visible to whoever is filing the product.
+          Only the category is saved — the section is implied by it. */}
+      <div className="grid grid-cols-2 gap-6">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="sectionId" className="text-start text-sm font-bold text-foreground">{t("section")}</Label>
+          <select
+            id="sectionId"
+            value={effectiveSectionId}
+            onChange={(e) => {
+              setSectionId(e.target.value);
+              // The chosen category almost certainly belongs to the old section,
+              // so clear it rather than leave a mismatched pair on screen.
+              setCategoryId("");
+            }}
+            className="flex h-12 w-full rounded-xl border border-input bg-muted/30 px-4 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-primary/20 transition-all"
+          >
+            <option value="">{t("selectSection")}</option>
+            {sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.nameAr || sec.nameEn}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="categoryId" className="text-start text-sm font-bold text-foreground">{t("category")}</Label>
+          <select
+            id="categoryId"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            disabled={!effectiveSectionId}
+            className="flex h-12 w-full rounded-xl border border-input bg-muted/30 px-4 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-primary/20 transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            required
+          >
+            <option value="">
+              {effectiveSectionId ? t("selectCategory") : t("selectSectionFirst")}
             </option>
-          ))}
-        </select>
+            {categoriesInSection.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.nameAr || cat.nameEn}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">

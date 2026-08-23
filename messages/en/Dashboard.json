@@ -202,5 +202,14 @@
   "trustTitleEn": "Title (English)",
   "trustTextAr": "Description (Arabic)",
   "trustTextEn": "Description (English)",
-  "trustSaved": "Saved"
+  "trustSaved": "Saved",
+  "section": "Section",
+  "selectSection": "Choose a section",
+  "selectSectionFirst": "Choose a section first",
+  "parentSection": "Parent section",
+  "isTopLevelSection": "Top-level section (no parent)",
+  "parentSectionHint": "Leave empty to make this a top-level section, or choose one to make it a category inside it.",
+  "cannotNestSection": "This section holds categories, so it cannot be placed inside another one.",
+  "sections": "Sections",
+  "noCategoriesYet": "No categories yet"
 }

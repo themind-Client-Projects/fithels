@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import { translatePrismaError } from '@/lib/prisma-errors'
+import { assertValidParent, assertDeletable, CategoryTreeError } from '@/lib/categories/tree'
 
 // GET /api/categories/[id] - Get single category (public)
 export async function GET(
@@ -27,6 +28,12 @@ export async function GET(
 
     return NextResponse.json(category)
   } catch (error) {
+    if (error instanceof CategoryTreeError) {
+      return NextResponse.json(
+        { error: error.message, reason: error.reason },
+        { status: error.status }
+      )
+    }
     const translated = translatePrismaError(error)
     if (translated) {
       return NextResponse.json(
@@ -61,7 +68,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Category not found' }, { status: 404 })
     }
 
-    const { nameEn, nameAr, slug, image } = body
+    const { nameEn, nameAr, slug, image, parentId } = body
 
     // If slug is being changed, check uniqueness
     if (slug && slug !== existing.slug) {
@@ -74,6 +81,12 @@ export async function PUT(
       }
     }
 
+    // Only validate when the caller is actually changing the parent, so a plain
+    // rename does not have to satisfy the tree rules again.
+    if (parentId !== undefined) {
+      await assertValidParent({ id, parentId: parentId || null })
+    }
+
     const category = await prisma.category.update({
       where: { id },
       data: {
@@ -81,6 +94,7 @@ export async function PUT(
         ...(nameAr !== undefined && { nameAr }),
         ...(slug !== undefined && { slug }),
         ...(image !== undefined && { image: image || null }),
+        ...(parentId !== undefined && { parentId: parentId || null }),
       },
       include: {
         _count: {
@@ -91,6 +105,12 @@ export async function PUT(
 
     return NextResponse.json(category)
   } catch (error) {
+    if (error instanceof CategoryTreeError) {
+      return NextResponse.json(
+        { error: error.message, reason: error.reason },
+        { status: error.status }
+      )
+    }
     const translated = translatePrismaError(error)
     if (translated) {
       return NextResponse.json(
@@ -132,17 +152,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Category not found' }, { status: 404 })
     }
 
-    if (category._count.products > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete category with ${category._count.products} product(s). Remove or reassign them first.` },
-        { status: 400 }
-      )
-    }
+    // Children as well as products. The foreign key is Restrict, so the database
+    // would refuse this anyway — but as an opaque constraint error rather than a
+    // message saying which of the two problems it is.
+    await assertDeletable(id)
 
     await prisma.category.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Category deleted successfully' })
   } catch (error) {
+    if (error instanceof CategoryTreeError) {
+      return NextResponse.json(
+        { error: error.message, reason: error.reason },
+        { status: error.status }
+      )
+    }
     const translated = translatePrismaError(error)
     if (translated) {
       return NextResponse.json(

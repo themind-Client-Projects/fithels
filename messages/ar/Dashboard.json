@@ -202,5 +202,14 @@
   "trustTitleEn": "العنوان (إنجليزي)",
   "trustTextAr": "الوصف (عربي)",
   "trustTextEn": "الوصف (إنجليزي)",
-  "trustSaved": "تم الحفظ"
+  "trustSaved": "تم الحفظ",
+  "section": "القسم الرئيسي",
+  "selectSection": "اختر القسم",
+  "selectSectionFirst": "اختر القسم أولًا",
+  "parentSection": "القسم الرئيسي",
+  "isTopLevelSection": "قسم رئيسي (بدون أب)",
+  "parentSectionHint": "اتركه فارغًا ليكون قسمًا رئيسيًا، أو اختر قسمًا ليصبح تصنيفًا بداخله.",
+  "cannotNestSection": "هذا القسم يحتوي تصنيفات، لذلك لا يمكن وضعه داخل قسم آخر.",
+  "sections": "الأقسام الرئيسية",
+  "noCategoriesYet": "لا توجد تصنيفات بعد"
 }

@@ -99,6 +99,24 @@ export default function CategoriesPage() {
       ),
     },
     {
+      // Which section this belongs to — the one column that makes the tree
+      // legible in a flat table. A row with no parent IS a section, and says so
+      // rather than showing an empty cell.
+      header: t("section"),
+      accessorKey: "parentId",
+      cell: ({ row }) =>
+        row.parentId ? (
+          <span className="text-sm text-muted-foreground">
+            {row.parent?.nameAr || row.parent?.nameEn || "—"}
+          </span>
+        ) : (
+          <Badge variant="outline" className="font-bold">
+            {t("sections")}
+            {row._count?.children ? ` · ${row._count.children}` : ""}
+          </Badge>
+        ),
+    },
+    {
       header: t("slug"),
       accessorKey: "slug",
       cell: ({ row }) => (

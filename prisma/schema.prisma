@@ -103,13 +103,34 @@ model Product {
   @@index([createdAt])
 }
 
+/// Two-level catalogue tree: a SECTION (parentId null, e.g. "الأحذية") holding
+/// CATEGORIES (e.g. "حذاء فلات", "حذاء بكعب"), which is what products attach to.
+///
+/// One self-referencing model rather than separate Section and Category tables.
+/// The five categories that existed before this were already shoe types, so they
+/// became children of a new section without a single product being re-assigned —
+/// two tables would have meant migrating every product's foreign key.
+///
+/// Depth is capped at two in the API, not by the schema: a row with a parent
+/// cannot be given children, and a row with children cannot be given a parent.
+/// Postgres has no way to express that, so lib/categories/tree.ts owns the rule
+/// and every write goes through it.
 model Category {
   id       String    @id @default(cuid())
   nameEn   String
   nameAr   String
   slug     String    @unique
   image    String?
+
+  parentId String?
+  /// Restrict, not Cascade: deleting a section must never silently take its
+  /// categories — and their products — with it.
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
+
   products Product[]
+
+  @@index([parentId])
 }
 
 model Order {
