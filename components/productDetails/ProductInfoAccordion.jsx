@@ -76,28 +76,20 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                 </thead>
                 <tbody>
                   <tr>
-                    <th scope="row">UK</th>
-                    {SIZE_CONVERSIONS.map((row) => (
-                      <td key={row.eu}>{row.uk}</td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th scope="row">US</th>
+                    <th scope="row">{ar ? "أمريكي" : "US Women"}</th>
                     {SIZE_CONVERSIONS.map((row) => (
                       <td key={row.eu}>{row.us}</td>
                     ))}
                   </tr>
                   {/* Foot length — the one row a shopper can check against a
                       ruler rather than against another country's numbering.
-                      Labelled "CM" in both locales, like UK and US: the unit is
-                      read as a symbol, not translated.
 
                       There is no availability row here. The size pills above
                       already strike through what this product does not carry,
                       and repeating it in the guide meant two places to keep in
                       step for no extra information. */}
                   <tr>
-                    <th scope="row">CM</th>
+                    <th scope="row">{ar ? "طول القدم (سم)" : "Foot length (cm)"}</th>
                     {SIZE_CONVERSIONS.map((row) => (
                       <td key={row.eu}>{row.cm}</td>
                     ))}

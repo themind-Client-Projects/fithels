@@ -21,40 +21,41 @@ export const CANONICAL_SIZES: readonly string[] = [
 ];
 
 /**
- * EU → UK → US → foot length conversion for the size guide.
+ * EU → foot length → US women's, from the shop's own chart.
  *
- * Kept as data rather than markup so the table and the size pills cannot drift
- * apart: the EU column is exactly CANONICAL_SIZES. Women's shoe sizing, which is
- * what this shop sells.
+ * These are supplied values, not derived ones. An earlier version carried a UK
+ * column and US/CM figures interpolated from a partial chart; when the real
+ * chart arrived every US value was wrong (it read 4,5,6,7,8,9,10 against the
+ * true 5,6,6.5,7.5,8.5,9,9.5) and the centimetres were out by up to 0.5. Nothing
+ * here is calculated any more.
  *
- * `cm` is the FOOT length the size fits, not the shoe's outer length — it is the
- * number a shopper gets by standing on a ruler, which is the whole point of the
- * column.
+ * The UK column is gone with them. It was interpolated from the same bad source
+ * and the shop's chart does not give UK sizes, so there is nothing to restore it
+ * from — a plausible-looking wrong number is worse than an absent one when a
+ * shopper is choosing a size they cannot try on.
  *
- * Five of the eight cm values are taken verbatim from the supplier chart:
- * 36→22.5, 38→24, 39→25, 40→25.5, 41→26.5. That chart lists half sizes this shop
- * does not stock (35.5, 36.5, 37.5, 38.5, 40.5), so 35 and 37 are interpolated
- * from the rows either side of them and are the ones to correct first if the
- * supplier disagrees.
+ * `cm` is FOOT length, matching the chart's own "طول القدم" heading — the number
+ * a shopper gets standing on a ruler, not the shoe's outer length.
+ *
+ * The EU column is exactly CANONICAL_SIZES, so the table and the size pills
+ * cannot drift apart.
  */
 export type SizeConversion = {
   eu: string;
-  uk: string;
-  us: string;
   /** Foot length in centimetres. */
   cm: string;
+  /** US women's sizing. */
+  us: string;
 };
-
 export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
-  { eu: "35", uk: "2", us: "4", cm: "21.5" },
-  { eu: "36", uk: "3", us: "5", cm: "22.5" },
-  { eu: "37", uk: "4", us: "6", cm: "23.5" },
-  { eu: "38", uk: "5", us: "7", cm: "24" },
-  { eu: "39", uk: "6", us: "8", cm: "25" },
-  { eu: "40", uk: "7", us: "9", cm: "25.5" },
-  { eu: "41", uk: "8", us: "10", cm: "26.5" },
+  { eu: "35", cm: "22.0", us: "5" },
+  { eu: "36", cm: "22.68", us: "6" },
+  { eu: "37", cm: "23.35", us: "6.5" },
+  { eu: "38", cm: "24.01", us: "7.5" },
+  { eu: "39", cm: "24.68", us: "8.5" },
+  { eu: "40", cm: "25.35", us: "9" },
+  { eu: "41", cm: "26.01", us: "9.5" },
 ];
-
 /**
  * Which sizes are ticked when a NEW product is created.
  *
