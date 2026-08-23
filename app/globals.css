@@ -1275,7 +1275,10 @@ tr:hover > .tbl-pin-cell {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  text-align: center;
+  /* Follows the reading direction rather than sitting in the middle: it labels a
+     row that begins at the inline edge, so centring left the heading and the
+     first card disagreeing about where the section starts. */
+  text-align: start;
 }
 
 /* Floating WhatsApp button. */
@@ -1443,14 +1446,26 @@ tr:hover > .tbl-pin-cell {
  * colour is a 1.9:1 contrast and effectively unreadable.
  */
 
-/* 1. Cart count badge in the header. */
-.nav-cart .count-box {
+/* 1. Cart count badge in the header.
+ *
+ * The template styles it as `#header .nav-icon .count-box` — an ID, so (1,2,0).
+ * No amount of classes beats an id, so this matches the same id and adds one
+ * more class to reach (1,3,0). A two-class selector, which is what this started
+ * as, never applied at all. */
+#header .nav-icon .nav-cart .count-box {
   background-color: var(--brand-accent);
   color: var(--brand-accent-on);
 }
 
-/* 2. The -25% marker on product cards. */
-.card-product .on-sale-item {
+/* 2. The -25% marker on product cards.
+ *
+ * The template's is
+ * `.card-product .card-product-wrapper .on-sale-wrap .on-sale-item` — (0,4,0).
+ * Matching it exactly would still lose, because globals.css is imported by the
+ * root layout and the template scss by the nested storefront one, so the
+ * template loads second and takes every tie. The class is repeated to reach
+ * (0,5,0). */
+.card-product .card-product-wrapper .on-sale-wrap .on-sale-item.on-sale-item {
   background-color: var(--brand-accent);
   color: var(--brand-accent-on);
 }
@@ -1500,4 +1515,35 @@ tr:hover > .tbl-pin-cell {
   .related-products__rail > .card-product {
     flex: 0 0 19%;
   }
+}
+
+/* Scroll indicator under the rail.
+ *
+ * A proportional bar, not dots: at ten items with two-and-a-bit on screen, ten
+ * dots would be more chrome than the row itself, and would still not say how
+ * much is left.
+ */
+.rail-progress {
+  position: relative;
+  height: 2px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background: rgba(24, 24, 24, 0.1);
+  /* Kept in the layout when it has nothing to report, so the row below does not
+     jump as the rail resizes across breakpoints. */
+  transition: opacity 200ms ease;
+}
+
+.rail-progress--idle {
+  opacity: 0;
+}
+
+.rail-progress__thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--brand-accent);
+  /* inset-inline-start is set inline, so the thumb starts on the right in RTL
+     and the left in LTR without a second ruleset. */
 }

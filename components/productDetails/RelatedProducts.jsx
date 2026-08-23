@@ -1,7 +1,7 @@
 import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
-import ProductCard1 from "@/components/productCards/ProductCard1";
+import RelatedRail from "@/components/productDetails/RelatedRail";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { resolveProductColors } from "@/lib/products/colors";
 
@@ -104,12 +104,10 @@ export default async function RelatedProducts({ product, locale }) {
             block taller than the product page itself, pushing the footer far
             below the fold; side by side they read as a suggestion the shopper
             can skim past. Native scroll-snap, so swipe and momentum are the
-            browser's — the same approach as the product gallery. */}
-        <div className="related-products__rail">
-          {cards.map((card) => (
-            <ProductCard1 key={card.dbId} product={card} />
-          ))}
-        </div>
+            browser's — the same approach as the product gallery.
+            The rail is a client component only because of its scroll indicator;
+            the cards themselves are still built here on the server. */}
+        <RelatedRail cards={cards} />
       </div>
     </section>
   );
