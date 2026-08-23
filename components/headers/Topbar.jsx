@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
 import {useTranslations} from "next-intl";
-import { siteContact, telHref } from "@/data/siteContact";
+import { siteContact } from "@/data/siteContact";
 
 export default function Topbar() {
   const t = useTranslations("nav");
@@ -12,17 +12,9 @@ export default function Topbar() {
       <div className="container">
         <div className="tf-topbar_wrap d-flex align-items-center justify-content-center justify-content-xl-between">
           <ul className="topbar-left">
-            {siteContact.phone && (
-              <li>
-                <a
-                  className="text-caption-1 text-white"
-                  href={telHref(siteContact.phone)}
-                  dir="ltr"
-                >
-                  {siteContact.phone}
-                </a>
-              </li>
-            )}
+            {/* No phone number here. It is still one tap away in the side menu
+                and beside the WhatsApp button, so the topbar does not need to
+                spend its width repeating it. */}
             {siteContact.email ? (
               <li>
                 {/* Was href="#", so tapping the address in the topbar did
