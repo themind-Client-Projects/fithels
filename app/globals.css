@@ -1454,3 +1454,50 @@ tr:hover > .tbl-pin-cell {
   background-color: var(--brand-accent);
   color: var(--brand-accent-on);
 }
+
+/* "You may also like" as a horizontal rail.
+ *
+ * Ten cards in a two-across grid built a block taller than the product page it
+ * follows. Side by side they stay skimmable and the footer stays reachable.
+ *
+ * Logical padding so the first card starts at the correct edge in both
+ * directions, and scroll-padding to match — without it a snapped card sits
+ * flush against the viewport edge with no breathing room.
+ */
+.related-products__rail {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  /* The cards are the affordance; a scrollbar under them is noise. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  /* Cards are squared off, so a hidden overflow would clip nothing — but the
+     shadowless design means the rail needs no padding of its own either. */
+  padding-bottom: 4px;
+}
+
+.related-products__rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Two and a bit cards visible on a phone: the partial third is what tells the
+   shopper the row keeps going. */
+.related-products__rail > .card-product {
+  flex: 0 0 42%;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .related-products__rail > .card-product {
+    flex: 0 0 26%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .related-products__rail > .card-product {
+    flex: 0 0 19%;
+  }
+}

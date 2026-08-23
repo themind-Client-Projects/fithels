@@ -100,7 +100,12 @@ export default async function RelatedProducts({ product, locale }) {
     <section className="related-products">
       <div className="container">
         <h2 className="related-products__title">{t("youMayAlsoLike")}</h2>
-        <div className="tf-grid-layout tf-col-2 lg-col-3 xl-col-4">
+        {/* A horizontal rail, not a grid. Ten cards stacked two-across made a
+            block taller than the product page itself, pushing the footer far
+            below the fold; side by side they read as a suggestion the shopper
+            can skim past. Native scroll-snap, so swipe and momentum are the
+            browser's — the same approach as the product gallery. */}
+        <div className="related-products__rail">
           {cards.map((card) => (
             <ProductCard1 key={card.dbId} product={card} />
           ))}
