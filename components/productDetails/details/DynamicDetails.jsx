@@ -377,7 +377,12 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                   style={{
                     fontSize: "24px",
                     fontWeight: "700",
-                    color: hasDiscount ? "#dc2626" : "#1a1a2e",
+                    // Always the text colour, discounted or not. The red was
+                    // doing the same job as the struck-through original beside
+                    // it and the SALE badge — three signals for one fact, and it
+                    // made the price the shopper actually pays read as a
+                    // warning.
+                    color: "#1a1a2e",
                   }}
                 >
                   <CurrencyFormatter price={unitPrice} />
@@ -843,7 +848,7 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
             flexShrink: 0,
             fontWeight: "700",
             fontSize: "18px",
-            color: hasDiscount ? "#dc2626" : "#1a1a2e",
+            color: "#1a1a2e",
           }}
         >
           <CurrencyFormatter
