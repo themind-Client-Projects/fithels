@@ -11,5 +11,17 @@
   "phoneTitle": "الهاتف:",
   "emailTitle": "البريد الإلكتروني:",
   "addressTitle": "العنوان:",
-  "openTimeTitle": "أوقات العمل:"
+  "openTimeTitle": "أوقات العمل:",
+  "lead": "يسعدنا سماعك. اختر الطريقة الأنسب للتواصل معنا وسنرد عليك بأسرع وقت.",
+  "whatsappTitle": "واتساب",
+  "whatsappDesc": "أسرع طريقة للرد على استفساراتك وطلباتك.",
+  "whatsappAction": "راسلنا على واتساب",
+  "phoneLabel": "الهاتف",
+  "phoneDesc": "اتصل بنا مباشرة للاستفسار عن طلبك.",
+  "phoneAction": "اتصل الآن",
+  "instagramTitle": "إنستغرام",
+  "instagramDesc": "أحدث الوصولات والعروض أولًا بأول.",
+  "instagramAction": "تابعنا",
+  "addressLabel": "العنوان",
+  "hoursLabel": "أوقات العمل"
 }

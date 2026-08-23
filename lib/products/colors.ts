@@ -82,8 +82,14 @@ const LOOKUP: ReadonlyArray<readonly [string, ColorOption]> = COLOR_PALETTE.flat
  * shopper should never be shown a blank dot.
  */
 function fallback(name: string): ColorOption {
+  // \p{L}\p{N} rather than a-z0-9: the old class kept LATIN letters only, so
+  // every Arabic name lost all of its characters and collapsed to the same key,
+  // `custom--`. Two custom colours were then indistinguishable — the product
+  // form's duplicate check silently refused the second one, and any list keyed
+  // by this rendered duplicate React keys.
+  const slug = normaliseForSearch(name).replace(/[^\p{L}\p{N}]+/gu, '-')
   return {
-    key: `custom-${normaliseForSearch(name).replace(/[^a-z0-9]+/g, '-') || 'unnamed'}`,
+    key: `custom-${slug.replace(/^-|-$/g, '') || 'unnamed'}`,
     nameAr: name,
     nameEn: name,
     hex: '#d4d4d8',

@@ -1104,7 +1104,10 @@ tr:hover > .tbl-pin-cell {
 
 .pdp-gallery__slide {
   flex: 0 0 100%;
-  scroll-snap-align: center;
+  /* `start`, matching the edge useLoopingRail measures and corrects against.
+     At 100% width start and center resolve to the same offset, so this changes
+     nothing today — it stops the two disagreeing if the slide width ever does. */
+  scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
@@ -1922,5 +1925,183 @@ tr:hover > .tbl-pin-cell {
   .filter-panel__mark,
   .filter-panel__apply {
     transition: none;
+  }
+}
+
+/* ── Contact page ───────────────────────────────────────────────────────────
+ *
+ * Replaces a contact form that posted to the template's own EmailJS account.
+ * The page is a set of channels the shop actually reads, WhatsApp first,
+ * because that is how this shop already takes orders.
+ *
+ * New class names, so nothing in the template stylesheet — which loads after
+ * this file — can tie on specificity and win on order. Logical properties
+ * throughout: the same code lays out in Arabic and English.
+ */
+.contact-section {
+  padding: 56px 0 72px;
+}
+
+.contact-hero {
+  max-width: 620px;
+  margin: 0 auto 40px;
+  text-align: center;
+}
+
+.contact-hero__title {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 5vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.contact-hero__lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  opacity: 0.66;
+}
+
+/* auto-fit rather than a fixed column count: the row reflows from three across
+   to one without a breakpoint for each step, and a shop that later hides a
+   channel does not leave a gap behind. */
+.contact-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.contact-channel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 26px 24px 24px;
+  border: 1px solid rgba(24, 24, 24, 0.12);
+  background: #fff;
+  color: #181818;
+  text-align: start;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Only anchors lift — a channel with nowhere to go must not look clickable. */
+a.contact-channel:hover {
+  border-color: rgba(24, 24, 24, 0.4);
+  transform: translateY(-2px);
+}
+
+.contact-channel--primary {
+  border-color: transparent;
+  background: var(--brand-accent);
+  color: var(--brand-accent-on);
+}
+
+a.contact-channel--primary:hover {
+  border-color: transparent;
+  background: var(--brand-accent-hover);
+}
+
+.contact-channel__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: rgba(24, 24, 24, 0.06);
+}
+
+.contact-channel--primary .contact-channel__icon {
+  background: rgba(24, 24, 24, 0.14);
+}
+
+.contact-channel__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.contact-channel__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.contact-channel__desc {
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.62;
+}
+
+.contact-channel__value {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  /* The number is dir=ltr; in an RTL page it must still sit at the start of the
+     card rather than being pushed to the far edge by the inherited alignment. */
+  text-align: start;
+  align-self: flex-start;
+}
+
+.contact-channel__action {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 28px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 30px;
+  border-top: 1px solid rgba(24, 24, 24, 0.1);
+}
+
+.contact-details__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.contact-details__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.contact-details__value {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.contact-copy {
+  padding-bottom: 56px;
+}
+
+.contact-map {
+  display: block;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-channel {
+    transition: none;
+  }
+  a.contact-channel:hover {
+    transform: none;
   }
 }

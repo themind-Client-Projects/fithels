@@ -11,5 +11,17 @@
   "phoneTitle": "Phone:",
   "emailTitle": "Email:",
   "addressTitle": "Address:",
-  "openTimeTitle": "Open Time:"
+  "openTimeTitle": "Open Time:",
+  "lead": "We'd love to hear from you. Pick whichever way suits you and we'll reply as soon as we can.",
+  "whatsappTitle": "WhatsApp",
+  "whatsappDesc": "The quickest way to get an answer about an order.",
+  "whatsappAction": "Message us on WhatsApp",
+  "phoneLabel": "Phone",
+  "phoneDesc": "Call us directly about your order.",
+  "phoneAction": "Call now",
+  "instagramTitle": "Instagram",
+  "instagramDesc": "New arrivals and offers, first.",
+  "instagramAction": "Follow us",
+  "addressLabel": "Address",
+  "hoursLabel": "Opening hours"
 }

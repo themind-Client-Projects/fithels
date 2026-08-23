@@ -2,7 +2,6 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar from "@/components/headers/Topbar";
 import Products1 from "@/components/products/Products1";
-import Link from "next/link";
 import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
@@ -20,8 +19,6 @@ export async function generateMetadata({ params }) {
 
 export default async function ShopDefaultGridPage({ params }) {
   const { locale } = await params;
-  const tShop = await getTranslations({ locale, namespace: "shop" });
-  const tNav = await getTranslations({ locale, namespace: "nav" });
 
   const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
@@ -67,29 +64,6 @@ export default async function ShopDefaultGridPage({ params }) {
     <>
       <Topbar />
       <Header1 />
-      <div
-        className="page-title"
-        style={{ backgroundImage: "url(/images/section/page-title.jpg)" }}
-      >
-        <div className="container-full">
-          <div className="row">
-            <div className="col-12">
-              <h3 className="heading text-center">{tShop("women")}</h3>
-              <ul className="breadcrumbs d-flex align-items-center justify-content-center">
-                <li>
-                  <Link className="link" href={`/`}>
-                    {tNav("home")}
-                  </Link>
-                </li>
-                <li>
-                  <i className="icon-arrRight" />
-                </li>
-                <li>{tShop("women")}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
       <Products1 products={mappedProducts} />
       <Footer1 />
     </>

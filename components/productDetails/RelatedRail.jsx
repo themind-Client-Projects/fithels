@@ -20,19 +20,40 @@ import { useLoopingRail } from "@/lib/hooks/useLoopingRail";
  * bit on screen would need ten dots to mean anything, which is more chrome than
  * the row itself, and dots still would not say how much is left.
  */
+/**
+ * How many items to clone at each end.
+ *
+ * ONE IS NOT ENOUGH HERE, and that was the bug. A rail only wraps once the
+ * shopper can actually scroll the far clone to the leading edge, and this rail
+ * shows two and a half cards at a time — the single trailing clone needed more
+ * scroll than the rail had, so the wrap point was physically unreachable and
+ * the row simply stopped dead at the last card. The gallery never had the
+ * problem because its slides are the full width, where one clone is exactly a
+ * viewport.
+ *
+ * Six covers the widest layout the rail has: cards are 19% at 1200px and up, so
+ * five and a bit are on screen at once. Capped at the number of real cards,
+ * since cloning more than exist would repeat them within one screen.
+ */
+const CLONES = 6;
+
 export default function RelatedRail({ cards }) {
-  const { attach, handleScroll, index } = useLoopingRail(cards.length);
+  // Fewer than four cards barely overflows the rail, so there is nothing to
+  // loop through and the clones would be most of what is rendered.
+  const loop = cards.length >= 4;
+  const clones = loop ? Math.min(cards.length, CLONES) : 0;
+  const { attach, handleScroll, index } = useLoopingRail(cards.length, clones);
 
   if (cards.length === 0) return null;
 
-  // Below three cards there is nothing to loop through — the clones would be
-  // most of the rail, and every position would show the same products twice.
-  const loop = cards.length >= 3;
   const slides = loop
     ? [
-        { card: cards[cards.length - 1], clone: true },
+        ...cards.slice(cards.length - clones).map((card) => ({
+          card,
+          clone: true,
+        })),
         ...cards.map((card) => ({ card, clone: false })),
-        { card: cards[0], clone: true },
+        ...cards.slice(0, clones).map((card) => ({ card, clone: true })),
       ]
     : cards.map((card) => ({ card, clone: false }));
 

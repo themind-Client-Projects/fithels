@@ -25,6 +25,15 @@ export const siteContact = {
   /** A real address, if there is one. Rendered as a mailto link when set. */
   email: "",
 
+  /**
+   * The shop's Instagram profile URL.
+   *
+   * Deliberately NOT derived from `handle`: guessing instagram.com/<handle>
+   * would produce a link that looks official and may lead somewhere that is not
+   * the shop. Left empty, the handle still shows — as plain text.
+   */
+  instagramUrl: "",
+
   /** The shop's number, in international form. */
   phone: "+964 772 993 9937",
 
