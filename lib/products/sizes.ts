@@ -42,7 +42,7 @@ export const CANONICAL_SIZES: readonly string[] = [
  */
 export type SizeConversion = {
   eu: string;
-  /** Foot length in centimetres. */
+  /** Foot length in centimetres, exactly as the shop's chart gives it. */
   cm: string;
   /** US women's sizing. */
   us: string;
@@ -56,6 +56,24 @@ export const SIZE_CONVERSIONS: readonly SizeConversion[] = [
   { eu: "40", cm: "25.35", us: "9" },
   { eu: "41", cm: "26.01", us: "9.5" },
 ];
+
+/**
+ * Round a foot length to the nearest half centimetre for display.
+ *
+ * The chart gives figures like 22.68 and 26.01, which are more precision than
+ * anyone measuring their own foot against a ruler can use — and the trailing
+ * decimals made the column look like a calculation rather than a size guide.
+ *
+ * The exact values stay in SIZE_CONVERSIONS: this rounds on the way out, so the
+ * shop's real chart is never overwritten by its own presentation. A whole number
+ * loses its ".0" — "22" reads as a measurement, "22.0" as a reading.
+ */
+export function formatCm(cm: string | number): string {
+  const value = Number(cm);
+  if (!Number.isFinite(value)) return String(cm);
+  const rounded = Math.round(value * 2) / 2;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
 /**
  * Which sizes are ticked when a NEW product is created.
  *

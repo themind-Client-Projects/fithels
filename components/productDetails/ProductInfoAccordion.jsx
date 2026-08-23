@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
   AccordionPanel,
 } from "@/components/ui/accordion";
-import { SIZE_CONVERSIONS } from "@/lib/products/sizes";
+import { SIZE_CONVERSIONS, formatCm } from "@/lib/products/sizes";
 
 /**
  * The product page's information sections: description, size guide, delivery.
@@ -91,7 +91,7 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                   <tr>
                     <th scope="row">{ar ? "طول القدم (سم)" : "Foot length (cm)"}</th>
                     {SIZE_CONVERSIONS.map((row) => (
-                      <td key={row.eu}>{row.cm}</td>
+                      <td key={row.eu}>{formatCm(row.cm)}</td>
                     ))}
                   </tr>
                 </tbody>
