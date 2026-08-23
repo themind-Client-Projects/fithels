@@ -1,68 +1,73 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React from "react";
 import ProductCard1 from "@/components/productCards/ProductCard1";
+import { useLoopingRail } from "@/lib/hooks/useLoopingRail";
 
 /**
- * The horizontal rail under "you may also like", with a scroll indicator.
+ * The horizontal rail under "you may also like".
  *
  * A thin client shell around cards the server already built — the products are
- * passed in as data, so nothing about the query or the card markup moves to the
- * browser. All this adds is the scroll position.
+ * passed in as data, so neither the query nor the card markup moves to the
+ * browser. All this adds is scroll behaviour.
  *
- * The indicator is a proportional bar rather than dots. Ten items at two-and-a-
- * bit visible would need ten dots to mean anything, which is more chrome than
- * the row itself; a bar whose thumb is as wide as the visible fraction answers
- * both questions at once — how far along, and how much is left.
+ * The rail wraps: swiping past the last card continues into the first rather
+ * than hitting a wall. useLoopingRail explains how; here the only requirement is
+ * rendering the two clones it needs, marked aria-hidden so a screen reader is
+ * not read the same product three times.
  *
- * RTL: a right-to-left scroller reports scrollLeft as 0 at the RIGHT edge and
- * counts negative going left. Taking the absolute value makes "distance
- * travelled" mean the same thing in both directions, and the thumb is positioned
- * with a logical offset so it starts on the correct side.
+ * The indicator is a proportional bar rather than dots. Ten items with two and a
+ * bit on screen would need ten dots to mean anything, which is more chrome than
+ * the row itself, and dots still would not say how much is left.
  */
 export default function RelatedRail({ cards }) {
-  const railRef = useRef(null);
-  const [progress, setProgress] = useState(0);
-  const [visibleFraction, setVisibleFraction] = useState(1);
+  const { attach, handleScroll, index } = useLoopingRail(cards.length);
 
-  const measure = useCallback(() => {
-    const rail = railRef.current;
-    if (!rail) return;
+  if (cards.length === 0) return null;
 
-    const { scrollWidth, clientWidth, scrollLeft } = rail;
-    const overflow = scrollWidth - clientWidth;
+  // Below three cards there is nothing to loop through — the clones would be
+  // most of the rail, and every position would show the same products twice.
+  const loop = cards.length >= 3;
+  const slides = loop
+    ? [
+        { card: cards[cards.length - 1], clone: true },
+        ...cards.map((card) => ({ card, clone: false })),
+        { card: cards[0], clone: true },
+      ]
+    : cards.map((card) => ({ card, clone: false }));
 
-    setVisibleFraction(scrollWidth > 0 ? clientWidth / scrollWidth : 1);
-    // Guard the divide: a rail short enough not to scroll has no progress to
-    // report, and would otherwise divide by zero.
-    setProgress(overflow > 0 ? Math.min(1, Math.abs(scrollLeft) / overflow) : 0);
-  }, []);
-
-  // Nothing to indicate when everything already fits.
-  const showIndicator = visibleFraction < 0.999;
+  const progress = cards.length > 1 ? index / (cards.length - 1) : 0;
+  const thumbWidth = Math.max(1 / cards.length, 0.12);
 
   return (
     <>
-      <div className="related-products__rail" ref={railRef} onScroll={measure}>
-        {cards.map((card) => (
-          <ProductCard1 key={card.dbId} product={card} />
+      <div
+        className="related-products__rail"
+        ref={loop ? attach : undefined}
+        onScroll={loop ? handleScroll : undefined}
+      >
+        {slides.map(({ card, clone }, i) => (
+          <div
+            className="related-products__slide"
+            key={clone ? `clone-${i}` : card.dbId}
+            aria-hidden={clone || undefined}
+          >
+            <ProductCard1 product={card} />
+          </div>
         ))}
       </div>
 
-      <div
-        className={`rail-progress${showIndicator ? "" : " rail-progress--idle"}`}
-        aria-hidden="true"
-      >
-        <span
-          className="rail-progress__thumb"
-          style={{
-            // Width is the share of the row on screen; the offset walks it
-            // across whatever space is left over.
-            inlineSize: `${Math.max(visibleFraction, 0.12) * 100}%`,
-            insetInlineStart: `${progress * (1 - Math.max(visibleFraction, 0.12)) * 100}%`,
-          }}
-        />
-      </div>
+      {cards.length > 1 && (
+        <div className="rail-progress" aria-hidden="true">
+          <span
+            className="rail-progress__thumb"
+            style={{
+              inlineSize: `${thumbWidth * 100}%`,
+              insetInlineStart: `${progress * (1 - thumbWidth) * 100}%`,
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }

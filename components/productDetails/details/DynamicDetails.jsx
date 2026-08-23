@@ -3,7 +3,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/products/selection";
 import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
 import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
+import { useLoopingRail } from "@/lib/hooks/useLoopingRail";
 
 /**
  * Product detail.
@@ -44,35 +44,31 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
    * Gallery carousel.
    *
    * The track is a scroll-snap container, so swiping, momentum and keyboard
-   * scrolling are the browser's own — no carousel library, no extra javascript
-   * shipped, and every image stays in the document for crawlers. The only state
-   * is which dot is lit, derived from the scroll position rather than driving
-   * it, which is what keeps the dots honest when the shopper swipes instead of
-   * tapping.
+   * scrolling are the browser's own — no carousel library, no extra javascript,
+   * and every image stays in the document for crawlers.
+   *
+   * It wraps: swiping past the last image continues into the first. The looping
+   * is the same hook the related-products rail uses, so the two carousels on
+   * this page behave identically rather than each having their own quirks.
    */
   const gallery = product.images ?? [];
-  const trackRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Under three images the clones would outnumber the originals and every
+  // position would show the same picture twice.
+  const loopGallery = gallery.length >= 3;
+  const {
+    attach: attachGallery,
+    handleScroll: handleGalleryScroll,
+    index: activeIndex,
+    goTo: goToSlide,
+  } = useLoopingRail(gallery.length);
 
-  const handleTrackScroll = () => {
-    const track = trackRef.current;
-    if (!track) return;
-    // Round to the nearest slide so a half-swipe still lights the dot the
-    // shopper is looking at.
-    const index = Math.round(track.scrollLeft / track.clientWidth);
-    const clamped = Math.min(Math.max(Math.abs(index), 0), gallery.length - 1);
-    setActiveIndex((prev) => (prev === clamped ? prev : clamped));
-  };
-
-  const scrollToSlide = (index) => {
-    const track = trackRef.current;
-    if (!track) return;
-    // Signed by direction: in RTL the track scrolls negatively, so a positive
-    // offset would jump to the wrong end.
-    const direction = getComputedStyle(track).direction === "rtl" ? -1 : 1;
-    track.scrollTo({ left: direction * index * track.clientWidth, behavior: "smooth" });
-    setActiveIndex(index);
-  };
+  const gallerySlides = loopGallery
+    ? [
+        { src: gallery[gallery.length - 1], clone: true },
+        ...gallery.map((src) => ({ src, clone: false })),
+        { src: gallery[0], clone: true },
+      ]
+    : gallery.map((src) => ({ src, clone: false }));
 
   const { addVariantsToCart } = useContextElement();
 
@@ -290,19 +286,24 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
               {gallery.length > 0 ? (
                 <>
                   <div
-                    ref={trackRef}
-                    onScroll={handleTrackScroll}
+                    ref={loopGallery ? attachGallery : undefined}
+                    onScroll={loopGallery ? handleGalleryScroll : undefined}
                     className="pdp-gallery"
                   >
-                    {gallery.map((img, i) => (
-                      <div className="pdp-gallery__slide" key={img + i}>
+                    {gallerySlides.map(({ src: img, clone }, i) => (
+                      <div
+                        className="pdp-gallery__slide"
+                        key={clone ? `clone-${i}` : img + i}
+                        aria-hidden={clone || undefined}
+                      >
                         <Image
                           src={img}
                           alt={`${title} — ${i + 1}`}
                           width={900}
                           height={1200}
-                          // First slide is the LCP candidate on this page.
-                          priority={i === 0}
+                          // The first REAL slide is the LCP candidate; with the
+                          // loop clones in place that is index 1, not 0.
+                          priority={i === (loopGallery ? 1 : 0)}
                           sizes="(max-width: 767px) 100vw, 50vw"
                           className="pdp-gallery__img"
                         />
@@ -319,7 +320,7 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                           role="tab"
                           aria-selected={i === activeIndex}
                           aria-label={`${i + 1} / ${gallery.length}`}
-                          onClick={() => scrollToSlide(i)}
+                          onClick={() => goToSlide(i)}
                           className={`pdp-dot${
                             i === activeIndex ? " is-active" : ""
                           }`}

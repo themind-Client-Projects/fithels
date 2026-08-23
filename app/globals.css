@@ -1483,7 +1483,7 @@ tr:hover > .tbl-pin-cell {
   display: flex;
   gap: 2px;
   overflow-x: auto;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
   scroll-padding-inline: 2px;
   /* The cards are the affordance; a scrollbar under them is noise. */
   scrollbar-width: none;
@@ -1500,19 +1500,19 @@ tr:hover > .tbl-pin-cell {
 
 /* Two and a bit cards visible on a phone: the partial third is what tells the
    shopper the row keeps going. */
-.related-products__rail > .card-product {
+.related-products__rail > .related-products__slide {
   flex: 0 0 42%;
   scroll-snap-align: start;
 }
 
 @media (min-width: 768px) {
-  .related-products__rail > .card-product {
+  .related-products__rail > .related-products__slide {
     flex: 0 0 26%;
   }
 }
 
 @media (min-width: 1200px) {
-  .related-products__rail > .card-product {
+  .related-products__rail > .related-products__slide {
     flex: 0 0 19%;
   }
 }

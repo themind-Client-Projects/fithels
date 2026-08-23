@@ -1,49 +1,76 @@
 "use client";
 import React, { useState } from "react";
+import { useLocale } from "next-intl";
 
-export default function Pagination({ totalPages = 3 }) {
-  const [currentPage, setCurrentPage] = useState(1);
+/**
+ * Page controls.
+ *
+ * Works controlled or uncontrolled. GridView drives it — it owns which slice of
+ * products is on screen — while the older template callers still render it bare
+ * and get the previous self-contained behaviour.
+ *
+ * Direction matters here. The list itself is laid out by the document, so in
+ * Arabic the first item (previous) sits on the RIGHT — correct. But the icons
+ * were hardcoded to arrLeft for previous and arrRight for next, which pointed
+ * both of them away from the page they move to. The icon is chosen by locale so
+ * "previous" always points back toward the start of the reading order.
+ */
+export default function Pagination({
+  totalPages = 3,
+  currentPage,
+  onPageChange,
+}) {
+  const [internalPage, setInternalPage] = useState(1);
+  const locale = useLocale();
+  const ar = locale === "ar";
 
-  const handlePageClick = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const page = currentPage ?? internalPage;
+  const setPage = onPageChange ?? setInternalPage;
+
+  const goTo = (next) => {
+    if (next < 1 || next > totalPages || next === page) return;
+    setPage(next);
   };
 
-  const renderPageNumbers = () => {
-    return Array.from({ length: totalPages }, (_, index) => {
-      const page = index + 1;
-      return (
-        <li
-          key={page}
-          className={page === currentPage ? "active" : ""}
-          onClick={() => handlePageClick(page)}
-        >
-          <div className="pagination-item text-button">{page}</div>
-        </li>
-      );
-    });
-  };
+  // A single page needs no controls; rendering a disabled pair either side of a
+  // lone "1" is chrome that cannot do anything.
+  if (totalPages <= 1) return null;
+
+  const prevIcon = ar ? "icon-arrRight" : "icon-arrLeft";
+  const nextIcon = ar ? "icon-arrLeft" : "icon-arrRight";
 
   return (
     <>
-      <li onClick={() => handlePageClick(currentPage - 1)}>
+      <li onClick={() => goTo(page - 1)}>
         <a
-          className={`pagination-item text-button ${
-            currentPage === 1 ? "disabled" : ""
-          }`}
+          className={`pagination-item text-button ${page === 1 ? "disabled" : ""}`}
+          aria-label={ar ? "السابق" : "Previous"}
         >
-          <i className="icon-arrLeft" />
+          <i className={prevIcon} />
         </a>
       </li>
-      {renderPageNumbers()}
-      <li onClick={() => handlePageClick(currentPage + 1)}>
+
+      {Array.from({ length: totalPages }, (_, index) => {
+        const value = index + 1;
+        return (
+          <li
+            key={value}
+            className={value === page ? "active" : ""}
+            onClick={() => goTo(value)}
+          >
+            <div className="pagination-item text-button">{value}</div>
+          </li>
+        );
+      })}
+
+      <li onClick={() => goTo(page + 1)}>
         <a
           className={`pagination-item text-button ${
-            currentPage === totalPages ? "disabled" : ""
+            page === totalPages ? "disabled" : ""
           }`}
+          aria-label={ar ? "التالي" : "Next"}
         >
-          <i className="icon-arrRight" />
+          <i className={nextIcon} />
         </a>
       </li>
     </>
