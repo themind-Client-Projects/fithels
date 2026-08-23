@@ -1547,3 +1547,380 @@ tr:hover > .tbl-pin-cell {
   /* inset-inline-start is set inline, so the thumb starts on the right in RTL
      and the left in LTR without a second ruleset. */
 }
+
+/* ── Shop filter panel ──────────────────────────────────────────────────────
+ *
+ * Every facet used to render expanded, so the colour list pushed the reset
+ * button below the fold on a phone. The facets are collapsible now, on the same
+ * accordion as the product page and the home FAQ — `.acc__icon` is reused
+ * verbatim so the +/- means the same thing in all three places.
+ *
+ * Class names are new (`filter-panel__*`), which matters: the template
+ * stylesheet loads AFTER this file, so an override that merely ties on
+ * specificity loses. Nothing in the template targets these names, so a single
+ * class beats its bare-element rules outright and no !important is needed.
+ *
+ * Logical properties throughout — the panel is the same code in Arabic. */
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+.filter-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: none;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(24, 24, 24, 0.1);
+}
+
+.filter-panel__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.filter-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #181818;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.filter-panel__close:hover {
+  opacity: 0.55;
+}
+
+/* The scroll lives here rather than on the wrapper so the header and the apply
+   button stay put while the facets move — the button is the one control a
+   shopper needs constantly, and it used to scroll away with everything else. */
+.filter-panel__scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px;
+}
+
+.filter-panel__acc {
+  display: block;
+}
+
+.filter-panel__section {
+  border-bottom: 1px solid rgba(24, 24, 24, 0.1);
+}
+
+.filter-panel__section:last-child {
+  border-bottom: 0;
+}
+
+/* Full reset: the template paints a bare <button> as a filled pill. */
+.filter-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 17px 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #181818;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+  text-align: start;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.filter-panel__head:hover {
+  opacity: 0.6;
+}
+
+.filter-panel__head:focus-visible {
+  outline: 2px solid #181818;
+  outline-offset: -2px;
+}
+
+/* Flips the "+" to a "−". `.acc__icon` itself is defined unscoped further up,
+   so only the open-state selector needs restating for this panel. */
+.filter-panel__head[data-panel-open] .acc__icon::after {
+  transform: translateY(-50%) rotate(0deg);
+}
+
+.filter-panel__panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-panel__panel[data-starting-style],
+.filter-panel__panel[data-ending-style] {
+  height: 0;
+}
+
+.filter-panel__body {
+  padding: 2px 2px 22px;
+}
+
+/* Price */
+.filter-panel__prices {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.filter-panel__price {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(24, 24, 24, 0.16);
+}
+
+.filter-panel__pricelabel {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  opacity: 0.55;
+}
+
+.filter-panel__priceval {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sizes — a grid rather than a wrapping row, so 35-41 line up in columns
+   instead of ragging out and leaving one lonely chip on the last line. */
+.filter-panel__pills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.filter-panel__pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(24, 24, 24, 0.16);
+  border-radius: 0;
+  background: #fff;
+  color: #181818;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.filter-panel__pill:hover {
+  border-color: rgba(24, 24, 24, 0.45);
+}
+
+.filter-panel__pill[aria-pressed="true"] {
+  border-color: #181818;
+  background: #181818;
+  color: #fff;
+}
+
+/* Rows — colour and availability */
+.filter-panel__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  margin: 0;
+  padding: 9px 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #181818;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: start;
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+
+.filter-panel__row:hover {
+  opacity: 0.65;
+}
+
+.filter-panel__row:focus-visible {
+  outline: 2px solid #181818;
+  outline-offset: -2px;
+}
+
+/* The tick box. Square, drawn with a border so an unchecked one is a clean
+   outline rather than a grey block. */
+.filter-panel__mark {
+  position: relative;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border: 1px solid rgba(24, 24, 24, 0.3);
+  background: #fff;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.filter-panel__row[aria-pressed="true"] .filter-panel__mark {
+  border-color: #181818;
+  background: #181818;
+}
+
+/* The check itself: two borders of a rotated box, so there is no icon font or
+   svg to load for a mark this small. */
+.filter-panel__row[aria-pressed="true"] .filter-panel__mark::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 5px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.filter-panel__swatch {
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+
+/* A white swatch on a white panel is invisible without an edge. */
+.filter-panel__swatch[data-light] {
+  box-shadow: inset 0 0 0 1px rgba(24, 24, 24, 0.22);
+}
+
+.filter-panel__rowlabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-panel__count {
+  flex: none;
+  font-size: 12px;
+  opacity: 0.45;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer */
+.filter-panel__footer {
+  flex: none;
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(24, 24, 24, 0.1);
+  background: #fff;
+}
+
+.filter-panel__apply {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--brand-accent);
+  color: var(--brand-accent-on);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.filter-panel__apply:hover {
+  background: var(--brand-accent-hover);
+}
+
+.filter-panel__applycount {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-panel__reset {
+  display: block;
+  width: 100%;
+  margin: 0;
+  margin-top: 10px;
+  padding: 6px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #181818;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.3;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+
+.filter-panel__reset:hover {
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel__panel,
+  .filter-panel__head,
+  .filter-panel__pill,
+  .filter-panel__row,
+  .filter-panel__mark,
+  .filter-panel__apply {
+    transition: none;
+  }
+}

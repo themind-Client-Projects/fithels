@@ -43,5 +43,17 @@
   "faqCareTitle": "خدمة العملاء",
   "faqCareText": "راسلنا على واتساب أو اتصل بنا وسنجيبك بأسرع وقت. تجد رقمنا وحسابنا في أسفل الصفحة وفي القائمة الجانبية.",
   "faqOrderTitle": "الطلب والدفع والتوصيل",
-  "faqOrderIntro": "اختر المقاس واللون ثم أضف إلى السلة وأكمل الطلب."
+  "faqOrderIntro": "اختر المقاس واللون ثم أضف إلى السلة وأكمل الطلب.",
+  "filterPrice": "السعر",
+  "filterSize": "المقاس",
+  "filterColor": "اللون",
+  "filterAvailability": "التوفر",
+  "minPrice": "من",
+  "maxPrice": "إلى",
+  "inStock": "متوفر",
+  "outOfStock": "غير متوفر",
+  "freeSize": "مقاس حر",
+  "viewProducts": "عرض المنتجات",
+  "all": "الكل",
+  "close": "إغلاق"
 }

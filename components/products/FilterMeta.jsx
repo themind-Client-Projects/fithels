@@ -22,7 +22,9 @@ export default function FilterMeta({ allProps, productLength }) {
             className="filter-tag"
             onClick={() => allProps.setAvailability("All")}
           >
-            {allProps.availability.label}
+            {/* A translation key, not stored text — the tag and the filter
+                panel then cannot word the same option differently. */}
+            {t(allProps.availability.key)}
             <span className="remove-tag icon-close" />
           </span>
         ) : (
@@ -41,7 +43,13 @@ export default function FilterMeta({ allProps, productLength }) {
             className="filter-tag color-tag"
             onClick={() => allProps.setColor("All")}
           >
-            <span className={`color bg-red ${allProps.color.className} `} />
+            {/* The real colour. This was `bg-red` plus a `className` the colour
+                objects have never carried, so every tag — black, white, gold —
+                showed a red dot. */}
+            <span
+              className="color"
+              style={{ backgroundColor: allProps.color.swatch?.hex }}
+            />
             {allProps.color.name}
             <span className="remove-tag icon-close" />
           </span>

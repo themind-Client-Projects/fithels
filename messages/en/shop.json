@@ -43,5 +43,17 @@
   "faqCareTitle": "Customer care",
   "faqCareText": "Message us on WhatsApp or call, and we will get back to you quickly. Our number and handle are at the foot of the page and in the side menu.",
   "faqOrderTitle": "Ordering, payment and delivery",
-  "faqOrderIntro": "Pick your size and colour, add to the cart and complete the order."
+  "faqOrderIntro": "Pick your size and colour, add to the cart and complete the order.",
+  "filterPrice": "Price",
+  "filterSize": "Size",
+  "filterColor": "Colour",
+  "filterAvailability": "Availability",
+  "minPrice": "From",
+  "maxPrice": "To",
+  "inStock": "In stock",
+  "outOfStock": "Out of stock",
+  "freeSize": "Free size",
+  "viewProducts": "View products",
+  "all": "All",
+  "close": "Close"
 }
