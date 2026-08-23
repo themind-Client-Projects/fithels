@@ -13,6 +13,21 @@
   --color-primary: #1a1a2e;
   --color-primary-light: #16213e;
   --color-accent: #c9a96e;
+
+  /* Brand accent. Used for the primary buy button, the sale markers and the
+     cart badge — the four places the shop asked for, and nowhere else.
+     It is LIGHT (relative luminance ~0.51), so anything sitting on it must be
+     dark: #181818 gives 9.5:1, white gives 1.9:1 and fails outright. Every rule
+     below pairs it with --brand-accent-on for exactly that reason.
+
+     NOT named --accent: :root already declares one further down, from the
+     shadcn palette, and it is mapped into Tailwind by @theme. Reusing the name
+     would have been silently overwritten by whichever came last — and if this
+     one had won, it would have repainted every accent surface in the dashboard
+     instead of the four places asked for. */
+  --brand-accent: #eeabb7;
+  --brand-accent-hover: #e79aa8;
+  --brand-accent-on: #181818;
   --color-accent-light: #d4b87a;
   --color-accent-dark: #b8944f;
 
@@ -1415,4 +1430,27 @@ tr:hover > .tbl-pin-cell {
   .home-info__faq {
     margin-top: 32px;
   }
+}
+
+/* Brand accent, applied to the four places the shop asked for.
+ *
+ * Scoped rules rather than a token swap in the template: --primary and
+ * --critical are used across dozens of template components, and repainting all
+ * of them would have reached far beyond what was asked.
+ *
+ * Text is --accent-on (near-black) in every case. The accent is a light pink;
+ * the template pairs both --primary and --critical with white, which on this
+ * colour is a 1.9:1 contrast and effectively unreadable.
+ */
+
+/* 1. Cart count badge in the header. */
+.nav-cart .count-box {
+  background-color: var(--brand-accent);
+  color: var(--brand-accent-on);
+}
+
+/* 2. The -25% marker on product cards. */
+.card-product .on-sale-item {
+  background-color: var(--brand-accent);
+  color: var(--brand-accent-on);
 }

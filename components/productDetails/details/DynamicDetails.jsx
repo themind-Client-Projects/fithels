@@ -395,8 +395,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                     </span>
                     <span
                       style={{
-                        background: "#dc2626",
-                        color: "#fff",
+                        // Brand accent. Dark text, not white: the accent is a
+                        // light pink and white on it is a 1.9:1 contrast.
+                        background: "var(--brand-accent)",
+                        color: "var(--brand-accent-on)",
                         padding: "4px 8px",
                         borderRadius: "4px",
                         fontSize: "12px",
@@ -781,8 +783,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                   disabled={!inStock}
                   style={{
                     width: "100%",
-                    backgroundColor: inStock ? "#111" : "#ced4da",
-                    color: "#fff",
+                    backgroundColor: inStock
+                      ? "var(--brand-accent)"
+                      : "#ced4da",
+                    color: inStock ? "var(--brand-accent-on)" : "#fff",
                     border: "none",
                     padding: "18px 24px",
                     fontSize: "14px",
@@ -794,10 +798,14 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                     transition: "background-color 0.3s ease",
                   }}
                   onMouseOver={(e) => {
-                    if (inStock) e.currentTarget.style.backgroundColor = "#333";
+                    if (inStock)
+                      e.currentTarget.style.backgroundColor =
+                        "var(--brand-accent-hover)";
                   }}
                   onMouseOut={(e) => {
-                    if (inStock) e.currentTarget.style.backgroundColor = "#111";
+                    if (inStock)
+                      e.currentTarget.style.backgroundColor =
+                        "var(--brand-accent)";
                   }}
                 >
                   {ar ? "أضف إلى السلة" : "Add to cart"}
@@ -847,8 +855,8 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
           disabled={!inStock}
           style={{
             flex: 1,
-            backgroundColor: inStock ? "#111" : "#ced4da",
-            color: "#fff",
+            backgroundColor: inStock ? "var(--brand-accent)" : "#ced4da",
+            color: inStock ? "var(--brand-accent-on)" : "#fff",
             border: "none",
             padding: "14px 20px",
             fontSize: "14px",
