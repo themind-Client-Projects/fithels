@@ -5,12 +5,54 @@ import LanguageSelect from "../common/LanguageSelect";
 import CurrencySelect from "../common/CurrencySelect";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { useSession, signOut } from "next-auth/react";
+import { useUIStore } from "@/stores/useUIStore";
 import { siteContact, telHref } from "@/data/siteContact";
+
+/**
+ * The phone menu.
+ *
+ * IT NEVER KNEW WHO WAS SIGNED IN. This component did not read the session at
+ * all, so it showed "sign in" to everyone, including someone who had just
+ * signed in — and the link went to the HOMEPAGE, not to any sign-in of its own,
+ * so tapping it appeared to do nothing. Signing in on a phone was only possible
+ * through the header icon.
+ *
+ * It now reads the same session the header does and offers the same things:
+ * the dashboard for staff, the account page, and signing out.
+ */
+function AccountIcon() {
+  return (
+    <svg
+      className="icon"
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#181818"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" />
+      <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" />
+    </svg>
+  );
+}
+
 export default function MobileMenu() {
   const tNav = useTranslations("nav");
   const tContact = useTranslations("contact");
   const locale = useLocale();
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const { openAuth } = useUIStore();
+
+  const isLoaded = status !== "loading";
+  const isSignedIn = status === "authenticated";
+  const user = session?.user;
+  const isStaff = user?.role === "ADMIN" || user?.role === "EMPLOYEE";
   return (
     <div className="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
       <span
@@ -77,33 +119,69 @@ export default function MobileMenu() {
                 </svg>
                 {tNav('wishlist')}
               </a>
-              <Link href={`/${locale}`} className="site-nav-icon">
-                <svg
-                  className="icon"
-                  width={18}
-                  height={18}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              {/* Rendered only once the session is known. Showing "sign in" to
+                  someone who is already signed in, for the moment it takes to
+                  find out, is worse than showing nothing at all. */}
+              {!isLoaded ? null : isSignedIn ? (
+                <Link
+                  href={`/${locale}/account`}
+                  className="site-nav-icon"
+                  data-bs-dismiss="offcanvas"
                 >
-                  <path
-                    d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                    stroke="#181818"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
-                    stroke="#181818"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {tNav('login')}
-              </Link>
+                  <AccountIcon />
+                  {tNav("account")}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="site-nav-icon"
+                  // Dismisses the menu as it opens the dialog: the two are both
+                  // overlays, and the sign-in form would otherwise appear
+                  // underneath the panel that asked for it.
+                  data-bs-dismiss="offcanvas"
+                  onClick={() => openAuth("signIn")}
+                >
+                  <AccountIcon />
+                  {tNav("login")}
+                </button>
+              )}
             </div>
+
+            {isSignedIn && (
+              <div className="mb-account">
+                <p className="mb-account__who">{user?.name || user?.email}</p>
+                {isStaff && (
+                  /* A plain <a>, not a Link, deliberately — the same reason as
+                     in the header. Next keeps a route's stylesheet in the
+                     document across client-side navigations, so soft-navigating
+                     into the dashboard leaves the storefront template loaded on
+                     top of it and the dashboard renders in the wrong styling
+                     until reloaded. A full document load discards it. */
+                  <a
+                    href={`/${locale}/dashboard`}
+                    className="mb-account__link"
+                    data-bs-dismiss="offcanvas"
+                  >
+                    {tNav("dashboard")}
+                  </a>
+                )}
+                <Link
+                  href={`/${locale}/my-orders`}
+                  className="mb-account__link"
+                  data-bs-dismiss="offcanvas"
+                >
+                  {tNav("orders")}
+                </Link>
+                <button
+                  type="button"
+                  className="mb-account__link mb-account__link--quiet"
+                  data-bs-dismiss="offcanvas"
+                  onClick={() => signOut()}
+                >
+                  {tNav("signOut")}
+                </button>
+              </div>
+            )}
             <div className="mb-notice">
               <Link href={`/${locale}/contact`} className="text-need">
                 {tNav('needHelp')}

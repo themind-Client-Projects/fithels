@@ -2111,3 +2111,72 @@ a.contact-channel--primary:hover {
     transform: none;
   }
 }
+
+/* Signed-in block in the phone menu.
+ *
+ * The menu had no idea who was signed in: it showed "sign in" to everyone and
+ * the link pointed at the homepage, so tapping it did nothing visible. These
+ * are the same destinations the header offers on a desktop.
+ *
+ * `.site-nav-icon` is a template class written for <a>; the sign-in control is
+ * a <button> because it opens a dialog rather than navigating, and the template
+ * paints a bare button as a filled pill. The reset below is what stops it
+ * looking like a submit button sitting in a menu.
+ */
+button.site-nav-icon {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.mb-account {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(24, 24, 24, 0.1);
+}
+
+.mb-account__who {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  /* An email is latin even in an Arabic menu, but it still belongs at the
+     start of the line rather than pushed across by the paragraph direction. */
+  overflow-wrap: anywhere;
+}
+
+.mb-account__link {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #181818;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mb-account__link:hover {
+  opacity: 0.6;
+}
+
+.mb-account__link--quiet {
+  opacity: 0.6;
+}
