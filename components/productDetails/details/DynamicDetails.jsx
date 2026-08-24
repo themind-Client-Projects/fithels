@@ -17,7 +17,7 @@ import {
 } from "@/lib/products/selection";
 import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
 import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
-import { useLoopingRail } from "@/lib/hooks/useLoopingRail";
+import { useCarousel } from "@/lib/hooks/useCarousel";
 
 /**
  * Product detail.
@@ -43,32 +43,24 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
   /**
    * Gallery carousel.
    *
-   * The track is a scroll-snap container, so swiping, momentum and keyboard
-   * scrolling are the browser's own — no carousel library, no extra javascript,
-   * and every image stays in the document for crawlers.
+   * Every image stays in the document, so crawlers still see the whole set.
    *
-   * It wraps: swiping past the last image continues into the first. The looping
-   * is the same hook the related-products rail uses, so the two carousels on
-   * this page behave identically rather than each having their own quirks.
+   * It wraps: swiping past the last image continues into the first. useCarousel
+   * explains how — in short, there are no duplicated slides, each photo is just
+   * drawn at whichever copy of itself is nearest, so there is no wrap to detect
+   * and nothing to correct after the fact.
    */
   const gallery = product.images ?? [];
-  // Under three images the clones would outnumber the originals and every
-  // position would show the same picture twice.
+  // A single photo has nothing to move between; two would show the same picture
+  // on both sides of the loop.
   const loopGallery = gallery.length >= 3;
   const {
-    attach: attachGallery,
-    handleScroll: handleGalleryScroll,
     index: activeIndex,
+    attachViewport: attachGallery,
+    registerSlide,
+    dragHandlers,
     goTo: goToSlide,
-  } = useLoopingRail(gallery.length);
-
-  const gallerySlides = loopGallery
-    ? [
-        { src: gallery[gallery.length - 1], clone: true },
-        ...gallery.map((src) => ({ src, clone: false })),
-        { src: gallery[0], clone: true },
-      ]
-    : gallery.map((src) => ({ src, clone: false }));
+  } = useCarousel(gallery.length, { loop: loopGallery });
 
   const { addVariantsToCart } = useContextElement();
 
@@ -286,25 +278,28 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
               {gallery.length > 0 ? (
                 <>
                   <div
-                    ref={loopGallery ? attachGallery : undefined}
-                    onScroll={loopGallery ? handleGalleryScroll : undefined}
+                    ref={attachGallery}
                     className="pdp-gallery"
+                    {...dragHandlers}
                   >
-                    {gallerySlides.map(({ src: img, clone }, i) => (
+                    {gallery.map((img, i) => (
                       <div
                         className="pdp-gallery__slide"
-                        key={clone ? `clone-${i}` : img + i}
-                        aria-hidden={clone || undefined}
+                        key={img + i}
+                        ref={registerSlide(i)}
                       >
                         <Image
                           src={img}
                           alt={`${title} — ${i + 1}`}
                           width={900}
                           height={1200}
-                          // The first REAL slide is the LCP candidate; with the
-                          // loop clones in place that is index 1, not 0.
-                          priority={i === (loopGallery ? 1 : 0)}
+                          // No clones any more, so the first real slide — the
+                          // LCP candidate — is simply the first one.
+                          priority={i === 0}
                           sizes="(max-width: 767px) 100vw, 50vw"
+                          // A drag that starts on a photo must move the
+                          // carousel, not tear the image out of the page.
+                          draggable={false}
                           className="pdp-gallery__img"
                         />
                       </div>

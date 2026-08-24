@@ -1082,43 +1082,47 @@ tr:hover > .tbl-pin-cell {
 
 /* Product detail gallery — full-bleed carousel with dots.
  *
- * A scroll-snap track rather than a carousel library: swipe, momentum and
- * keyboard scrolling come from the browser, nothing extra ships to the client,
- * and every image stays in the markup. Squared off to match the cards.
+ * Slides are stacked in a frame and moved with transforms rather than scrolled.
+ * That is what makes the loop seamless: each photo is drawn at whichever copy
+ * of itself is nearest, so there are no duplicated slides and no wrap to catch
+ * and repair. See lib/hooks/useCarousel.js. Squared off to match the cards.
  */
 .pdp-gallery {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  /* The dots are the affordance; a scrollbar under the photo is noise. */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* Momentum scrolling on iOS. */
-  -webkit-overflow-scrolling: touch;
+  /* A positioned frame, not a scroll container. The slides are stacked and
+     moved with transforms, so there is no scroll position to manage, nothing to
+     snap, and no scrollLeft that runs backwards in Arabic. */
+  position: relative;
+  overflow: hidden;
+  /* Height comes from here: every slide is absolutely positioned, so the frame
+     has to declare the shape the photography is shot in. */
+  aspect-ratio: 3 / 4;
+  /* Horizontal drags belong to the carousel, vertical ones to the page. Without
+     this the browser waits to see which way the finger goes and the first part
+     of every swipe is dropped. */
+  touch-action: pan-y;
+  cursor: grab;
   border-radius: 0;
 }
 
-.pdp-gallery::-webkit-scrollbar {
-  display: none;
+.pdp-gallery:active {
+  cursor: grabbing;
 }
 
 .pdp-gallery__slide {
-  flex: 0 0 100%;
-  /* `start`, matching the edge useLoopingRail measures and corrects against.
-     At 100% width start and center resolve to the same offset, so this changes
-     nothing today — it stops the two disagreeing if the slide width ever does. */
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  position: absolute;
+  inset: 0;
+  /* The transform is written by useCarousel on each frame of a drag. */
+  will-change: transform;
 }
 
 .pdp-gallery__img {
   display: block;
   width: 100%;
-  height: auto;
-  /* 3:4 is the shape the product photography is shot in; fixing it here stops
-     the dots jumping as each slide loads at its own intrinsic height. */
-  aspect-ratio: 3 / 4;
+  height: 100%;
   object-fit: cover;
+  /* The whole frame is a drag surface; a photo must not be draggable itself. */
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .pdp-dots {
@@ -1483,40 +1487,42 @@ tr:hover > .tbl-pin-cell {
  * flush against the viewport edge with no breathing room.
  */
 .related-products__rail {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 2px;
-  /* The cards are the affordance; a scrollbar under them is noise. */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-  /* Cards are squared off, so a hidden overflow would clip nothing — but the
-     shadowless design means the rail needs no padding of its own either. */
+  /* A grid with every card in the SAME cell, not a scroll container.
+     Stacking them this way means the rail's height is the tallest card's,
+     automatically — absolute positioning would have collapsed it to nothing and
+     needed a hardcoded height that the card's title and price would outgrow.
+     The cards are then moved apart with transforms by useCarousel. */
+  display: grid;
+  overflow: hidden;
+  /* Horizontal drags move the rail, vertical ones scroll the page. */
+  touch-action: pan-y;
+  cursor: grab;
   padding-bottom: 4px;
 }
 
-.related-products__rail::-webkit-scrollbar {
-  display: none;
+.related-products__rail:active {
+  cursor: grabbing;
 }
 
 /* Two and a bit cards visible on a phone: the partial third is what tells the
    shopper the row keeps going. */
 .related-products__rail > .related-products__slide {
-  flex: 0 0 42%;
-  scroll-snap-align: start;
+  grid-area: 1 / 1;
+  justify-self: start;
+  /* Leaves room for the 2px gap useCarousel is told about. */
+  width: calc(42% - 2px);
+  will-change: transform;
 }
 
 @media (min-width: 768px) {
   .related-products__rail > .related-products__slide {
-    flex: 0 0 26%;
+    width: calc(26% - 2px);
   }
 }
 
 @media (min-width: 1200px) {
   .related-products__rail > .related-products__slide {
-    flex: 0 0 19%;
+    width: calc(19% - 2px);
   }
 }
 

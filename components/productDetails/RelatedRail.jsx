@@ -2,60 +2,44 @@
 
 import React from "react";
 import ProductCard1 from "@/components/productCards/ProductCard1";
-import { useLoopingRail } from "@/lib/hooks/useLoopingRail";
+import { useCarousel } from "@/lib/hooks/useCarousel";
+
+/** Gap between cards, in pixels. Must match `--related-gap` in globals.css. */
+const GAP = 2;
 
 /**
  * The horizontal rail under "you may also like".
  *
  * A thin client shell around cards the server already built — the products are
  * passed in as data, so neither the query nor the card markup moves to the
- * browser. All this adds is scroll behaviour.
+ * browser. All this adds is the dragging.
  *
- * The rail wraps: swiping past the last card continues into the first rather
- * than hitting a wall. useLoopingRail explains how; here the only requirement is
- * rendering the two clones it needs, marked aria-hidden so a screen reader is
- * not read the same product three times.
+ * The rail wraps: dragging past the last card continues into the first rather
+ * than hitting a wall.
+ *
+ * THE CLONES ARE GONE. This used to duplicate six cards at each end so that
+ * scrolling off one end landed on a copy of the other, and six was not a
+ * decision so much as a measurement — enough to cover the widest viewport,
+ * because with fewer the wrap point sat beyond the end of the scroll range and
+ * could not be reached at all, so the row just stopped dead. Twenty-two cards
+ * were rendered to show ten. useCarousel draws each card at whichever copy of
+ * itself is nearest instead, so ten cards are ten cards and the wrap is
+ * arithmetic rather than a scroll position to repair.
  *
  * The indicator is a proportional bar rather than dots. Ten items with two and a
  * bit on screen would need ten dots to mean anything, which is more chrome than
  * the row itself, and dots still would not say how much is left.
  */
-/**
- * How many items to clone at each end.
- *
- * ONE IS NOT ENOUGH HERE, and that was the bug. A rail only wraps once the
- * shopper can actually scroll the far clone to the leading edge, and this rail
- * shows two and a half cards at a time — the single trailing clone needed more
- * scroll than the rail had, so the wrap point was physically unreachable and
- * the row simply stopped dead at the last card. The gallery never had the
- * problem because its slides are the full width, where one clone is exactly a
- * viewport.
- *
- * Six covers the widest layout the rail has: cards are 19% at 1200px and up, so
- * five and a bit are on screen at once. Capped at the number of real cards,
- * since cloning more than exist would repeat them within one screen.
- */
-const CLONES = 6;
-
 export default function RelatedRail({ cards }) {
-  // Fewer than four cards barely overflows the rail, so there is nothing to
-  // loop through and the clones would be most of what is rendered.
+  // Fewer than four cards do not fill the rail, so there is nothing to loop
+  // through and a wrap would just show the same products twice on one screen.
   const loop = cards.length >= 4;
-  const clones = loop ? Math.min(cards.length, CLONES) : 0;
-  const { attach, handleScroll, index } = useLoopingRail(cards.length, clones);
+  const { index, attachViewport, registerSlide, dragHandlers } = useCarousel(
+    cards.length,
+    { loop, gap: GAP }
+  );
 
   if (cards.length === 0) return null;
-
-  const slides = loop
-    ? [
-        ...cards.slice(cards.length - clones).map((card) => ({
-          card,
-          clone: true,
-        })),
-        ...cards.map((card) => ({ card, clone: false })),
-        ...cards.slice(0, clones).map((card) => ({ card, clone: true })),
-      ]
-    : cards.map((card) => ({ card, clone: false }));
 
   const progress = cards.length > 1 ? index / (cards.length - 1) : 0;
   const thumbWidth = Math.max(1 / cards.length, 0.12);
@@ -64,14 +48,14 @@ export default function RelatedRail({ cards }) {
     <>
       <div
         className="related-products__rail"
-        ref={loop ? attach : undefined}
-        onScroll={loop ? handleScroll : undefined}
+        ref={attachViewport}
+        {...dragHandlers}
       >
-        {slides.map(({ card, clone }, i) => (
+        {cards.map((card, i) => (
           <div
             className="related-products__slide"
-            key={clone ? `clone-${i}` : card.dbId}
-            aria-hidden={clone || undefined}
+            key={card.dbId}
+            ref={registerSlide(i)}
           >
             <ProductCard1 product={card} />
           </div>
