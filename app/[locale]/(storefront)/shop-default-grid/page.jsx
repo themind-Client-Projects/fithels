@@ -6,6 +6,7 @@ import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { totalStock } from "@/lib/products/variants";
 import { PRODUCT_CARD_SELECT, SHOP_GRID_LIMIT } from "@/lib/products/select";
 
 export async function generateMetadata({ params }) {
@@ -52,7 +53,11 @@ export default async function ShopDefaultGridPage({ params }) {
       sizes: p.sizes,
       // The template expects colors as swatches: { bgColor, imgSrc }
       colors: resolveProductColors(p.colors, p.images),
-      inStock: p.stock > 0,
+      // Any pair left, in any size or colour. A card cannot say more than
+      // that without becoming a stock report; the product page is where a
+      // shopper finds out whether THEIR size is there.
+      inStock: totalStock(p.variants) > 0,
+      variants: p.variants,
       filterColor: p.colors,
       filterSizes: p.sizes,
       filterBrands: [], // No brands in DB currently

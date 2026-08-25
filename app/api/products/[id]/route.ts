@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   parsePrice,
   parseSalePrice,
-  parseStock,
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { translatePrismaError } from '@/lib/prisma-errors'
@@ -19,7 +19,9 @@ export async function GET(
 
     const product = await prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      // Variants come too: the page decides which sizes are still
+    // obtainable from them, and without the rows every size reads as sold out.
+    include: { category: true, variants: true },
     })
 
     if (!product) {
@@ -57,7 +59,12 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const existing = await prisma.product.findUnique({ where: { id } })
+    // The rows come along: a save that changes only the sizes still has to
+    // re-clean the stock it already holds against the new list.
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      include: { variants: true },
+    })
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
@@ -76,7 +83,7 @@ export async function PUT(
       categoryId,
       sizes,
       colors,
-      stock,
+      variants,
       isActive,
       images,
     } = body
@@ -87,13 +94,11 @@ export async function PUT(
 
     let parsedPrice: number | undefined
     let parsedSalePrice: number | null | undefined
-    let parsedStock: number | undefined
     try {
       if (price !== undefined) parsedPrice = parsePrice(price)
       if (salePrice !== undefined) {
         parsedSalePrice = parseSalePrice(salePrice, parsedPrice ?? current.price)
       }
-      if (stock !== undefined) parsedStock = parseStock(stock)
 
       // Lowering the price alone could otherwise leave an untouched sale price
       // sitting at or above it, which bills the customer more than the listing.
@@ -124,6 +129,20 @@ export async function PUT(
       throw error
     }
 
+    // Cleaned against the sizes and colours the product will have AFTER this
+    // save — not the ones it had before — so a pair whose size is being removed
+    // in the same request cannot survive as an orphan row.
+    const nextSizes: string[] = sizes !== undefined ? (Array.isArray(sizes) ? sizes : []) : existing.sizes
+    const nextColors: string[] = colors !== undefined ? (Array.isArray(colors) ? colors : []) : existing.colors
+    const variantRows =
+      variants !== undefined || sizes !== undefined || colors !== undefined
+        ? normaliseVariants(
+            variants ?? existing.variants,
+            nextSizes,
+            nextColors
+          )
+        : undefined
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -142,14 +161,24 @@ export async function PUT(
         ...(categoryId !== undefined && { categoryId }),
         ...(sizes !== undefined && { sizes }),
         ...(colors !== undefined && { colors }),
-        ...(parsedStock !== undefined && { stock: parsedStock }),
         ...(isActive !== undefined && { isActive }),
         ...(images !== undefined && { images }),
+        // REPLACED WHOLESALE, not merged. Unticking a colour has to take its
+        // stock rows with it, or they keep counting towards what the shop
+        // believes it can sell while no longer appearing anywhere to be
+        // corrected. Both halves run inside the one update, so a failure
+        // cannot leave the product with its old sizes and its new stock.
+        ...(variantRows !== undefined && {
+          variants: {
+            deleteMany: {},
+            createMany: { data: variantRows },
+          },
+        }),
       },
-      include: { category: true },
+      include: { category: true, variants: true },
     })
 
-    return NextResponse.json(product)
+    return NextResponse.json(withStockTotal(product))
   } catch (error) {
     const translated = translatePrismaError(error)
     if (translated) {

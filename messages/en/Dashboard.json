@@ -223,5 +223,9 @@
   "sectionHasChildren": "This is a main section holding sub-sections, so it cannot become a sub-section itself.",
   "categoriesTreeHint": "Sections are two levels: a main section (e.g. Shoes) holds sub-sections (e.g. Flats). Products are filed against the sub-section.",
   "noSubSectionsYet": "No sub-sections yet",
-  "subSectionsCount": "{count} sub-sections"
+  "subSectionsCount": "{count} sub-sections",
+  "stockPerVariant": "Stock per size and colour",
+  "stockPerVariantHint": "Enter how many pairs you actually hold of each size in each colour. The total is worked out for you, and a size with none left is not offered for sale.",
+  "variantsNeedSizesAndColors": "Choose the sizes and colours first — the stock boxes appear for each combination.",
+  "totalStock": "Total stock"
 }

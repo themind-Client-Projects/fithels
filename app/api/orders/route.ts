@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { noStoreJson } from '@/lib/api-response'
 import type { OrderStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { variantKey } from '@/lib/products/variants'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   getUsdToIqdRate,
@@ -114,7 +115,10 @@ export async function GET(request: NextRequest) {
                 salePrice: true,
                 images: true,
                 isActive: true,
-                stock: true,
+                // Per-pair rows, not a single number. A nested select is NOT
+                // type-checked the way a top-level one is — `stock: true`
+                // survived tsc here and only failed when Prisma ran it.
+                variants: { select: { size: true, color: true, stock: true } },
               },
             },
           },
@@ -188,14 +192,11 @@ export async function POST(request: NextRequest) {
     let subtotal = 0
     const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
     const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
-    /**
-     * Units requested per product across ALL lines of this order.
-     *
-     * Stock is one counter per product, while a basket may now hold several
-     * lines of that product (different size or colour), so availability has to
-     * be judged on the sum.
-     */
-    const requestedByProduct = new Map<string, number>()
+    // Demand is accumulated per PAIR — product, size and colour together.
+    // Keyed by product alone, two lines for two different sizes of one shoe
+    // were checked against the same pool, which is what let the shop sell a
+    // size it did not have.
+    const requestedByVariant = new Map<string, number>()
 
     // Validate the shapes before touching the database, so a malformed basket
     // costs nothing.
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
         salePrice: true,
         images: true,
         isActive: true,
-        stock: true,
+        variants: { select: { size: true, color: true, stock: true } },
       },
     })
     const productById = new Map(basketProducts.map((p) => [p.id, p]))
@@ -247,33 +248,52 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Accumulate demand per PRODUCT, not per line.
-      //
-      // One product can legitimately appear on several lines now — the product
-      // page lets a shopper take size 38 and size 39 of the same shoe, and
-      // `Product.stock` is a single counter covering every size and colour.
-      // Checking each line against the untouched `product.stock` let two lines
-      // of one unit each both pass with only one unit in stock; the conditional
-      // decrement inside the transaction then refused the second line and the
-      // whole order rolled back as a 409 reading "one of the items just went out
-      // of stock", after the order row and coupon claim had already been
-      // written. Nothing had gone out of stock — the basket was never fulfillable
-      // and this check should have said so.
-      //
-      // This stays advisory: the conditional `updateMany` further down is what
-      // actually prevents overselling under concurrency. This only makes the
-      // rejection accurate and early.
-      const alreadyClaimed = requestedByProduct.get(productId) ?? 0
-      const totalRequested = alreadyClaimed + quantity
-
-      if (product.stock < totalRequested) {
+      // Which pair this line is for. A line with no size or colour cannot be
+      // matched to stock at all, and guessing would put the shop right back to
+      // selling whatever it felt like.
+      if (!size || !color) {
         return noStoreJson(
-          { error: `Insufficient stock for ${product.titleEn}. Available: ${product.stock}` },
+          { error: `Choose a size and colour for ${product.titleEn}` },
           { status: 400 }
         )
       }
 
-      requestedByProduct.set(productId, totalRequested)
+      const variant = product.variants.find(
+        (v) => v.size === size && v.color === color
+      )
+
+      if (!variant) {
+        return noStoreJson(
+          { error: `${product.titleEn} is not sold in ${size} / ${color}` },
+          { status: 400 }
+        )
+      }
+
+      // Accumulated across lines, not read fresh each time. One basket can name
+      // the same pair twice, and checking each line against the untouched row
+      // let two lines of one unit each both pass with a single unit in stock —
+      // the conditional decrement then refused the second and rolled the whole
+      // order back as a 409, after the order row and coupon claim were written.
+      // Nothing had gone out of stock; the basket was never fulfillable and
+      // this check should have said so.
+      //
+      // Still advisory: the conditional updateMany further down is what
+      // actually prevents overselling under concurrency. This only makes the
+      // rejection accurate and early.
+      const pairKey = variantKey(size, color)
+      const key = `${productId}::${pairKey}`
+      const totalRequested = (requestedByVariant.get(key) ?? 0) + quantity
+
+      if (variant.stock < totalRequested) {
+        return noStoreJson(
+          {
+            error: `Insufficient stock for ${product.titleEn} (${size} / ${color}). Available: ${variant.stock}`,
+          },
+          { status: 400 }
+        )
+      }
+
+      requestedByVariant.set(key, totalRequested)
 
       const itemPrice = product.salePrice ?? product.price
       subtotal += itemPrice * quantity
@@ -440,8 +460,20 @@ export async function POST(request: NextRequest) {
       // loser matches 0 rows and we abort the whole transaction rather than
       // driving stock negative.
       for (const item of orderItemsData) {
-        const claimed = await tx.product.updateMany({
-          where: { id: item.productId, stock: { gte: item.quantity } },
+        // The validation above rejects a line without a pair, so this cannot
+        // fire in practice — but stock must never be claimed against a pair
+        // nobody named, so it aborts rather than trusting that.
+        if (!item.size || !item.color) {
+          throw new InsufficientStockError(item.productId)
+        }
+
+        const claimed = await tx.productVariant.updateMany({
+          where: {
+            productId: item.productId,
+            size: item.size,
+            color: item.color,
+            stock: { gte: item.quantity },
+          },
           data: { stock: { decrement: item.quantity } },
         })
 

@@ -9,6 +9,7 @@ import Showcase from "@/components/homes/home-1/Showcase";
 import HomeInfo from "@/components/homes/home-1/HomeInfo";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { totalStock } from "@/lib/products/variants";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { getTranslations } from "next-intl/server";
 import { getTrustBadges } from "@/lib/settings/trustBadges";
@@ -59,7 +60,11 @@ export default async function HomePage({ params }) {
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
       colors: resolveProductColors(p.colors, p.images),
-      inStock: p.stock > 0,
+      // Any pair left, in any size or colour. A card cannot say more than
+      // that without becoming a stock report; the product page is where a
+      // shopper finds out whether THEIR size is there.
+      inStock: totalStock(p.variants) > 0,
+      variants: p.variants,
       filterColor: p.colors,
       filterSizes: p.sizes,
       filterBrands: [],

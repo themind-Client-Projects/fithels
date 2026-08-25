@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import ColorMultiSelect from "@/components/dashboard/ColorMultiSelect";
+import VariantStockGrid from "@/components/dashboard/VariantStockGrid";
+import { normaliseVariants, totalStock } from "@/lib/products/variants";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CANONICAL_SIZES,
@@ -70,7 +72,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   // Array, not a comma-joined string: the colour picker owns the vocabulary
   // now, so there is nothing to parse back out of a text field.
   const [colors, setColors] = useState(product?.colors ?? []);
-  const [stock, setStock] = useState(product?.stock?.toString() || "0");
+  /**
+   * Stock, one entry per (size, colour) pair.
+   *
+   * Held as a flat list rather than a nested map so it is exactly what the api
+   * stores and what it hands back — no shape to translate on the way in or out,
+   * and nowhere for the two to disagree.
+   */
+  const [variants, setVariants] = useState(() => product?.variants ?? []);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState(product?.images || []);
   const [categories, setCategories] = useState([]);
@@ -218,7 +227,13 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       // the stored array is stable and diffs stay readable.
       sizes: sizeRows.filter((size) => sizes.includes(size)),
       colors: Array.isArray(colors) ? colors : [],
-      stock,
+      // Cleaned against what is actually ticked, so a quantity typed for a
+      // colour that was later unticked is not sent at all.
+      variants: normaliseVariants(
+        variants,
+        sizeRows.filter((size) => sizes.includes(size)),
+        Array.isArray(colors) ? colors : []
+      ),
       isActive,
       images,
     };
@@ -556,16 +571,20 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </div>
       </div>
 
+      {/* Sits directly under the sizes and colours it is built from, so the
+          three are read as one decision rather than three unrelated fields. */}
       <div className="flex flex-col gap-2.5">
-        <Label htmlFor="stock" className="text-start text-sm font-bold text-foreground">{t("stock")}</Label>
-        <Input
-          id="stock"
-          type="number"
-          min="0"
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-          placeholder="0"
-          className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+        <Label className="text-start text-sm font-bold text-foreground">
+          {t("stockPerVariant")}
+        </Label>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t("stockPerVariantHint")}
+        </p>
+        <VariantStockGrid
+          sizes={sizeRows.filter((size) => sizes.includes(size))}
+          colors={Array.isArray(colors) ? colors : []}
+          variants={variants}
+          onChange={setVariants}
         />
       </div>
 

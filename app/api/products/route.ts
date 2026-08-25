@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   parsePrice,
   parseSalePrice,
-  parseStock,
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { buildProductSlug } from '@/lib/products/slug'
@@ -64,11 +64,14 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where,
       take: limit,
-      include: { category: true },
+      include: { category: true, variants: true },
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(products)
+    // `stock` is answered as a derived total so every existing consumer — the
+    // dashboard list, the order builder, the reorder button — keeps reading one
+    // number, while the rows behind it stay the only stored truth.
+    return NextResponse.json(products.map(withStockTotal))
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       categoryId,
       sizes,
       colors,
-      stock,
+      variants,
       isActive,
       images,
     } = body
@@ -113,13 +116,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // What the shoe is sold in, settled before the stock rows are cleaned, so
+    // a row for a size that was just unticked cannot slip through.
+    const offeredSizes: string[] = Array.isArray(sizes) ? sizes : []
+    const offeredColors: string[] = Array.isArray(colors) ? colors : []
+    const variantRows = normaliseVariants(variants, offeredSizes, offeredColors)
+
     let parsedPrice: number
     let parsedSalePrice: number | null
-    let parsedStock: number
     try {
       parsedPrice = parsePrice(price)
       parsedSalePrice = parseSalePrice(salePrice, parsedPrice)
-      parsedStock = parseStock(stock)
     } catch (error) {
       if (error instanceof PricingValidationError) {
         return NextResponse.json(
@@ -163,16 +170,19 @@ export async function POST(request: NextRequest) {
         price: parsedPrice,
         salePrice: parsedSalePrice,
         categoryId,
-        sizes: sizes || [],
-        colors: colors || [],
-        stock: parsedStock,
+        sizes: offeredSizes,
+        colors: offeredColors,
+        // Rejected rather than stored if it names a pair the product is not
+        // sold in; normaliseVariants also fills in a zero row for every pair
+        // that has no number yet, so the grid always has something to show.
+        variants: { createMany: { data: variantRows } },
         isActive: isActive ?? true,
         images: images || [],
       },
-      include: { category: true },
+      include: { category: true, variants: true },
     })
 
-    return NextResponse.json(product, { status: 201 })
+    return NextResponse.json(withStockTotal(product), { status: 201 })
   } catch (error) {
     // A category that was deleted between the form loading and the save is the
     // caller's problem, not the server's — it used to surface as a bare 500

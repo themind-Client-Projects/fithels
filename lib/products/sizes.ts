@@ -103,8 +103,16 @@ export type SizeOption = {
  * unbuyable, which is a worse failure than showing an unusual one — so the
  * canonical list decides the order, never the membership.
  */
+/**
+ * @param isAvailable Optional. Decides whether a size the product is SOLD in is
+ *   actually obtainable right now — on the product page that means "is there a
+ *   pair of this size in the colour currently chosen". Without it a size counts
+ *   as available merely for being listed, which is what let the page offer a
+ *   size the shop had run out of.
+ */
 export function buildSizeOptions(
-  productSizes?: readonly (string | number)[] | null
+  productSizes?: readonly (string | number)[] | null,
+  isAvailable?: (size: string) => boolean
 ): SizeOption[] {
   const stocked = new Set(
     (productSizes ?? [])
@@ -125,6 +133,8 @@ export function buildSizeOptions(
 
   return [...CANONICAL_SIZES, ...extras].map((size) => ({
     size,
-    available: stocked.has(size),
+    // Sold in this size AND obtainable. Both, because a size the shop has run
+    // out of should read the same as one it never carried: not orderable.
+    available: stocked.has(size) && (isAvailable?.(size) ?? true),
   }));
 }

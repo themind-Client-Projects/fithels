@@ -53,12 +53,26 @@ export async function releaseOrderStock(
 ): Promise<void> {
   const items = await tx.orderItem.findMany({
     where: { orderId },
-    select: { productId: true, quantity: true },
+    select: { productId: true, quantity: true, size: true, color: true },
   })
 
   for (const item of items) {
-    await tx.product.update({
-      where: { id: item.productId },
+    // Back to the exact pair it came from. Crediting the product as a whole
+    // would put a returned size 40 back as stock the shop could sell in any
+    // size — the mirror of the overselling this replaced.
+    //
+    // updateMany, not update: an order placed before a colour was retired can
+    // name a pair that no longer has a row, and `update` throws on a missing
+    // record, which would abort the whole cancellation. Matching zero rows is
+    // the right outcome there — there is nowhere to put the pair back.
+    if (!item.size || !item.color) continue
+
+    await tx.productVariant.updateMany({
+      where: {
+        productId: item.productId,
+        size: item.size,
+        color: item.color,
+      },
       data: { stock: { increment: item.quantity } },
     })
   }

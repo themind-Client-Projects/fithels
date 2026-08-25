@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
 import { useContextElement } from "@/context/Context";
+import { stockFor } from "@/lib/products/variants";
 
 /**
  * "Order again" — rebuild a past order's basket from the live catalogue.
@@ -47,7 +48,13 @@ export default function ReorderButton({ order, variant = "inline" }) {
     for (const item of order.items || []) {
       const product = item.product;
 
-      if (!product || product.isActive === false || (product.stock ?? 0) < 1) {
+      // Against the exact pair that was bought, not the product as a whole.
+      // Reading the product total would re-add a size 40 because some 38s are
+      // in stock — the customer would be told it worked and get a rejection at
+      // checkout, or worse, the wrong shoe.
+      const held = stockFor(product?.variants, item.size ?? "", item.color ?? "");
+
+      if (!product || product.isActive === false || held < 1) {
         unavailable += 1;
         continue;
       }
@@ -65,8 +72,8 @@ export default function ReorderButton({ order, variant = "inline" }) {
             ? product.price
             : null,
         imgSrc: product.images?.[0] ?? "",
-        // Only re-add as much as is actually on the shelf.
-        quantity: Math.min(item.quantity || 1, product.stock),
+        // Only re-add as many of THIS pair as are actually on the shelf.
+        quantity: Math.min(item.quantity || 1, held),
       };
 
       const ok = addProductToCart(

@@ -14,7 +14,7 @@ export async function GET(
     // delisted product with a live, fully-priced, add-to-cart-able page.
     const product = await prisma.product.findFirst({
       where: { slug, isActive: true },
-      include: { category: true },
+      include: { category: true, variants: true },
     })
 
     if (!product) {

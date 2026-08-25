@@ -54,7 +54,10 @@ export async function GET(
                 salePrice: true,
                 images: true,
                 isActive: true,
-                stock: true,
+                // Per-pair rows, not a single number. A nested select is NOT
+                // type-checked the way a top-level one is — `stock: true`
+                // survived tsc here and only failed when Prisma ran it.
+                variants: { select: { size: true, color: true, stock: true } },
               },
             },
           },

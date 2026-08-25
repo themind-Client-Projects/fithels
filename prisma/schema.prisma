@@ -90,9 +90,22 @@ model Product {
   images     String[]
   category   Category    @relation(fields: [categoryId], references: [id])
   categoryId String
+  /// Which sizes and colours this shoe is SOLD in. The quantities live on
+  /// ProductVariant — these two only decide which rows the grid offers.
   sizes      String[]
   colors     String[]
-  stock      Int         @default(0)
+  /// Inventory, one row per (size, colour) pair actually held.
+  ///
+  /// This replaced a single `stock Int` on the product. That number covered
+  /// every size and every colour at once, so a shoe with nineteen pairs across
+  /// five sizes and three colours could be ordered nineteen times in one size —
+  /// the check and the decrement were both blind to which pair was being sold,
+  /// and the shop oversold whatever size the customer happened to want.
+  ///
+  /// There is deliberately NO total column beside it. A denormalised total is a
+  /// second source of truth for the one number that must never be wrong, and it
+  /// drifts the first time an update misses it; the total is summed from here.
+  variants   ProductVariant[]
   isActive   Boolean     @default(true)
   orderItems OrderItem[]
   createdAt  DateTime    @default(now())
@@ -101,6 +114,22 @@ model Product {
   @@index([categoryId])
   @@index([isActive])
   @@index([createdAt])
+}
+
+/// Stock for one (size, colour) pair of one product.
+model ProductVariant {
+  id        String  @id @default(cuid())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  size      String
+  color     String
+  stock     Int     @default(0)
+
+  /// One row per pair, enforced by the database rather than by hoping the
+  /// application never writes a duplicate — two rows for the same pair would
+  /// make "how many size 40 in black" a question with two answers.
+  @@unique([productId, size, color])
+  @@index([productId])
 }
 
 /// Two-level catalogue tree: a SECTION (parentId null, e.g. "الأحذية") holding

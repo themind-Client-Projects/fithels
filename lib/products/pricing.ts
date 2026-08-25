@@ -94,17 +94,3 @@ export function parseSalePrice(
 
   return salePrice
 }
-
-export function parseStock(value: unknown): number {
-  if (isBlank(value)) return 0
-
-  const stock = toNumber(value, 'stock')
-  if (!Number.isInteger(stock) || stock < 0) {
-    throw new PricingValidationError(
-      'stock',
-      'STOCK_NOT_A_WHOLE_NUMBER',
-      'Stock must be a whole number of zero or more.'
-    )
-  }
-  return stock
-}

@@ -24,7 +24,11 @@ export const PRODUCT_CARD_SELECT = {
   images: true,
   sizes: true,
   colors: true,
-  stock: true,
+  // Inventory is per (size, colour) now, so a card cannot read one number off
+  // the product. These three columns are narrow and there is at most one row
+  // per pair, which is cheaper than it looks — and the card needs them anyway
+  // to grey out a size the shop has run out of.
+  variants: { select: { size: true, color: true, stock: true } },
 } satisfies Prisma.ProductSelect
 
 export type ProductCardRow = Prisma.ProductGetPayload<{

@@ -11,6 +11,7 @@ import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { resolveColor } from "@/lib/products/colors";
 import { buildSizeOptions } from "@/lib/products/sizes";
+import { stockFor, totalStock } from "@/lib/products/variants";
 import {
   parseStoredSelections,
   selectionStorageKey,
@@ -26,13 +27,12 @@ import { useCarousel } from "@/lib/hooks/useCarousel";
  * product before committing, so buying two sizes of the same colour — or the
  * same size in two colours — is one trip through the page instead of several.
  *
- * IMPORTANT, and the reason the quantities are capped the way they are:
- * `Product.stock` is a single Int covering EVERY size and colour
- * (prisma/schema.prisma:84). There is no per-variant inventory in the schema.
- * So the cap has to apply to the SUM of every selected row, not to each row —
- * otherwise a product with one unit left would happily accept "size 38 x1 and
- * size 39 x1" and the order would be rejected at checkout after the shopper had
- * entered their details.
+ * EVERY CAP IS PER PAIR. Stock is held per (size, colour) on ProductVariant, so
+ * "size 38 in black" and "size 39 in black" draw on separate counts and each row
+ * is capped by its own. This used to be a single number for the whole product,
+ * which meant the page had to cap the SUM of every row — and, worse, offered
+ * sizes the shop had entirely run out of, because the size list said nothing
+ * about how many were left.
  */
 export default function DynamicDetails({ product, locale = "ar", trustBadges = [] }) {
   const ar = locale === "ar";
@@ -67,12 +67,28 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
   const title = ar ? product.titleAr : product.titleEn;
   const hasDiscount = product.salePrice && product.salePrice < product.price;
   const unitPrice = product.salePrice || product.price;
-  const stock = Number(product.stock) || 0;
+  // Memoised: `?? []` builds a fresh array whenever the prop is absent, which
+  // would change the identity the size memo depends on on every render.
+  const variants = useMemo(() => product.variants ?? [], [product.variants]);
+  const stock = totalStock(variants);
   const inStock = stock > 0;
 
+  /**
+   * Sizes offered, and whether the CHOSEN COLOUR is actually available in each.
+   *
+   * A size used to count as available for appearing in the product's size list,
+   * which said nothing about whether any pairs were left — so the page happily
+   * took an order for a size the shop had run out of. Availability is now read
+   * from the pair, and it follows the colour: black may be gone in 40 while
+   * brown is not.
+   */
   const sizeOptions = useMemo(
-    () => buildSizeOptions(product.sizes),
-    [product.sizes]
+    () =>
+      buildSizeOptions(
+        product.sizes,
+        (size) => stockFor(variants, size, activeColor) > 0
+      ),
+    [product.sizes, variants, activeColor]
   );
 
   const storageKey = selectionStorageKey(product.slug);
@@ -132,7 +148,27 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
   const selections = edited ?? restored;
 
   const totalUnits = selections.reduce((sum, row) => sum + row.quantity, 0);
-  const remaining = Math.max(0, stock - totalUnits);
+
+  /** Pairs held of one exact size and colour. */
+  const heldFor = (size, color) => stockFor(variants, size, color ?? "");
+
+  /**
+   * How many more pairs the shopper could still add of what they have chosen.
+   *
+   * Summed per pair rather than taken from one product-wide number: with three
+   * black 38s and one black 41 left, "four more" is only true if they want them
+   * in that split, and the steppers enforce the split anyway.
+   */
+  const selectableLeft = selections.reduce(
+    (sum, row) => sum + Math.max(0, stockFor(variants, row.size, row.color ?? "") - row.quantity),
+    0
+  );
+
+  /** Pairs of one exact size and colour already in this basket. */
+  const takenFor = (size, color) =>
+    selections
+      .filter((row) => row.size === size && (row.color ?? "") === (color ?? ""))
+      .reduce((sum, row) => sum + row.quantity, 0);
 
   // Write-through. No setState here, so this stays a pure side effect. The
   // `storage` event does not fire in the document that wrote the value, so this
@@ -151,9 +187,15 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
 
   const keyOf = (size, color) => `${size}::${color ?? ""}`;
 
-  const capMessage = ar
-    ? `لا يمكن اختيار أكثر من ${stock} قطعة — هذا كل المتوفر.`
-    : `You cannot pick more than ${stock} — that is all we have.`;
+  // Names the pair. "You cannot pick more than 3" over a basket of several
+  // sizes leaves the shopper guessing which one it means.
+  const pairCapMessage = (size, color) => {
+    const held = heldFor(size, color);
+    const pair = color ? `${size} / ${color}` : size;
+    return ar
+      ? `المتوفر من ${pair} هو ${held} فقط.`
+      : `We only have ${held} of ${pair}.`;
+  };
 
   // Both handlers decide from the CURRENT `selections` before calling setState,
   // rather than deciding inside the updater. A state updater has to be pure —
@@ -174,8 +216,9 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
       return;
     }
 
-    if (totalUnits >= stock) {
-      setNotice(capMessage);
+    // Against THIS pair's count, not the shop's total for the product.
+    if (heldFor(size, activeColor) < 1) {
+      setNotice(pairCapMessage(size, activeColor));
       return;
     }
 
@@ -196,8 +239,8 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
       return;
     }
 
-    if (totalUnits - row.quantity + next > stock) {
-      setNotice(capMessage);
+    if (next > heldFor(row.size, row.color)) {
+      setNotice(pairCapMessage(row.size, row.color));
       return;
     }
 
@@ -669,14 +712,20 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                         <button
                           onClick={() => changeQuantity(index, 1)}
                           aria-label={ar ? "زيادة" : "Increase"}
-                          disabled={remaining <= 0}
+                          disabled={row.quantity >= heldFor(row.size, row.color)}
                           style={{
                             width: "36px",
                             background: "#f8f9fa",
                             border: "none",
                             fontSize: "16px",
-                            cursor: remaining > 0 ? "pointer" : "not-allowed",
-                            color: remaining > 0 ? "#495057" : "#ced4da",
+                            cursor:
+                              row.quantity < heldFor(row.size, row.color)
+                                ? "pointer"
+                                : "not-allowed",
+                            color:
+                              row.quantity < heldFor(row.size, row.color)
+                                ? "#495057"
+                                : "#ced4da",
                           }}
                         >
                           +
@@ -747,8 +796,8 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                     }}
                   >
                     {ar
-                      ? `يمكنك إضافة ${remaining} أخرى`
-                      : `${remaining} more available`}
+                      ? `${selectableLeft} متاحة للإضافة`
+                      : `${selectableLeft} more available`}
                   </span>
                 )}
               </div>

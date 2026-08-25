@@ -34,7 +34,9 @@ import { getTrustBadges } from "@/lib/settings/trustBadges";
 const getActiveProduct = cache(async (slug) =>
   prisma.product.findFirst({
     where: { slug, isActive: true },
-    include: { category: true },
+    // Variants come too: the page decides which sizes are still
+    // obtainable from them, and without the rows every size reads as sold out.
+    include: { category: true, variants: true },
   })
 );
 
