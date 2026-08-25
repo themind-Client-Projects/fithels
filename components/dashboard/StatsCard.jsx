@@ -20,10 +20,16 @@ export default function StatsCard({ icon: Icon, value, label, trend }) {
         <div style={{ fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-0.025em", color: "#1a1a2e", lineHeight: 1 }}>{value}</div>
         {trend && (
           <p style={{ display: "flex", alignItems: "center", fontSize: "0.75rem", color: "#6c757d", marginTop: "0.5rem" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", backgroundColor: "#ecfdf5", color: "#059669", padding: "0.125rem 0.375rem", borderRadius: "0.375rem", fontWeight: 600, marginRight: "0.375rem", marginLeft: "0.375rem" }}>
+            {/* The badge says what it is on its own — "5 orders", "2 need
+                reconciliation". It used to be followed by a hardcoded
+                "منذ الشهر الماضي", which was wrong twice over: none of these
+                figures is a month-over-month comparison, so "5 orders since
+                last month" read as growth when it actually meant five orders
+                are outstanding RIGHT NOW; and the string was untranslated
+                Arabic, so it appeared in the English dashboard too. */}
+            <span style={{ display: "inline-flex", alignItems: "center", backgroundColor: "#ecfdf5", color: "#059669", padding: "0.125rem 0.375rem", borderRadius: "0.375rem", fontWeight: 600 }}>
               {trend}
             </span>
-            <span>منذ الشهر الماضي</span>
           </p>
         )}
       </div>
