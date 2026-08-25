@@ -11,6 +11,48 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { slugify } from "@/lib/products/slug";
 
 
+/**
+ * One of the two answers to "what is this row".
+ *
+ * A whole card is the click target, not just the radio: on a tablet — which is
+ * what the shop is run from — a 16px dot is a poor thing to have to hit.
+ */
+function KindOption({
+  checked,
+  onChange,
+  title,
+  help,
+  disabled = false,
+  disabledReason,
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition-colors ${
+        disabled
+          ? "cursor-not-allowed border-border bg-muted/20 opacity-60"
+          : checked
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-primary/40"
+      }`}
+    >
+      <input
+        type="radio"
+        name="categoryKind"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="mt-1 h-4 w-4 shrink-0 accent-primary"
+      />
+      <span className="text-start">
+        <span className="block text-sm font-bold text-foreground">{title}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+          {disabled ? disabledReason : help}
+        </span>
+      </span>
+    </label>
+  );
+}
+
 export default function CategoryForm({ category, onSuccess, onCancel }) {
   const isEditing = !!category;
   const t = useTranslations("Dashboard");
@@ -25,14 +67,30 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
   const [error, setError] = useState("");
 
   /**
-   * Which section this belongs to. Empty string means "this IS a section".
+   * WHAT THIS ROW IS, asked outright.
+   *
+   * A main section used to be created by leaving the parent picker on its first
+   * option — the row was top-level because nothing had been chosen. That is a
+   * decision made by NOT doing something, which is invisible: nothing on the
+   * form said "this is how you create a main section". Now the two kinds are
+   * offered side by side and the picker only appears for the one that needs it.
+   */
+  const [kind, setKind] = useState(category?.parentId ? "sub" : "main");
+
+  /**
+   * Which section a sub-section belongs to.
    *
    * Sections are fetched rather than passed in so the picker is right even when
    * the form is opened straight after another one created a section.
    */
   const [parentId, setParentId] = useState(category?.parentId || "");
   const [sections, setSections] = useState([]);
+
+  // A main section that already holds sub-sections cannot itself be moved
+  // inside another — the tree is two levels deep.
   const hasChildren = (category?._count?.children ?? 0) > 0;
+  const available = sections.filter((s) => s.id !== category?.id);
+  const canBeSub = !hasChildren && available.length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -66,11 +124,22 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
     // DOM. Validate both languages here instead of relying on the browser.
     if (!nameEn.trim()) { setActiveTab('en'); setError(t('requiredEnName')); return; }
     if (!nameAr.trim()) { setActiveTab('ar'); setError(t('requiredArName')); return; }
+    // Asked for a sub-section but never said which section: the api would
+    // silently file it as a main section, which is not what was asked for.
+    if (kind === "sub" && !parentId) {
+      setError(t("chooseMainSectionRequired"));
+      return;
+    }
     setError("");
     setLoading(true);
 
-    // Empty string means top level; the api reads null for that.
-    const body = { nameEn, nameAr, slug, parentId: parentId || null };
+    // null is what the api reads as "top level".
+    const body = {
+      nameEn,
+      nameAr,
+      slug,
+      parentId: kind === "sub" ? parentId : null,
+    };
 
     try {
       const url = isEditing
@@ -155,31 +224,51 @@ export default function CategoryForm({ category, onSuccess, onCancel }) {
         </p>
       </div>
 
-      {/* Where this sits in the tree. A row that already holds categories cannot
-          be moved inside another one — the tree is two levels deep — so the
-          picker is disabled rather than offering a move the api will refuse. */}
+      {/* Where this sits in the tree, asked as a question with two answers
+          rather than inferred from an untouched dropdown. */}
       <div className="space-y-2">
-        <Label htmlFor="parentId">{t("parentSection")}</Label>
-        <select
-          id="parentId"
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          disabled={hasChildren}
-          className="h-12 w-full rounded-xl border border-input bg-muted/30 px-4 text-start disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <option value="">{t("isTopLevelSection")}</option>
-          {sections
-            .filter((s) => s.id !== category?.id)
-            .map((s) => (
+        <Label>{t("categoryKind")}</Label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <KindOption
+            checked={kind === "main"}
+            onChange={() => setKind("main")}
+            title={t("mainSection")}
+            help={t("mainSectionHelp")}
+          />
+          <KindOption
+            checked={kind === "sub"}
+            onChange={() => setKind("sub")}
+            title={t("subSection")}
+            help={t("subSectionHelp")}
+            // Offered but explained when it cannot be taken, rather than simply
+            // missing: "why can I not do this" is the question a hidden option
+            // leaves behind.
+            disabled={!canBeSub}
+            disabledReason={
+              hasChildren ? t("sectionHasChildren") : t("needMainSectionFirst")
+            }
+          />
+        </div>
+      </div>
+
+      {kind === "sub" && canBeSub && (
+        <div className="space-y-2">
+          <Label htmlFor="parentId">{t("chooseMainSection")}</Label>
+          <select
+            id="parentId"
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            className="h-12 w-full rounded-xl border border-input bg-muted/30 px-4 text-start"
+          >
+            <option value="">— {t("chooseMainSection")} —</option>
+            {available.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nameAr}
               </option>
             ))}
-        </select>
-        <p className="text-xs text-gray-400">
-          {hasChildren ? t("cannotNestSection") : t("parentSectionHint")}
-        </p>
-      </div>
+          </select>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-2">
         {onCancel && (

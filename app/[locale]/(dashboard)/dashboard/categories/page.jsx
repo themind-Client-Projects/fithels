@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
@@ -87,21 +87,69 @@ export default function CategoriesPage() {
     }
   };
 
+  /**
+   * Rows ordered as a tree: each main section, then its own sub-sections.
+   *
+   * The api sorts by Arabic name, which is right for a flat list and useless
+   * for a nested one — "حذاء فلات" could sit ten rows away from the "أحذية" it
+   * belongs to, so the shape of the tree was impossible to see. Grouping here
+   * rather than in the query keeps one endpoint serving both this page and the
+   * product form's pickers.
+   */
+  const ordered = useMemo(() => {
+    const children = new Map();
+    for (const row of categories) {
+      if (!row.parentId) continue;
+      if (!children.has(row.parentId)) children.set(row.parentId, []);
+      children.get(row.parentId).push(row);
+    }
+
+    const rows = [];
+    for (const section of categories.filter((c) => !c.parentId)) {
+      rows.push(section);
+      for (const child of children.get(section.id) ?? []) rows.push(child);
+    }
+
+    // A sub-section whose parent is missing from the list would otherwise
+    // vanish from the page entirely.
+    const placed = new Set(rows.map((r) => r.id));
+    for (const row of categories) if (!placed.has(row.id)) rows.push(row);
+    return rows;
+  }, [categories]);
+
   const columns = [
     {
       header: t("nameAr"),
       accessorKey: "nameAr",
-      cell: ({ row }) => (
-        <div>
-          <span className="font-medium">{row.nameAr}</span>
-          <span className="block text-xs text-muted-foreground">{row.nameEn}</span>
-        </div>
-      ),
+      cell: ({ row }) =>
+        row.parentId ? (
+          // Indented and marked, so a sub-section reads as belonging to the
+          // section above it rather than as another row in a flat list.
+          <div className="flex items-start gap-2 ps-6">
+            {/* An elbow drawn from two borders — the branch joining this row to
+                the section above it. Logical sides, so it turns around in
+                English without a second rule. */}
+            <span
+              aria-hidden="true"
+              className="mt-2 h-3 w-3 shrink-0 border-b border-s border-muted-foreground/40"
+            />
+            <div>
+              <span className="font-medium">{row.nameAr}</span>
+              <span className="block text-xs text-muted-foreground">
+                {row.nameEn}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <span className="font-bold">{row.nameAr}</span>
+            <span className="block text-xs text-muted-foreground">
+              {row.nameEn}
+            </span>
+          </div>
+        ),
     },
     {
-      // Which section this belongs to — the one column that makes the tree
-      // legible in a flat table. A row with no parent IS a section, and says so
-      // rather than showing an empty cell.
       header: t("section"),
       accessorKey: "parentId",
       cell: ({ row }) =>
@@ -110,10 +158,16 @@ export default function CategoriesPage() {
             {row.parent?.nameAr || row.parent?.nameEn || "—"}
           </span>
         ) : (
-          <Badge variant="outline" className="font-bold">
-            {t("sections")}
-            {row._count?.children ? ` · ${row._count.children}` : ""}
-          </Badge>
+          <div className="flex flex-col items-start gap-1">
+            <Badge variant="outline" className="font-bold">
+              {t("mainSection")}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {row._count?.children
+                ? t("subSectionsCount", { count: row._count.children })
+                : t("noSubSectionsYet")}
+            </span>
+          </div>
         ),
     },
     {
@@ -196,11 +250,17 @@ export default function CategoriesPage() {
         </Button>
       }
     >
+      {/* What the two levels mean, said once on the page rather than left to
+          be inferred from the rows. */}
+      <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+        {t("categoriesTreeHint")}
+      </p>
+
       <Card>
         <CardContent className="p-0 sm:p-0">
           <DataTable
             columns={columns}
-            data={categories}
+            data={ordered}
             isError={loadError}
             onRetry={fetchCategories}
           />

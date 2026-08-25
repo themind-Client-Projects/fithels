@@ -211,5 +211,17 @@
   "parentSectionHint": "Leave empty to make this a top-level section, or choose one to make it a category inside it.",
   "cannotNestSection": "This section holds categories, so it cannot be placed inside another one.",
   "sections": "Sections",
-  "noCategoriesYet": "No categories yet"
+  "noCategoriesYet": "No categories yet",
+  "categoryKind": "Section type",
+  "mainSection": "Main section",
+  "mainSectionHelp": "A standalone section that can hold sub-sections inside it. For example: Shoes.",
+  "subSection": "Sub-section",
+  "subSectionHelp": "Sits inside a main section, and products are filed against it. For example: Flats, inside Shoes.",
+  "needMainSectionFirst": "Create one main section first, then you can add sub-sections inside it.",
+  "chooseMainSection": "Choose the main section",
+  "chooseMainSectionRequired": "Choose the main section it goes inside.",
+  "sectionHasChildren": "This is a main section holding sub-sections, so it cannot become a sub-section itself.",
+  "categoriesTreeHint": "Sections are two levels: a main section (e.g. Shoes) holds sub-sections (e.g. Flats). Products are filed against the sub-section.",
+  "noSubSectionsYet": "No sub-sections yet",
+  "subSectionsCount": "{count} sub-sections"
 }
