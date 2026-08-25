@@ -80,6 +80,16 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
    * and nowhere for the two to disagree.
    */
   const [variants, setVariants] = useState(() => product?.variants ?? []);
+
+  /**
+   * The stock numbers as this form was FIRST given them.
+   *
+   * Sent alongside the edited ones so the server can apply what actually
+   * changed rather than overwriting live inventory with a snapshot: a form left
+   * open while a sale goes through used to put the sold pairs back on the shelf
+   * the moment anything on the page was saved, including just a price.
+   */
+  const [variantsBaseline] = useState(() => product?.variants ?? []);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState(product?.images || []);
   const [categories, setCategories] = useState([]);
@@ -234,6 +244,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         sizeRows.filter((size) => sizes.includes(size)),
         Array.isArray(colors) ? colors : []
       ),
+      variantsBaseline,
       isActive,
       images,
     };

@@ -65,7 +65,20 @@ export async function releaseOrderStock(
     // name a pair that no longer has a row, and `update` throws on a missing
     // record, which would abort the whole cancellation. Matching zero rows is
     // the right outcome there — there is nowhere to put the pair back.
-    if (!item.size || !item.color) continue
+    // A line with no pair recorded cannot be credited anywhere — there is no
+    // row that owns those units. That is a real possibility on orders placed
+    // before a size and colour became mandatory, and staying silent about it
+    // means the shop is quietly short with nothing to explain why. Every other
+    // "we cannot do the right thing here" branch in this codebase says so
+    // loudly; this one used to be a bare `continue`.
+    if (!item.size || !item.color) {
+      console.warn(
+        `[stock] order ${orderId}: ${item.quantity} unit(s) of product ` +
+          `${item.productId} could not be returned to stock — the line records ` +
+          `no size/colour, so there is no variant to credit. Adjust by hand.`
+      )
+      continue
+    }
 
     await tx.productVariant.updateMany({
       where: {

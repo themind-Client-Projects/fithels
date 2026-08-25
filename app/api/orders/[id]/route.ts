@@ -316,6 +316,36 @@ export async function DELETE(
       )
     }
 
+    // A DELIVERED order is a completed sale. Deleting it drops its money from
+    // the revenue figures and destroys the only record tying the missing stock
+    // to a customer — the goods have gone, so there is nothing to release and
+    // nothing to correct afterwards. Cancel is the reversible action; delete is
+    // for orders that never happened.
+    if (existing.status === 'DELIVERED') {
+      return noStoreJson(
+        {
+          error:
+            'This order has been delivered and cannot be deleted. Its record is what accounts for the stock that left the shop.',
+          reason: 'ORDER_ALREADY_DELIVERED',
+        },
+        { status: 409 }
+      )
+    }
+
+    // Money that arrived is money that has to stay accounted for, even on an
+    // order that was later cancelled: deleting it makes the collected-revenue
+    // figure disagree with the bank, and hides a refund somebody still owes.
+    if (existing.paymentStatus === 'PAID') {
+      return noStoreJson(
+        {
+          error:
+            'This order has been paid. Refund and reconcile it before deleting, or cancel it instead.',
+          reason: 'ORDER_ALREADY_PAID',
+        },
+        { status: 409 }
+      )
+    }
+
     await prisma.$transaction(async (tx) => {
       // Return the reservation BEFORE deleting. The OrderItem rows carry the
       // quantities and are cascade-deleted with the order, so releasing
@@ -324,8 +354,20 @@ export async function DELETE(
       // does nothing in that case.
       await cancelOrderAndReleaseStock(tx, id)
 
-      // OrderItems and PaymentIntent are auto-deleted via onDelete: Cascade
-      await tx.order.delete({ where: { id } })
+      // deleteMany, not delete: a double-click or a retried request finds the
+      // row already gone, and `delete` throws P2025 for a missing record, which
+      // the catch below turned into a 500 for an operation that had in fact
+      // succeeded — inviting a third attempt.
+      // OrderItems and PaymentIntent are auto-deleted via onDelete: Cascade.
+      await tx.order.deleteMany({ where: { id } })
+    }, {
+      // The same ceiling the cancel path already carries. This transaction does
+      // strictly MORE work than that one — it credits every line's stock, voids
+      // the coupon, then cascade-deletes — and it was still running on Prisma's
+      // 5s default, so a large order against a pooled remote Postgres died with
+      // "Transaction already closed" and surfaced as an unexplained 500.
+      maxWait: 10_000,
+      timeout: 20_000,
     })
 
     return noStoreJson({ success: true })

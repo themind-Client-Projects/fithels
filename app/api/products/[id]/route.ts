@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
+import {
+  applyVariantEdits,
+  normaliseVariants,
+  withStockTotal,
+} from '@/lib/products/variants'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -84,6 +88,7 @@ export async function PUT(
       sizes,
       colors,
       variants,
+      variantsBaseline,
       isActive,
       images,
     } = body
@@ -134,12 +139,15 @@ export async function PUT(
     // in the same request cannot survive as an orphan row.
     const nextSizes: string[] = sizes !== undefined ? (Array.isArray(sizes) ? sizes : []) : existing.sizes
     const nextColors: string[] = colors !== undefined ? (Array.isArray(colors) ? colors : []) : existing.colors
+    // Applied as an EDIT against what the form was shown, not as an absolute
+    // overwrite. See applyVariantEdits — a stale form submitting the numbers it
+    // loaded used to put sold-and-delivered pairs back on the shelf.
     const variantRows =
       variants !== undefined || sizes !== undefined || colors !== undefined
-        ? normaliseVariants(
-            variants ?? existing.variants,
-            nextSizes,
-            nextColors
+        ? applyVariantEdits(
+            normaliseVariants(variants ?? existing.variants, nextSizes, nextColors),
+            variantsBaseline ?? existing.variants,
+            existing.variants
           )
         : undefined
 
