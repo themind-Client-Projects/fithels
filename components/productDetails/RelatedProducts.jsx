@@ -37,7 +37,10 @@ export default async function RelatedProducts({ product, locale }) {
   // Each step excludes what the previous one already found, so a product never
   // appears twice, and each runs only if the row is still short.
   const seen = new Set([product.id]);
-  let picks = [];
+  // Collected by pushing rather than reassigning: `picks = [...picks, ...rows]`
+  // inside an async function is flagged by react-hooks/immutability, and the
+  // rebuild served no purpose here — nothing renders from this until it is done.
+  const picks = [];
 
   const widen = async (where) => {
     if (picks.length >= LIMIT) return;
@@ -47,8 +50,10 @@ export default async function RelatedProducts({ product, locale }) {
       take: LIMIT - picks.length,
       select: PRODUCT_CARD_SELECT,
     });
-    for (const row of rows) seen.add(row.id);
-    picks = [...picks, ...rows];
+    for (const row of rows) {
+      seen.add(row.id);
+      picks.push(row);
+    }
   };
 
   await widen({ categoryId: product.categoryId });

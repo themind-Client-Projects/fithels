@@ -241,6 +241,10 @@ export default function Header1({ fullWidth = false }) {
                             {t("dashboard")}
                           </a>
                         )}
+                        {/* No locale prefix here on purpose: this Link comes
+                            from @/i18n/navigation, which adds the current one.
+                            Writing `/${locale}/account` would produce
+                            /ar/ar/account. */}
                         <Link href="/account" className="profile-dropdown-link" style={{
                           display: "flex",
                           alignItems: "center",
@@ -253,7 +257,7 @@ export default function Header1({ fullWidth = false }) {
                           transition: "color 0.2s ease",
                         }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                          My Account
+                          {t("account")}
                         </Link>
                         <button onClick={() => {
                           setIsSigningOut(true);
