@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+  BarChart3,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -64,6 +65,9 @@ export default function DashboardSidebar() {
     { title: t("products"), url: `/${locale}/dashboard/products`, icon: Package, permission: PERMISSIONS.VIEW_PRODUCTS },
     { title: t("categories"), url: `/${locale}/dashboard/categories`, icon: Tags, permission: PERMISSIONS.VIEW_CATEGORIES },
     { title: t("customers"), url: `/${locale}/dashboard/customers`, icon: Users, permission: PERMISSIONS.VIEW_CUSTOMERS },
+    // Reads across orders, customers and stock, so it sits behind the same
+    // permission as the overview it expands on.
+    { title: t("analytics"), url: `/${locale}/dashboard/analytics`, icon: BarChart3, permission: PERMISSIONS.VIEW_DASHBOARD },
     { title: "البانرات", url: `/${locale}/dashboard/banners`, icon: Sparkles, permission: PERMISSIONS.VIEW_SETTINGS },
     { title: "الكوبونات", url: `/${locale}/dashboard/coupons`, icon: TicketPercent, permission: PERMISSIONS.VIEW_SETTINGS },
   ];
