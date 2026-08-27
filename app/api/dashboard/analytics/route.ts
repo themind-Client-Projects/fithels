@@ -90,6 +90,9 @@ export async function GET(request: NextRequest) {
           titleAr: true,
           titleEn: true,
           isActive: true,
+          // Only the first photo is rendered, but Postgres has no cheap way to
+          // slice an array column, and these are short paths.
+          images: true,
           sizes: true,
           variants: { select: { size: true, color: true, stock: true } },
         },
@@ -99,6 +102,7 @@ export async function GET(request: NextRequest) {
     ])
 
     const productTitles = new Map(products.map((p) => [p.id, p.titleAr || p.titleEn]))
+    const productImages = new Map(products.map((p) => [p.id, p.images?.[0] ?? null]))
 
     // Orders that have neither shipped nor been cancelled are still sitting on
     // reserved stock. Taken from the lifetime set, not the window: a reservation
@@ -114,7 +118,11 @@ export async function GET(request: NextRequest) {
       productTitles
     )
     const inventory = summariseInventory(products, liveOrders as AnalyticsOrder[])
-    const topProducts = summariseTopProducts(periodOrders as AnalyticsOrder[], productTitles)
+    const topProducts = summariseTopProducts(
+      periodOrders as AnalyticsOrder[],
+      productTitles,
+      productImages
+    )
 
     const segments = {
       vip: customers.filter((c) => c.tier === 'vip').length,

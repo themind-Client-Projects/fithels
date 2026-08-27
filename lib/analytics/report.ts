@@ -81,6 +81,7 @@ export interface AnalyticsProduct {
   titleAr: string
   titleEn: string
   isActive: boolean
+  images: string[]
   sizes: string[]
   variants: AnalyticsVariant[]
 }
@@ -354,6 +355,8 @@ export interface InventoryRow {
   titleAr: string
   titleEn: string
   isActive: boolean
+  /** First photo, so the row can be recognised at a glance rather than read. */
+  image: string | null
   /** Units the shop can still sell — the variant rows, which are already net
    *  of anything reserved by a live order. */
   sellable: number
@@ -415,6 +418,7 @@ export function summariseInventory(
       titleAr: p.titleAr,
       titleEn: p.titleEn,
       isActive: p.isActive,
+      image: p.images?.[0] ?? null,
       sellable,
       reserved,
       onHand: sellable + reserved,
@@ -441,14 +445,22 @@ export function summariseInventory(
 export interface SoldRow {
   productId: string
   title: string
+  image: string | null
   units: number
   revenue: number
 }
 
-/** Units and money per product, from PAID orders only. */
+/**
+ * Units and money per product, from PAID orders only.
+ *
+ * @param productImages First photo per product, so a best-seller is recognised
+ *   at a glance. A product deleted since the sale simply has none — the line
+ *   still counts, because it still earned.
+ */
 export function summariseTopProducts(
   orders: readonly AnalyticsOrder[],
-  productTitles: ReadonlyMap<string, string>
+  productTitles: ReadonlyMap<string, string>,
+  productImages?: ReadonlyMap<string, string | null>
 ): SoldRow[] {
   const rows = new Map<string, SoldRow>()
 
@@ -460,6 +472,7 @@ export function summariseTopProducts(
         row = {
           productId: item.productId,
           title: productTitles.get(item.productId) ?? item.productId,
+          image: productImages?.get(item.productId) ?? null,
           units: 0,
           revenue: 0,
         }

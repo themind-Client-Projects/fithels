@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import AnalyticsTable from "@/components/dashboard/AnalyticsTable";
 import { formatMoney } from "@/lib/currency";
 import {
@@ -241,16 +242,36 @@ export default function AnalyticsPage() {
       key: "title", header: t("products"),
       sortValue: (p) => (ar ? p.titleAr : p.titleEn),
       render: (p) => (
-        <>
-          <span className="font-medium">{ar ? p.titleAr : p.titleEn}</span>
-          {p.outOfStock ? (
-            <Badge variant="destructive" className="ms-2 font-bold">{t("outOfStockLabel")}</Badge>
-          ) : p.lowStock ? (
-            <Badge variant="outline" className="ms-2 border-amber-500 bg-amber-50 font-bold text-amber-600">
-              {t("lowStockLabel")}
-            </Badge>
-          ) : null}
-        </>
+        <div className="flex items-center gap-3">
+          {/* The photo, because a shop recognises a shoe far faster than it
+              reads one — and several of these names differ by a single word. */}
+          {p.image ? (
+            <Image
+              src={p.image}
+              alt=""
+              width={44}
+              height={44}
+              // Fixed 44px box, so the optimiser is told not to fetch a
+              // full-size product photo for a table row.
+              sizes="44px"
+              className="h-11 w-11 shrink-0 rounded-lg border border-border object-cover"
+            />
+          ) : (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+              <Package className="h-4 w-4" />
+            </span>
+          )}
+          <span>
+            <span className="font-medium">{ar ? p.titleAr : p.titleEn}</span>
+            {p.outOfStock ? (
+              <Badge variant="destructive" className="ms-2 font-bold">{t("outOfStockLabel")}</Badge>
+            ) : p.lowStock ? (
+              <Badge variant="outline" className="ms-2 border-amber-500 bg-amber-50 font-bold text-amber-600">
+                {t("lowStockLabel")}
+              </Badge>
+            ) : null}
+          </span>
+        </div>
       ),
     },
     {
@@ -307,7 +328,25 @@ export default function AnalyticsPage() {
     {
       key: "title", header: t("products"),
       sortValue: (p) => p.title,
-      render: (p) => <span className="font-medium">{p.title}</span>,
+      render: (p) => (
+        <div className="flex items-center gap-3">
+          {p.image ? (
+            <Image
+              src={p.image}
+              alt=""
+              width={44}
+              height={44}
+              sizes="44px"
+              className="h-11 w-11 shrink-0 rounded-lg border border-border object-cover"
+            />
+          ) : (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+              <Package className="h-4 w-4" />
+            </span>
+          )}
+          <span className="font-medium">{p.title}</span>
+        </div>
+      ),
     },
     {
       key: "units", header: t("unitsLabel"), align: "center",
