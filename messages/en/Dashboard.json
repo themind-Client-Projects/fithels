@@ -291,5 +291,9 @@
   "lowStockFilter": "Running low",
   "inStockFilter": "In stock",
   "customersNote": "\"Cancelled\" counts orders cancelled inside the period. \"Completion rate\" is paid orders divided by all their orders, all time — the order count sits beside it, because a rate over two orders means far less than the same rate over twenty.",
-  "noData": "No data"
+  "noData": "No data",
+  "totalSales": "Total sales",
+  "totalSalesHint": "Collected + awaiting collection — orders that stand, cancelled ones excluded",
+  "grossPlaced": "Total placed",
+  "grossPlacedHint": "Everything ordered in the period, including what fell through"
 }

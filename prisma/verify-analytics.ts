@@ -143,6 +143,29 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   })
   check('units sold', sales.unitsSold, soldUnits._sum.quantity ?? 0)
 
+  /* Total sales: what was collected plus what is still owed, straight from
+     Postgres rather than from the two figures above added together. */
+  const standing = await prisma.order.aggregate({
+    _sum: { total: true }, where: { ...inWindow, status: { not: 'CANCELLED' } },
+  })
+  const standingPaid = await prisma.order.aggregate({
+    _sum: { total: true }, where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' },
+  })
+  // Orders that stand, plus any cancelled ones whose money was still taken.
+  check(
+    'TOTAL SALES (collected + outstanding)',
+    sales.netSales,
+    (standing._sum.total ?? 0) + (standingPaid._sum.total ?? 0)
+  )
+  check(
+    'total sales orders',
+    sales.netSalesOrders,
+    (await prisma.order.count({ where: { ...inWindow, status: { not: 'CANCELLED' } } })) +
+      (await prisma.order.count({ where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' } }))
+  )
+  check('IDENTITY placed = total sales + lost', sales.placedAmount,
+    sales.netSales + (sales.cancelledAmount - sales.refundDue))
+
   /* The books must balance: everything placed is either banked, still owed, or
      cancelled-and-never-paid. Cancelled-but-paid sits in both `collected` and
      `cancelledAmount` on purpose, so it is subtracted once here. */

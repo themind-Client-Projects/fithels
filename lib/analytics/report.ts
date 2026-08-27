@@ -179,9 +179,26 @@ export function summariseSales(orders: readonly AnalyticsOrder[]) {
     if (o.paymentStatus === 'EXPIRED') method.expired += 1
   }
 
+  /**
+   * TOTAL SALES: the orders that stand.
+   *
+   * Collected plus still owed — money that has arrived and money that is going
+   * to. Cancelled orders are excluded because they sold nothing; they are
+   * reported beside this as what was lost, and the two add back up to
+   * everything placed:
+   *
+   *     placed = netSales + (cancelled - refundDue)
+   *
+   * The page showed the two halves without ever showing the sum, which left
+   * "what did I sell this month" as a question the shop had to do in its head.
+   */
+  const netSales = collected + outstanding
+
   return {
     placedOrders: orders.length,
     placedAmount,
+    netSales,
+    netSalesOrders: collectedOrders + outstandingOrders,
     collected, collectedOrders,
     outstanding, outstandingOrders,
     refundDue, refundDueOrders,

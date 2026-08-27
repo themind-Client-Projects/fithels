@@ -11,7 +11,7 @@ import AnalyticsTable from "@/components/dashboard/AnalyticsTable";
 import { formatMoney } from "@/lib/currency";
 import {
   ShoppingCart, DollarSign, Truck, TicketPercent,
-  XCircle, Users, Package, AlertTriangle, Boxes,
+  XCircle, Users, Package, AlertTriangle, Boxes, TrendingUp,
 } from "lucide-react";
 
 const PERIODS = ["1m", "3m", "6m", "12m"];
@@ -362,6 +362,38 @@ export default function AnalyticsPage() {
         <div className="space-y-10">
           {/* ── Sales ─────────────────────────────────────────────── */}
           <Section title={t("salesSection")}>
+            {/* The headline the two figures below decompose into. It was
+                computed all along and never shown, which left "what did I sell
+                this month" as a sum the shop had to do in its head. */}
+            <div className="mb-4 rounded-2xl border border-border bg-card p-6">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h3 className="m-0 mb-2 flex items-center gap-2.5 text-sm font-medium text-muted-foreground">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 text-foreground">
+                      <TrendingUp className="h-4 w-4" strokeWidth={2} />
+                    </span>
+                    {t("totalSales")}
+                  </h3>
+                  <div className="text-4xl font-bold leading-none tracking-tight text-foreground">
+                    {money(sales.netSales)}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {sales.netSalesOrders} {t("ordersWord")} · {t("totalSalesHint")}
+                  </p>
+                </div>
+
+                {/* Everything ordered, lost included — so the two numbers
+                    explain each other rather than inviting the question. */}
+                <div className="text-end">
+                  <p className="m-0 text-xs text-muted-foreground">{t("grossPlaced")}</p>
+                  <div className="text-lg font-bold tabular-nums text-muted-foreground">
+                    {money(sales.placedAmount)}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t("grossPlacedHint")}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Figure icon={DollarSign} label={t("revenueCollected")} value={money(sales.collected)}
                 hint={`${sales.collectedOrders} ${t("ordersWord")}`} />
