@@ -8,6 +8,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useUIStore } from "@/stores/useUIStore";
 import { useTranslations } from "next-intl";
+import { coverFor } from "@/lib/products/colorImages";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { Banknote, CreditCard, MapPin } from "lucide-react";
 import { orderNumber } from "@/lib/orders/reference";
@@ -369,7 +370,8 @@ function CheckoutContent() {
       quantity: qty,
       selectedSize: size,
       selectedColor: color,
-      imgSrc: singleProduct.images?.[0]
+      // `color` is already the chosen one for this buy-now line.
+      imgSrc: coverFor(singleProduct.images, singleProduct.colorImages, color)
     }];
     displayTotal = (singleProduct.salePrice || singleProduct.price) * qty;
   } else {

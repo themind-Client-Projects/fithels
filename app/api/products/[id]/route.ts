@@ -166,7 +166,7 @@ export async function PUT(
     // they add up to, so it cannot drift from what was actually uploaded.
     const gallery =
       colorImageRows !== undefined && colorImageRows.length > 0
-        ? deriveGallery(colorImageRows, nextColors)
+        ? deriveGallery(colorImageRows, nextColors, existing.images)
         : undefined
 
     const product = await prisma.product.update({

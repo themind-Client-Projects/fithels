@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { coverFor } from "@/lib/products/colorImages";
 import { RotateCcw } from "lucide-react";
 import { useContextElement } from "@/context/Context";
 import { stockFor } from "@/lib/products/variants";
@@ -71,7 +72,10 @@ export default function ReorderButton({ order, variant = "inline" }) {
           product.salePrice && product.salePrice < product.price
             ? product.price
             : null,
-        imgSrc: product.images?.[0] ?? "",
+        // The photo of the colour THIS line was for. The order carries the
+        // colour, so re-ordering a black pair should not put the product's
+        // cover — often another colour — back into the basket.
+        imgSrc: coverFor(product.images, product.colorImages, item.color),
         // Only re-add as many of THIS pair as are actually on the shelf.
         quantity: Math.min(item.quantity || 1, held),
       };

@@ -25,20 +25,35 @@ export interface ColorImageRow {
 /**
  * The gallery to show for a colour.
  *
- * Falls back to the product's own photos when that colour has none — never to
- * an empty gallery, which would leave the page with a blank frame the moment a
- * shopper picked a colour nobody had photographed yet.
+ * Three steps down, and the middle one matters most during the changeover:
+ *
+ *   1. the colour's own photos;
+ *   2. failing that, the product photos NO colour has claimed;
+ *   3. failing that, the whole gallery.
+ *
+ * Step 2 exists because the product gallery now contains the colour photos too.
+ * Falling straight through to it meant a colour nobody had photographed showed
+ * the photos of the colour someone HAD: photograph the black pair and brown
+ * starts showing black shoes, which is worse than the generic photo it used to
+ * show. The unclaimed photos are exactly the shop's original generic ones.
+ *
+ * Never returns empty while the product has any photo at all — a blank frame the
+ * moment a shopper picks a colour reads as broken.
  */
 export function galleryFor(
   productImages: readonly string[] | null | undefined,
   colorImages: readonly ColorImageRow[] | null | undefined,
   color: string | null | undefined
 ): string[] {
-  const fallback = Array.isArray(productImages) ? [...productImages] : []
-  if (!color || !Array.isArray(colorImages)) return fallback
+  const all = Array.isArray(productImages) ? [...productImages] : []
+  if (!color || !Array.isArray(colorImages)) return all
 
   const own = colorImages.find((row) => row.color === color)?.images
-  return Array.isArray(own) && own.length > 0 ? [...own] : fallback
+  if (Array.isArray(own) && own.length > 0) return [...own]
+
+  const claimed = new Set(colorImages.flatMap((row) => row.images ?? []))
+  const unclaimed = all.filter((url) => !claimed.has(url))
+  return unclaimed.length > 0 ? unclaimed : all
 }
 
 /**
@@ -111,7 +126,21 @@ export function normaliseColorImages(
  */
 export function deriveGallery(
   colorImages: readonly ColorImageRow[] | null | undefined,
-  colors: readonly string[] | null | undefined
+  colors: readonly string[] | null | undefined,
+  /**
+   * Photos already on the product, kept after the colour ones.
+   *
+   * NOTHING IS EVER DESTROYED BY PHOTOGRAPHING A COLOUR. Without this, adding
+   * photos to one colour of an existing product replaced its whole gallery with
+   * that colour's photos — the originals were gone, unrecoverable now that the
+   * general uploader is removed, and the colours NOT yet photographed fell back
+   * to the gallery and so showed the one colour that had been. A shop would
+   * photograph black and find brown showing black shoes.
+   *
+   * Keeping them means an un-photographed colour still falls back to something
+   * generic, and the shop's existing work survives the transition.
+   */
+  keep: readonly string[] | null | undefined = []
 ): string[] {
   const rows = Array.isArray(colorImages) ? colorImages : []
   const order = Array.isArray(colors) && colors.length > 0
@@ -128,17 +157,28 @@ export function deriveGallery(
       gallery.push(url)
     }
   }
+
+  for (const url of keep ?? []) {
+    if (seen.has(url)) continue
+    seen.add(url)
+    gallery.push(url)
+  }
+
   return gallery
 }
 
 /**
  * The two photos a card shows: at rest, and on hover.
  *
- * Both come from the SAME colour. The gallery is ordered by colour now, so
- * `images[0]` and `images[1]` can be two different shoes — a card would sit
- * showing brown and flip to black on hover, which reads as the wrong picture
- * rather than as a second view. The hover falls back to the next photo in the
- * gallery only when that colour has just one.
+ * Both come from the SAME colour, and there is no fallback across colours. The
+ * gallery is ordered by colour, so `images[1]` is very often a different shoe —
+ * a card would sit showing brown and flip to black on hover, which reads as the
+ * wrong picture rather than as a second view.
+ *
+ * A colour with only one photo therefore has no hover, and the card simply does
+ * not change. That is the honest answer: there is no second view of it. The
+ * fallback for a product nobody has photographed per colour still works, since
+ * galleryFor hands back the whole unclaimed gallery in that case.
  */
 export function cardImages(
   productImages: readonly string[] | null | undefined,
@@ -150,5 +190,5 @@ export function cardImages(
   const own = first ? galleryFor(all, colorImages, first) : all
 
   const cover = own[0] ?? all[0] ?? ''
-  return { cover, hover: own[1] ?? all[1] ?? cover }
+  return { cover, hover: own[1] ?? cover }
 }
