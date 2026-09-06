@@ -1,4 +1,6 @@
 "use client";
+
+import { galleryFor } from "@/lib/products/colorImages";
 import { openCartModal } from "@/utlis/openCartModal";
 import { openWistlistModal } from "@/utlis/openWishlist";
 
@@ -164,8 +166,20 @@ export default function Context({ children }) {
         const lineKey = cartLineKey(source.id, selection.size, selection.color);
         const index = next.findIndex((elm) => elm.lineKey === lineKey);
         if (index === -1) {
+          // The photo of THIS line's colour. Spreading `source` alone gave
+          // every line the product's first default photo, so a basket with
+          // black and brown of one shoe showed the same picture twice — and it
+          // followed the order through checkout onto the customer's receipt.
+          const lineGallery = galleryFor(
+            source.images,
+            source.colorImages,
+            selection.color
+          );
+
           next.push({
             ...source,
+            imgSrc: lineGallery[0] || source.imgSrc,
+            imgHover: lineGallery[1] || lineGallery[0] || source.imgHover,
             quantity: selection.quantity,
             selectedSize: selection.size,
             selectedColor: selection.color,

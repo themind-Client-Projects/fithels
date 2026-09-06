@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+// The photo of the colour on THIS line — a receipt showing a different colour
+// than the one bought is the kind of thing a customer writes in about.
+import { coverFor } from "@/lib/products/colorImages";
 import { formatMoney } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -397,9 +400,9 @@ export default function OrderDetailPage() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                 <div style={{ height: "4rem", width: "4rem", borderRadius: "0.5rem", border: "1px solid #e9ecef", backgroundColor: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.25rem", flexShrink: 0 }}>
-                  {item.product?.images?.[0] ? (
+                  {coverFor(item.product?.images, item.product?.colorImages, item.color) ? (
                     <Image
-                      src={item.product.images[0]}
+                      src={coverFor(item.product.images, item.product.colorImages, item.color)}
                       alt={item.product.titleAr || item.product.titleEn}
                       width={64}
                       height={64}

@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
           // slice an array column, and these are short paths.
           images: true,
           sizes: true,
+          colors: true,
           variants: { select: { size: true, color: true, stock: true } },
         },
       }),

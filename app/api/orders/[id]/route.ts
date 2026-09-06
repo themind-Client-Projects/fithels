@@ -53,6 +53,8 @@ export async function GET(
                 price: true,
                 salePrice: true,
                 images: true,
+                // So a receipt shows the colour that was actually bought.
+                colorImages: { select: { color: true, images: true } },
                 isActive: true,
                 // Per-pair rows, not a single number. A nested select is NOT
                 // type-checked the way a top-level one is — `stock: true`
@@ -249,6 +251,8 @@ export async function PATCH(
                 titleEn: true,
                 titleAr: true,
                 images: true,
+                // So a receipt shows the colour that was actually bought.
+                colorImages: { select: { color: true, images: true } },
               },
             },
           },

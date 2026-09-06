@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import AnalyticsTable from "@/components/dashboard/AnalyticsTable";
+import StockBreakdown from "@/components/dashboard/StockBreakdown";
 import { formatMoney } from "@/lib/currency";
 import {
   ShoppingCart, DollarSign, Truck, TicketPercent,
@@ -290,28 +291,10 @@ export default function AnalyticsPage() {
       render: (p) => <span className="tabular-nums">{p.onHand}</span>,
     },
     {
-      key: "bySize", header: t("perSizeStock"),
-      render: (p) => (
-        <div className="flex flex-wrap gap-1.5">
-          {/* Every size it is SOLD in, zeroes included — "which size am I out
-              of" is the question this column exists to answer. */}
-          {Object.entries(p.bySize).map(([size, qty]) => (
-            <span
-              key={size}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs ${
-                qty === 0
-                  ? "border-red-200 bg-red-50 text-red-600"
-                  : qty <= 2
-                  ? "border-amber-200 bg-amber-50 text-amber-700"
-                  : "border-border bg-muted/30"
-              }`}
-            >
-              <span className="font-bold">{size}</span>
-              <span className="tabular-nums">{qty}</span>
-            </span>
-          ))}
-        </div>
-      ),
+      key: "bySize", header: t("stockBreakdown"),
+      // Which colours the total is made of, which sizes, and — once opened —
+      // exactly how many of each pair. See StockBreakdown.
+      render: (p) => <StockBreakdown row={p} />,
     },
   ], [t, ar]);
 

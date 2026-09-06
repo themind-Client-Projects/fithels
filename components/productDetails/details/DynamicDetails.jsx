@@ -278,6 +278,13 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
       oldPrice: hasDiscount ? product.price : null,
       imgSrc: product.images?.[0] || "",
       imgHover: product.images?.[1] || product.images?.[0] || "",
+      // Carried so the cart can pick the photo of the colour each LINE is for.
+      // A basket holding black and brown of the same shoe showed the same
+      // picture twice — whichever happened to be first in the default gallery —
+      // and that picture followed the order through checkout to the customer's
+      // receipt.
+      images: product.images ?? [],
+      colorImages: product.colorImages ?? [],
       isOnSale: Boolean(hasDiscount),
       sizes: product.sizes,
       filterColor: product.colors,

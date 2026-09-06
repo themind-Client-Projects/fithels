@@ -58,7 +58,7 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   const allOrders = await prisma.order.findMany({ select: ORDER_SHAPE })
   const products = await prisma.product.findMany({
     select: {
-      id: true, titleAr: true, titleEn: true, isActive: true, images: true, sizes: true,
+      id: true, titleAr: true, titleEn: true, isActive: true, images: true, sizes: true, colors: true,
       variants: { select: { size: true, color: true, stock: true } },
     },
   })

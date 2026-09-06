@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { coverFor } from "@/lib/products/colorImages";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import ReorderButton from "@/components/my-account/ReorderButton";
 import { Clock, CheckCircle2, Package, Truck, Home, Check } from "lucide-react";
@@ -299,9 +300,9 @@ export default function OrderTracking({ orderId }) {
                     borderBottom: i < order.items.length - 1 ? "1px solid #f1f5f9" : "none",
                   }}
                 >
-                  {item.product?.images?.[0] && (
+                  {coverFor(item.product?.images, item.product?.colorImages, item.color) && (
                     <Image
-                      src={item.product.images[0]}
+                      src={coverFor(item.product.images, item.product.colorImages, item.color)}
                       alt={item.product.titleAr || "product"}
                       width={60}
                       height={75}

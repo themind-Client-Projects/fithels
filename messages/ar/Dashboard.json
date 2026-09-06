@@ -298,5 +298,7 @@
   "grossPlacedHint": "كل ما طُلب في الفترة، بما فيه ما لم يكتمل",
   "colorImagesLabel": "صور كل لون",
   "colorImagesHint": "ارفع صور كل لون على حدة. اللون بلا صور يعرض معرض المنتج الأعلى، فلا حاجة لتصوير كل الألوان قبل الحفظ.",
-  "usesDefaultGallery": "يستخدم معرض المنتج"
+  "usesDefaultGallery": "يستخدم معرض المنتج",
+  "sizeByColor": "التفصيل لكل لون",
+  "stockBreakdown": "تفصيل المخزون"
 }

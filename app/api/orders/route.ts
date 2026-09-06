@@ -114,6 +114,8 @@ export async function GET(request: NextRequest) {
                 price: true,
                 salePrice: true,
                 images: true,
+                // So a receipt shows the colour that was actually bought.
+                colorImages: { select: { color: true, images: true } },
                 isActive: true,
                 // Per-pair rows, not a single number. A nested select is NOT
                 // type-checked the way a top-level one is — `stock: true`
@@ -545,7 +547,10 @@ export async function POST(request: NextRequest) {
         items: {
           include: {
             product: {
-              select: { id: true, titleEn: true, titleAr: true, images: true },
+              select: {
+                id: true, titleEn: true, titleAr: true, images: true,
+                colorImages: { select: { color: true, images: true } },
+              },
             },
           },
         },

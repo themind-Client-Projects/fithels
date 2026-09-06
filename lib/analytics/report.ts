@@ -83,6 +83,7 @@ export interface AnalyticsProduct {
   isActive: boolean
   images: string[]
   sizes: string[]
+  colors: string[]
   variants: AnalyticsVariant[]
 }
 
@@ -366,6 +367,14 @@ export interface InventoryRow {
   onHand: number
   /** Sellable units per size, summed across colours. */
   bySize: Record<string, number>
+  /**
+   * Sellable units per colour, summed across sizes.
+   *
+   * "60 available" answered how many but never of what: a shop reading it could
+   * not tell sixty of one colour from twenty of each. Ordered by the colours the
+   * product is sold in, so a colour that has run out still appears, at zero.
+   */
+  byColor: Record<string, number>
   /** Sellable units per size and colour. */
   byPair: Array<{ size: string; color: string; stock: number }>
   outOfStock: boolean
@@ -395,6 +404,8 @@ export function summariseInventory(
 
   const rows: InventoryRow[] = products.map((p) => {
     const bySize: Record<string, number> = {}
+    const byColor: Record<string, number> = {}
+    for (const color of p.colors ?? []) byColor[color] = 0
     // Every size the product is SOLD in gets an entry, including the ones that
     // have run out — a missing row and a zero would otherwise look the same,
     // and "which size am I out of" is the question this table exists to answer.
@@ -406,6 +417,7 @@ export function summariseInventory(
       const stock = Number(v.stock) || 0
       sellable += stock
       bySize[v.size] = (bySize[v.size] ?? 0) + stock
+      byColor[v.color] = (byColor[v.color] ?? 0) + stock
       byPair.push({ size: v.size, color: v.color, stock })
     }
 
@@ -423,6 +435,7 @@ export function summariseInventory(
       reserved,
       onHand: sellable + reserved,
       bySize,
+      byColor,
       byPair,
       outOfStock: sellable === 0,
       lowStock: sellable > 0 && sellable <= LOW_STOCK,
