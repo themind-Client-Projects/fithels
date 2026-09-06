@@ -29,6 +29,9 @@ export const PRODUCT_CARD_SELECT = {
   // per pair, which is cheaper than it looks — and the card needs them anyway
   // to grey out a size the shop has run out of.
   variants: { select: { size: true, color: true, stock: true } },
+  // The swatch covers. Without these the card falls back to pairing colours
+  // with gallery photos BY POSITION, which was only ever a coincidence.
+  colorImages: { select: { color: true, images: true } },
 } satisfies Prisma.ProductSelect
 
 export type ProductCardRow = Prisma.ProductGetPayload<{

@@ -12,6 +12,7 @@ import Image from "next/image";
 import ColorMultiSelect from "@/components/dashboard/ColorMultiSelect";
 import VariantStockGrid from "@/components/dashboard/VariantStockGrid";
 import { normaliseVariants, totalStock } from "@/lib/products/variants";
+import { resolveColor } from "@/lib/products/colors";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CANONICAL_SIZES,
@@ -92,6 +93,41 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [variantsBaseline] = useState(() => product?.variants ?? []);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState(product?.images || []);
+
+  /**
+   * Photos per colour, as [{ color, images }].
+   *
+   * The product gallery above stays the fallback: it is what a card shows and
+   * what the page shows before a colour is picked. A colour with no photos of
+   * its own simply has no row, so a shop can photograph one colour at a time
+   * instead of having to do all of them before any of it works.
+   */
+  const [colorImages, setColorImages] = useState(() => product?.colorImages ?? []);
+
+  const imagesForColor = (color) =>
+    colorImages.find((row) => row.color === color)?.images ?? [];
+
+  const addColorImage = (color, url) =>
+    setColorImages((prev) => {
+      const existing = prev.find((row) => row.color === color);
+      if (!existing) return [...prev, { color, images: [url] }];
+      return prev.map((row) =>
+        row.color === color ? { ...row, images: [...row.images, url] } : row
+      );
+    });
+
+  const removeColorImage = (color, index) =>
+    setColorImages((prev) =>
+      prev
+        .map((row) =>
+          row.color === color
+            ? { ...row, images: row.images.filter((_, i) => i !== index) }
+            : row
+        )
+        // A colour with nothing left loses its row, so "no photos of its own"
+        // has one representation rather than two.
+        .filter((row) => row.images.length > 0)
+    );
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -143,7 +179,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     }
   }, [error]);
 
-  const handleFileUpload = async (e) => {
+  /**
+   * Upload the picked files, handing each finished url to `collect`.
+   *
+   * Generalised from the single gallery handler so the per-colour uploaders
+   * reuse it: the interesting part is the error mapping below, and a second
+   * copy of it would be the one that stops telling admins what went wrong.
+   */
+  const handleFileUpload = async (e, collect = (url) => setImages((prev) => [...prev, url])) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -180,10 +223,11 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           throw new Error(t("uploadError.GENERIC"));
         }
 
-        // Append as each file lands, using the functional form. Committing a
-        // snapshot taken before the loop instead meant an image the admin
-        // removed WHILE an upload was running came back when it finished.
-        setImages((prev) => [...prev, data.url]);
+        // Handed over as each file lands, and every collector uses the
+        // functional form. Committing a snapshot taken before the loop instead
+        // meant an image the admin removed WHILE an upload was running came
+        // back when it finished.
+        collect(data.url);
       }
     } catch (err) {
       console.error(err);
@@ -247,6 +291,8 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       variantsBaseline,
       isActive,
       images,
+      // Only colours still ticked survive; the api re-checks.
+      colorImages: colorImages.filter((row) => colors.includes(row.color)),
     };
 
     try {
@@ -581,6 +627,90 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           <ColorMultiSelect value={colors} onChange={setColors} />
         </div>
       </div>
+
+      {/* Photos per colour.
+          Appears only once colours are chosen, because a gallery for a colour
+          the shoe is not sold in is not a thing that can exist. A colour left
+          empty falls back to the product gallery above, so nothing has to be
+          photographed before the product can be saved. */}
+      {colors.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <Label className="text-start text-sm font-bold text-foreground">
+            {t("colorImagesLabel")}
+          </Label>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("colorImagesHint")}
+          </p>
+
+          <div className="flex flex-col gap-3">
+            {colors.map((color) => {
+              const swatch = resolveColor(color);
+              const shots = imagesForColor(color);
+
+              return (
+                <div key={color} className="rounded-xl border border-border p-3">
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15"
+                      style={{ backgroundColor: swatch.hex }}
+                    />
+                    <span className="text-sm font-semibold">{color}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {shots.length > 0
+                        ? `${shots.length}`
+                        : t("usesDefaultGallery")}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    {shots.map((img, idx) => (
+                      <div
+                        key={`${img}-${idx}`}
+                        className="relative w-20 h-20 rounded-lg overflow-hidden border border-border"
+                      >
+                        <Image
+                          src={img}
+                          alt=""
+                          fill
+                          sizes="80px"
+                          style={{ objectFit: "cover" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeColorImage(color, idx)}
+                          aria-label={t("delete")}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-80 hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+
+                    <label className="flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      {uploading ? (
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-xl text-muted-foreground">+</span>
+                      )}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        disabled={uploading}
+                        onChange={(e) =>
+                          handleFileUpload(e, (url) => addColorImage(color, url))
+                        }
+                      />
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Sits directly under the sizes and colours it is built from, so the
           three are read as one decision rather than three unrelated fields. */}

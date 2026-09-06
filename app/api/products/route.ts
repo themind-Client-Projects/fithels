@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
+import { normaliseColorImages } from '@/lib/products/colorImages'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where,
       take: limit,
-      include: { category: true, variants: true },
+      include: { category: true, variants: true, colorImages: true },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
       sizes,
       colors,
       variants,
+      colorImages,
       isActive,
       images,
     } = body
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
     const offeredSizes: string[] = Array.isArray(sizes) ? sizes : []
     const offeredColors: string[] = Array.isArray(colors) ? colors : []
     const variantRows = normaliseVariants(variants, offeredSizes, offeredColors)
+    const colorImageRows = normaliseColorImages(colorImages, offeredColors)
 
     let parsedPrice: number
     let parsedSalePrice: number | null
@@ -176,10 +179,11 @@ export async function POST(request: NextRequest) {
         // sold in; normaliseVariants also fills in a zero row for every pair
         // that has no number yet, so the grid always has something to show.
         variants: { createMany: { data: variantRows } },
+        colorImages: { createMany: { data: colorImageRows } },
         isActive: isActive ?? true,
         images: images || [],
       },
-      include: { category: true, variants: true },
+      include: { category: true, variants: true, colorImages: true },
     })
 
     return NextResponse.json(withStockTotal(product), { status: 201 })

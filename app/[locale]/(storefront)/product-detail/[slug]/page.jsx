@@ -36,7 +36,7 @@ const getActiveProduct = cache(async (slug) =>
     where: { slug, isActive: true },
     // Variants come too: the page decides which sizes are still
     // obtainable from them, and without the rows every size reads as sold out.
-    include: { category: true, variants: true },
+    include: { category: true, variants: true, colorImages: true },
   })
 );
 

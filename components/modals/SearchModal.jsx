@@ -39,7 +39,7 @@ export default function SearchModal() {
               isOnSale: onSale,
               imgSrc: p.images?.[0] ?? "",
               imgHover: p.images?.[1] ?? p.images?.[0] ?? "",
-              colors: resolveProductColors(p.colors, p.images),
+              colors: resolveProductColors(p.colors, p.images, p.colorImages),
               sizes: p.sizes,
               inStock: p.stock > 0,
             };

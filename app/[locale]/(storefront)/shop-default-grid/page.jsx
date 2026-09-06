@@ -52,7 +52,7 @@ export default async function ShopDefaultGridPage({ params }) {
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
       // The template expects colors as swatches: { bgColor, imgSrc }
-      colors: resolveProductColors(p.colors, p.images),
+      colors: resolveProductColors(p.colors, p.images, p.colorImages),
       // Any pair left, in any size or colour. A card cannot say more than
       // that without becoming a stock report; the product page is where a
       // shopper finds out whether THEIR size is there.

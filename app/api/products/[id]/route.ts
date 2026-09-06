@@ -4,6 +4,7 @@ import {
   normaliseVariants,
   withStockTotal,
 } from '@/lib/products/variants'
+import { normaliseColorImages } from '@/lib/products/colorImages'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -67,7 +68,7 @@ export async function PUT(
     // re-clean the stock it already holds against the new list.
     const existing = await prisma.product.findUnique({
       where: { id },
-      include: { variants: true },
+      include: { variants: true, colorImages: true },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
@@ -88,6 +89,7 @@ export async function PUT(
       sizes,
       colors,
       variants,
+      colorImages,
       variantsBaseline,
       isActive,
       images,
@@ -151,6 +153,15 @@ export async function PUT(
           )
         : undefined
 
+    // Replaced wholesale like the stock rows, and for the same reason:
+    // unticking a colour has to take its photos with it, or they linger
+    // attached to something the shop no longer sells and reappear the moment
+    // that colour is ticked again.
+    const colorImageRows =
+      colorImages !== undefined || colors !== undefined
+        ? normaliseColorImages(colorImages ?? existing.colorImages, nextColors)
+        : undefined
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -176,6 +187,12 @@ export async function PUT(
         // believes it can sell while no longer appearing anywhere to be
         // corrected. Both halves run inside the one update, so a failure
         // cannot leave the product with its old sizes and its new stock.
+        ...(colorImageRows !== undefined && {
+          colorImages: {
+            deleteMany: {},
+            createMany: { data: colorImageRows },
+          },
+        }),
         ...(variantRows !== undefined && {
           variants: {
             deleteMany: {},
@@ -183,7 +200,7 @@ export async function PUT(
           },
         }),
       },
-      include: { category: true, variants: true },
+      include: { category: true, variants: true, colorImages: true },
     })
 
     return NextResponse.json(withStockTotal(product))

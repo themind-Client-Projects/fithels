@@ -87,7 +87,12 @@ model Product {
   deliveryAr String?
   price      Float
   salePrice  Float?
+  /// The default gallery: what a shopper sees before choosing a colour, and
+  /// what a card shows. Per-colour photos live on ProductColorImage and take
+  /// over once a colour is picked; this stays the fallback, so a product whose
+  /// colours have no photos of their own still has something to show.
   images     String[]
+  colorImages ProductColorImage[]
   category   Category    @relation(fields: [categoryId], references: [id])
   categoryId String
   /// Which sizes and colours this shoe is SOLD in. The quantities live on
@@ -114,6 +119,24 @@ model Product {
   @@index([categoryId])
   @@index([isActive])
   @@index([createdAt])
+}
+
+/// Photos of one colour of one product.
+///
+/// Colours used to borrow the product's gallery BY POSITION — colour[i] was
+/// paired with images[i] — so reordering the photos silently pointed every
+/// swatch at the wrong shoe, and a product with three colours and five photos
+/// paired them by accident. Photos belong to a colour now, explicitly.
+model ProductColorImage {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  color     String
+  /// Ordered: the first is the swatch's cover.
+  images    String[]
+
+  @@unique([productId, color])
+  @@index([productId])
 }
 
 /// Stock for one (size, colour) pair of one product.

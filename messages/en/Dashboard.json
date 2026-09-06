@@ -295,5 +295,8 @@
   "totalSales": "Total sales",
   "totalSalesHint": "Collected + awaiting collection — orders that stand, cancelled ones excluded",
   "grossPlaced": "Total placed",
-  "grossPlacedHint": "Everything ordered in the period, including what fell through"
+  "grossPlacedHint": "Everything ordered in the period, including what fell through",
+  "colorImagesLabel": "Photos per colour",
+  "colorImagesHint": "Upload photos for each colour separately. A colour with none falls back to the product gallery above, so nothing has to be photographed before saving.",
+  "usesDefaultGallery": "uses the product gallery"
 }

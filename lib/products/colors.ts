@@ -134,13 +134,25 @@ export function colorLabel(option: ColorOption, locale: string): string {
  */
 export function resolveProductColors(
   colors: readonly string[] | null | undefined,
-  images: readonly string[] | null | undefined
+  images: readonly string[] | null | undefined,
+  colorImages?: readonly { color: string; images: string[] }[] | null
 ): Array<ColorOption & { imgSrc: string }> {
   const list = Array.isArray(colors) ? colors : []
   const photos = Array.isArray(images) ? images : []
 
-  return list.map((name, index) => ({
-    ...resolveColor(name),
-    imgSrc: photos[index] ?? photos[0] ?? '',
-  }))
+  return list.map((name, index) => {
+    // The colour's OWN cover when it has one.
+    //
+    // The positional fallback below is the old behaviour, and it was never more
+    // than a coincidence: colour[i] was paired with images[i], so a product
+    // with three colours and five photos matched them by accident, and
+    // reordering the gallery silently pointed every swatch at a different shoe.
+    // It is kept only for products photographed before colours had galleries.
+    const own = colorImages?.find((row) => row.color === name)?.images?.[0]
+
+    return {
+      ...resolveColor(name),
+      imgSrc: own || photos[index] || photos[0] || '',
+    }
+  })
 }

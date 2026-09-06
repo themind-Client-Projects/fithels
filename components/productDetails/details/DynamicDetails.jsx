@@ -18,7 +18,8 @@ import {
 } from "@/lib/products/selection";
 import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
 import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
-import { useCarousel } from "@/lib/hooks/useCarousel";
+import ProductGallery from "@/components/productDetails/ProductGallery";
+import { galleryFor } from "@/lib/products/colorImages";
 
 /**
  * Product detail.
@@ -50,18 +51,22 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
    * drawn at whichever copy of itself is nearest, so there is no wrap to detect
    * and nothing to correct after the fact.
    */
-  const gallery = product.images ?? [];
+  /**
+   * The gallery follows the chosen colour.
+   *
+   * Picking a colour used to change the size availability and nothing else —
+   * the shopper stayed looking at whichever shoe was photographed first, which
+   * on a three-colour product means two of them could not be seen at all.
+   *
+   * Falls back to the product's own photos when a colour has none of its own,
+   * so a shop can photograph one colour at a time rather than all or nothing.
+   */
+  const gallery = useMemo(
+    () => galleryFor(product.images, product.colorImages, activeColor),
+    [product.images, product.colorImages, activeColor]
+  );
   // A single photo has nothing to move between; two would show the same picture
   // on both sides of the loop.
-  const loopGallery = gallery.length >= 3;
-  const {
-    index: activeIndex,
-    attachViewport: attachGallery,
-    registerSlide,
-    dragHandlers,
-    goTo: goToSlide,
-  } = useCarousel(gallery.length, { loop: loopGallery });
-
   const { addVariantsToCart } = useContextElement();
 
   const title = ar ? product.titleAr : product.titleEn;
@@ -318,60 +323,13 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
               the bundle. The dots are the only state. */}
           <div className="col-md-6 mb-4 mb-md-0">
             <div style={{ position: "sticky", top: "100px" }}>
-              {gallery.length > 0 ? (
-                <>
-                  <div
-                    ref={attachGallery}
-                    className="pdp-gallery"
-                    {...dragHandlers}
-                  >
-                    {gallery.map((img, i) => (
-                      <div
-                        className="pdp-gallery__slide"
-                        key={img + i}
-                        ref={registerSlide(i)}
-                      >
-                        <Image
-                          src={img}
-                          alt={`${title} — ${i + 1}`}
-                          width={900}
-                          height={1200}
-                          // No clones any more, so the first real slide — the
-                          // LCP candidate — is simply the first one.
-                          priority={i === 0}
-                          sizes="(max-width: 767px) 100vw, 50vw"
-                          // A drag that starts on a photo must move the
-                          // carousel, not tear the image out of the page.
-                          draggable={false}
-                          className="pdp-gallery__img"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {gallery.length > 1 && (
-                    <div className="pdp-dots" role="tablist" aria-label={title}>
-                      {gallery.map((img, i) => (
-                        <button
-                          key={img + i}
-                          type="button"
-                          role="tab"
-                          aria-selected={i === activeIndex}
-                          aria-label={`${i + 1} / ${gallery.length}`}
-                          onClick={() => goToSlide(i)}
-                          className={`pdp-dot${
-                            i === activeIndex ? " is-active" : ""
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div
-                  style={{ width: "100%", paddingBottom: "133%", background: "#f8f9fa" }}
-                />
-              )}
+              {/* Keyed by colour so the carousel is rebuilt when the photos
+                  change: its position is a ref, and swapping a four-photo
+                  gallery for a two-photo one under it would leave that position
+                  pointing at a slide that no longer exists. Remounting also
+                  gives the right behaviour — a new colour opens on its own
+                  first photo. */}
+              <ProductGallery key={activeColor} images={gallery} title={title} />
             </div>
           </div>
 
