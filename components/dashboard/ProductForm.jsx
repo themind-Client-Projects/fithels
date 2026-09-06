@@ -129,7 +129,17 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     );
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  /**
+   * WHICH colour is receiving files, not merely that something is.
+   *
+   * A single shared boolean made every colour's button spin and every one of
+   * them go dead while any upload ran, so adding a photo to the second colour
+   * looked like the first had lost its own and was uploading too. With one
+   * colour on screen nobody could see it; with two it is the first thing you
+   * notice.
+   */
+  const [uploadingColor, setUploadingColor] = useState(null);
+  const uploading = uploadingColor !== null;
   const [error, setError] = useState("");
   const errorRef = React.useRef(null);
   // Controlled so validation can switch to the tab holding the missing field.
@@ -186,11 +196,11 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
    * mapping below — a second copy of that is the one that stops telling admins
    * whether a file was too large or simply not an image.
    */
-  const handleFileUpload = async (e, collect) => {
+  const handleFileUpload = async (e, collect, forColor) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setUploading(true);
+    setUploadingColor(forColor ?? "");
     setError("");
 
     try {
@@ -233,7 +243,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       console.error(err);
       setError(err?.message || t("uploadError.GENERIC"));
     } finally {
-      setUploading(false);
+      setUploadingColor(null);
       // Allow re-selecting the same file after a failure.
       e.target.value = "";
     }
@@ -635,8 +645,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
                       </div>
                     ))}
 
-                    <label className="flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                      {uploading ? (
+                    <label
+                      className={`flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-border rounded-lg transition-colors ${
+                        uploading
+                          ? "cursor-not-allowed opacity-50"
+                          : "cursor-pointer hover:bg-muted/50"
+                      }`}
+                    >
+                      {uploadingColor === color ? (
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <span className="text-xl text-muted-foreground">+</span>
@@ -648,7 +664,11 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
                         multiple
                         disabled={uploading}
                         onChange={(e) =>
-                          handleFileUpload(e, (url) => addColorImage(color, url))
+                          handleFileUpload(
+                            e,
+                            (url) => addColorImage(color, url),
+                            color
+                          )
                         }
                       />
                     </label>
