@@ -4,7 +4,7 @@ import {
   normaliseVariants,
   withStockTotal,
 } from '@/lib/products/variants'
-import { normaliseColorImages } from '@/lib/products/colorImages'
+import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -162,6 +162,13 @@ export async function PUT(
         ? normaliseColorImages(colorImages ?? existing.colorImages, nextColors)
         : undefined
 
+    // Same rule as create: when colour photos are in play the gallery is what
+    // they add up to, so it cannot drift from what was actually uploaded.
+    const gallery =
+      colorImageRows !== undefined && colorImageRows.length > 0
+        ? deriveGallery(colorImageRows, nextColors)
+        : undefined
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -181,7 +188,9 @@ export async function PUT(
         ...(sizes !== undefined && { sizes }),
         ...(colors !== undefined && { colors }),
         ...(isActive !== undefined && { isActive }),
-        ...(images !== undefined && { images }),
+        ...(gallery !== undefined
+          ? { images: gallery }
+          : images !== undefined && { images }),
         // REPLACED WHOLESALE, not merged. Unticking a colour has to take its
         // stock rows with it, or they keep counting towards what the shop
         // believes it can sell while no longer appearing anywhere to be

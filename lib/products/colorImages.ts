@@ -92,3 +92,63 @@ export function normaliseColorImages(
 
   return [...merged.entries()].map(([color, images]) => ({ color, images }))
 }
+
+/**
+ * The product's own gallery, derived from the colour galleries.
+ *
+ * There is ONE uploader in the dashboard now — per colour — because two of them
+ * asked the same question twice and left an admin guessing which photo a card
+ * would use. This keeps `Product.images` populated all the same, since eleven
+ * places read it: the cards, search, the admin order builder, the analytics
+ * thumbnails, and the receipt fallback.
+ *
+ * Derived rather than stored separately, so it cannot drift from the photos
+ * that were actually uploaded. Colour order decides gallery order, which makes
+ * `images[0]` the first colour's first photo — a sensible cover — and
+ * `images[1]` the next, which is what a card shows on hover.
+ *
+ * Deduplicated: the same file uploaded to two colours should not appear twice.
+ */
+export function deriveGallery(
+  colorImages: readonly ColorImageRow[] | null | undefined,
+  colors: readonly string[] | null | undefined
+): string[] {
+  const rows = Array.isArray(colorImages) ? colorImages : []
+  const order = Array.isArray(colors) && colors.length > 0
+    ? colors
+    : rows.map((row) => row.color)
+
+  const seen = new Set<string>()
+  const gallery: string[] = []
+
+  for (const color of order) {
+    for (const url of rows.find((row) => row.color === color)?.images ?? []) {
+      if (seen.has(url)) continue
+      seen.add(url)
+      gallery.push(url)
+    }
+  }
+  return gallery
+}
+
+/**
+ * The two photos a card shows: at rest, and on hover.
+ *
+ * Both come from the SAME colour. The gallery is ordered by colour now, so
+ * `images[0]` and `images[1]` can be two different shoes — a card would sit
+ * showing brown and flip to black on hover, which reads as the wrong picture
+ * rather than as a second view. The hover falls back to the next photo in the
+ * gallery only when that colour has just one.
+ */
+export function cardImages(
+  productImages: readonly string[] | null | undefined,
+  colorImages: readonly ColorImageRow[] | null | undefined,
+  colors: readonly string[] | null | undefined
+): { cover: string; hover: string } {
+  const all = Array.isArray(productImages) ? productImages : []
+  const first = Array.isArray(colors) ? colors[0] : undefined
+  const own = first ? galleryFor(all, colorImages, first) : all
+
+  const cover = own[0] ?? all[0] ?? ''
+  return { cover, hover: own[1] ?? all[1] ?? cover }
+}

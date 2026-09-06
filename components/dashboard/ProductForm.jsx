@@ -92,7 +92,6 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
    */
   const [variantsBaseline] = useState(() => product?.variants ?? []);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
-  const [images, setImages] = useState(product?.images || []);
 
   /**
    * Photos per colour, as [{ color, images }].
@@ -182,11 +181,12 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   /**
    * Upload the picked files, handing each finished url to `collect`.
    *
-   * Generalised from the single gallery handler so the per-colour uploaders
-   * reuse it: the interesting part is the error mapping below, and a second
-   * copy of it would be the one that stops telling admins what went wrong.
+   * `collect` is required: every photo belongs to a colour now, so there is no
+   * such thing as one with no home. The interesting part here is the error
+   * mapping below — a second copy of that is the one that stops telling admins
+   * whether a file was too large or simply not an image.
    */
-  const handleFileUpload = async (e, collect = (url) => setImages((prev) => [...prev, url])) => {
+  const handleFileUpload = async (e, collect) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -239,10 +239,6 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     }
   };
 
-  const removeImage = (indexToRemove) => {
-    setImages(images.filter((_, idx) => idx !== indexToRemove));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -290,7 +286,6 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       ),
       variantsBaseline,
       isActive,
-      images,
       // Only colours still ticked survive; the api re-checks.
       colorImages: colorImages.filter((row) => colors.includes(row.color)),
     };
@@ -447,53 +442,6 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Images Section */}
-      <div className="flex flex-col gap-3.5">
-        <Label className="text-start text-sm font-bold text-foreground">{t("images") || "Product Images"}</Label>
-        
-        <div className="flex flex-wrap gap-4">
-          {images.map((img, idx) => (
-            <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-border">
-              {/* Fixed 96px preview (w-24); without `sizes` the optimiser
-                  assumes full viewport width and downloads the largest source
-                  for a thumbnail. */}
-              <Image
-                src={img}
-                alt={`Product image ${idx}`}
-                fill
-                sizes="96px"
-                style={{ objectFit: "cover" }}
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(idx)}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-80 hover:opacity-100"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-          
-          <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              {uploading ? (
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <span className="text-2xl text-muted-foreground">+</span>
-              )}
-            </div>
-            <input 
-              type="file" 
-              className="hidden" 
-              accept="image/*" 
-              multiple 
-              onChange={handleFileUpload} 
-              disabled={uploading}
-            />
-          </label>
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-2.5">

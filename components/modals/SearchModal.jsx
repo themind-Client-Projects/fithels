@@ -4,6 +4,7 @@ import { useLocale } from "next-intl";
 
 import ProductCard1 from "../productCards/ProductCard1";
 import { resolveProductColors } from "@/lib/products/colors";
+import { cardImages } from "@/lib/products/colorImages";
 
 /**
  * Search drawer.
@@ -37,8 +38,8 @@ export default function SearchModal() {
               price: p.salePrice ?? p.price,
               oldPrice: onSale ? p.price : null,
               isOnSale: onSale,
-              imgSrc: p.images?.[0] ?? "",
-              imgHover: p.images?.[1] ?? p.images?.[0] ?? "",
+              imgSrc: cardImages(p.images, p.colorImages, p.colors).cover,
+              imgHover: cardImages(p.images, p.colorImages, p.colors).hover,
               colors: resolveProductColors(p.colors, p.images, p.colorImages),
               sizes: p.sizes,
               inStock: p.stock > 0,

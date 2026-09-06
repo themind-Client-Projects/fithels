@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import RelatedRail from "@/components/productDetails/RelatedRail";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { resolveProductColors } from "@/lib/products/colors";
+import { cardImages } from "@/lib/products/colorImages";
 import { totalStock } from "@/lib/products/variants";
 
 /**
@@ -89,8 +90,8 @@ export default async function RelatedProducts({ product, locale }) {
       title: locale === "ar" ? p.titleAr : p.titleEn,
       price: p.salePrice || p.price,
       oldPrice: isSale ? p.price : null,
-      imgSrc: p.images[0] || "/images/products/womens/women-1.jpg",
-      imgHover: p.images[1] || p.images[0] || "/images/products/womens/women-2.jpg",
+      imgSrc: cardImages(p.images, p.colorImages, p.colors).cover,
+      imgHover: cardImages(p.images, p.colorImages, p.colors).hover,
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,

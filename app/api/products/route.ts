@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
-import { normaliseColorImages } from '@/lib/products/colorImages'
+import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -124,6 +124,12 @@ export async function POST(request: NextRequest) {
     const offeredColors: string[] = Array.isArray(colors) ? colors : []
     const variantRows = normaliseVariants(variants, offeredSizes, offeredColors)
     const colorImageRows = normaliseColorImages(colorImages, offeredColors)
+    // Derived, never taken from the client: the dashboard has one uploader now,
+    // per colour, so the product gallery is whatever those add up to. A second
+    // stored copy is a second thing to keep in step.
+    const gallery = colorImageRows.length > 0
+      ? deriveGallery(colorImageRows, offeredColors)
+      : (Array.isArray(images) ? images : [])
 
     let parsedPrice: number
     let parsedSalePrice: number | null
@@ -181,7 +187,7 @@ export async function POST(request: NextRequest) {
         variants: { createMany: { data: variantRows } },
         colorImages: { createMany: { data: colorImageRows } },
         isActive: isActive ?? true,
-        images: images || [],
+        images: gallery,
       },
       include: { category: true, variants: true, colorImages: true },
     })

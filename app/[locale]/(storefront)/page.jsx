@@ -9,6 +9,7 @@ import Showcase from "@/components/homes/home-1/Showcase";
 import HomeInfo from "@/components/homes/home-1/HomeInfo";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { cardImages } from "@/lib/products/colorImages";
 import { totalStock } from "@/lib/products/variants";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { getTranslations } from "next-intl/server";
@@ -54,8 +55,10 @@ export default async function HomePage({ params }) {
       title: locale === "ar" ? p.titleAr : p.titleEn,
       price: currentPrice,
       oldPrice: originalPrice,
-      imgSrc: p.images[0] || "/images/products/womens/women-1.jpg",
-      imgHover: p.images[1] || p.images[0] || "/images/products/womens/women-2.jpg",
+      // Cover and hover from the SAME colour — the gallery is ordered by
+      // colour, so images[0] and images[1] can be two different shoes.
+      imgSrc: cardImages(p.images, p.colorImages, p.colors).cover || "/images/products/womens/women-1.jpg",
+      imgHover: cardImages(p.images, p.colorImages, p.colors).hover || "/images/products/womens/women-2.jpg",
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
