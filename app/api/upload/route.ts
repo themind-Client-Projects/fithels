@@ -80,7 +80,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bucketId = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "fit";
+    // Either naming, matching lib/supabase — and un-prefixed first, since this
+    // is read on the server and NEXT_PUBLIC_ would only publish it needlessly.
+    const bucketId =
+      process.env.SUPABASE_BUCKET ||
+      process.env.NEXT_PUBLIC_SUPABASE_BUCKET ||
+      "fit";
 
     // Generate unique file name
     const timestamp = Date.now();
