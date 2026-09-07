@@ -80,14 +80,18 @@ export function computeDiscount(coupon: Coupon, subtotal: number): number {
 /**
  * The same discount, in whole dinars, against the dinar subtotal.
  *
- * A PERCENT coupon needs no rate at all: 15% off is 15% off whichever column of
- * numbers you apply it to, so this is exact and independent of the dollar side.
+ * A PERCENT coupon's percentage needs no rate: 15% off is 15% off whichever
+ * column of numbers you apply it to, so that part is exact.
  *
- * A FIXED coupon is the one place a rate survives, because its value is a
- * DOLLAR amount and the shop has never stated a dinar equivalent. There are no
- * fixed-amount coupons today; if one is ever created it should carry its own
- * dinar value rather than be converted here. verify-catalogue.ts fails if one
- * appears, so this cannot go unnoticed.
+ * TWO DOLLAR FIGURES STILL GET CONVERTED HERE, and both are on the charge path:
+ *
+ *   - a FIXED coupon's `value`, which is a dollar amount with no dinar twin;
+ *   - a PERCENT coupon's `maxDiscount` cap, which is also dollars — so a
+ *     percentage coupon is NOT rate-free once it is capped.
+ *
+ * Neither exists in the data today, and verify-catalogue.ts fails on a coupon
+ * carrying either, so this cannot go unnoticed. The real fix is dinar columns
+ * on Coupon; until then the guard is the gate, not this function.
  */
 export function computeDiscountIqd(
   coupon: Coupon,

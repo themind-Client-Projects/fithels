@@ -205,7 +205,13 @@ async function main() {
     const onSaleUsd = p.salePrice != null && p.salePrice < p.price
     const onSaleIqd = p.salePriceIqd != null && p.salePriceIqd < p.priceIqd
     if (onSaleUsd !== onSaleIqd) {
-      warn(
+      // `flag`, not `warn`. This is a live shopper-facing discrepancy on an
+      // active product — the SALE badge appears for one currency and not the
+      // other — so it must fail the gate. Filing it under `warn` put it in the
+      // "retired products, unreachable by shoppers" bucket, which does not set
+      // the exit code, so the one cross-currency check here reported a real
+      // fault and still printed ALL CHECKS PASSED.
+      flag(
         p.slug,
         `on sale in ${onSaleUsd ? 'dollars' : 'dinars'} but not in ${onSaleUsd ? 'dinars' : 'dollars'} — the sale badge differs by currency`
       )
