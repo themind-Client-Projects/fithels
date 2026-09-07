@@ -1,4 +1,27 @@
 /**
+ * THE SHOP SELLS IN TWO SIZE RUNS.
+ *
+ * Shoes run 35-41. Socks and similar run XS-XL, and are often made as a pair of
+ * sizes in one — XS/S, M/L. Both are stored the same way, as plain strings in
+ * `Product.sizes`, because a size is a label and nothing here needs it to be a
+ * number. What the run decides is which options the dashboard offers, the order
+ * they appear in, and whether the EU/CM/US conversion table means anything.
+ *
+ * The conversion table belongs to NUMERIC only. There is no letter equivalent
+ * in this module and none is invented: the shop supplied a shoe chart and
+ * nothing else, and a plausible-looking wrong size guide is worse than none
+ * when a shopper is choosing something they cannot try on.
+ */
+export const SIZE_SYSTEMS = ['NUMERIC', 'LETTER'] as const;
+export type SizeSystem = (typeof SIZE_SYSTEMS)[number];
+
+export function parseSizeSystem(value: unknown): SizeSystem {
+  return SIZE_SYSTEMS.includes(value as SizeSystem)
+    ? (value as SizeSystem)
+    : 'NUMERIC';
+}
+
+/**
  * The shop's canonical size run.
  *
  * `Product.sizes` is a plain `String[]` holding only the sizes a product is
@@ -19,6 +42,80 @@ export const CANONICAL_SIZES: readonly string[] = [
   "40",
   "41",
 ];
+
+/**
+ * The letter run, single sizes first and paired ones after.
+ *
+ * The pairs are their own labels rather than a range over the singles: a
+ * product made as XS/S is one thing the shop stocks and counts, not two. A shop
+ * ticks whichever shape it actually sells, and mixing them on one product is
+ * allowed because some ranges genuinely do — XS/S, M/L, then a standalone XL.
+ */
+export const LETTER_SIZES: readonly string[] = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "XS/S",
+  "M/L",
+  "XL/XXL",
+];
+
+/** The run a product draws its sizes from. */
+export function sizesForSystem(system: SizeSystem): readonly string[] {
+  return system === "LETTER" ? LETTER_SIZES : CANONICAL_SIZES;
+}
+
+/**
+ * Order within a run.
+ *
+ * Numeric sizes sort as numbers so "9" cannot land after "10". Letter sizes
+ * sort by their position in the ladder, because alphabetically L comes before S
+ * and XL before XS — which reads as nonsense on a size row.
+ */
+/**
+ * A letter size's place on the ladder.
+ *
+ * Taken from the FIRST component, so a pair sits where it belongs rather than
+ * after every single size. LETTER_SIZES lists the singles and then the pairs,
+ * which is a sensible order to OFFER them in but nonsense to display in — it
+ * put XL before XS/S. Ranking by first component gives XS/S, M/L, XL, which is
+ * how the label is read.
+ */
+function letterRank(size: string): number {
+  const head = size.split("/")[0]?.trim() ?? size;
+  const i = LETTER_SIZES.indexOf(head);
+  return i === -1 ? Number.POSITIVE_INFINITY : i;
+}
+
+export function compareSizes(a: string, b: string, system: SizeSystem): number {
+  if (system === "LETTER") {
+    const ra = letterRank(a);
+    const rb = letterRank(b);
+    if (ra !== rb) return ra - rb;
+    // Same head: the single before the pair it starts ("XS" then "XS/S").
+    return a.length - b.length || a.localeCompare(b);
+  }
+
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  if (Number.isFinite(na)) return -1;
+  if (Number.isFinite(nb)) return 1;
+  return a.localeCompare(b);
+}
+
+/**
+ * Whether the EU/CM/US table applies.
+ *
+ * Only to shoes. A letter-sized product gets whatever the shop wrote in its own
+ * size guide field and nothing else.
+ */
+export function hasConversionTable(system: SizeSystem): boolean {
+  return system === "NUMERIC";
+}
 
 /**
  * EU → foot length → US women's, from the shop's own chart.
@@ -112,7 +209,8 @@ export type SizeOption = {
  */
 export function buildSizeOptions(
   productSizes?: readonly (string | number)[] | null,
-  isAvailable?: (size: string) => boolean
+  isAvailable?: (size: string) => boolean,
+  system: SizeSystem = "NUMERIC"
 ): SizeOption[] {
   const stocked = new Set(
     (productSizes ?? [])
@@ -120,18 +218,29 @@ export function buildSizeOptions(
       .filter((size) => size.length > 0)
   );
 
-  const extras = [...stocked]
-    .filter((size) => !CANONICAL_SIZES.includes(size))
-    .sort((a, b) => {
-      // Numeric where possible so '9' sorts before '10'; alphabetical otherwise
-      // so lettered sizes (S/M/L) still land in a stable order.
-      const na = Number(a);
-      const nb = Number(b);
-      if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-      return a.localeCompare(b);
-    });
+  /**
+   * ONLY NUMERIC SHOWS THE GAPS.
+   *
+   * 35-41 is one continuous ladder the shop stocks across, so a missing 36 is
+   * information: it says "not this one" about a size that plainly exists.
+   *
+   * The letter run is not a ladder. Singles and pairs are two ways of making
+   * the same garment, so a product sold as XS/S is not missing XS — it is not
+   * made in XS at all, and striking one through claims otherwise. Rendering the
+   * whole run put six struck-through sizes beside three real ones on a product
+   * with three sizes. A letter product shows what it is sold in, in ladder
+   * order, and nothing else.
+   */
+  const run =
+    system === "LETTER"
+      ? [...stocked].sort((a, b) => compareSizes(a, b, system))
+      : sizesForSystem(system);
 
-  return [...CANONICAL_SIZES, ...extras].map((size) => ({
+  const extras = [...stocked]
+    .filter((size) => !run.includes(size))
+    .sort((a, b) => compareSizes(a, b, system));
+
+  return [...run, ...extras].map((size) => ({
     size,
     // Sold in this size AND obtainable. Both, because a size the shop has run
     // out of should read the same as one it never carried: not orderable.

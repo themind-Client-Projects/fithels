@@ -6,6 +6,7 @@ import {
 } from '@/lib/products/variants'
 import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
 import { prisma } from '@/lib/prisma'
+import { parseSizeSystem } from '@/lib/products/sizes'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   parsePrice,
@@ -87,6 +88,7 @@ export async function PUT(
       salePrice,
       categoryId,
       sizes,
+      sizeSystem,
       colors,
       variants,
       colorImages,
@@ -185,6 +187,7 @@ export async function PUT(
         ...(parsedPrice !== undefined && { price: parsedPrice }),
         ...(parsedSalePrice !== undefined && { salePrice: parsedSalePrice }),
         ...(categoryId !== undefined && { categoryId }),
+        ...(sizeSystem !== undefined && { sizeSystem: parseSizeSystem(sizeSystem) }),
         ...(sizes !== undefined && { sizes }),
         ...(colors !== undefined && { colors }),
         ...(isActive !== undefined && { isActive }),

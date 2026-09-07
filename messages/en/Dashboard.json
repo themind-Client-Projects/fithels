@@ -300,5 +300,14 @@
   "colorImagesHint": "Upload photos for each colour separately. A colour with none falls back to the product gallery above, so nothing has to be photographed before saving.",
   "usesDefaultGallery": "uses the product gallery",
   "sizeByColor": "Split by colour",
-  "stockBreakdown": "Stock breakdown"
+  "stockBreakdown": "Stock breakdown",
+  "sizeSystem": {
+    "NUMERIC": "Numeric sizes",
+    "LETTER": "Letter sizes"
+  },
+  "sizeSystemHint": {
+    "NUMERIC": "35 to 41 — for shoes. Shows the EU/CM/US conversion table on the product page.",
+    "LETTER": "XS to XL, with paired sizes like XS/S available. No conversion table."
+  },
+  "sizeSystemSwitchWarning": "Changing the size type clears the sizes and the stock entered against them, because the two runs share no size."
 }

@@ -9,6 +9,7 @@ import {
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { buildProductSlug } from '@/lib/products/slug'
+import { parseSizeSystem } from '@/lib/products/sizes'
 import { translatePrismaError } from '@/lib/prisma-errors'
 
 /** Hard ceiling so no caller can ask for the whole table. */
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
       salePrice,
       categoryId,
       sizes,
+      sizeSystem,
       colors,
       variants,
       colorImages,
@@ -120,6 +122,9 @@ export async function POST(request: NextRequest) {
 
     // What the shoe is sold in, settled before the stock rows are cleaned, so
     // a row for a size that was just unticked cannot slip through.
+    // Validated rather than trusted: an unknown value falls back to shoes,
+    // which is what every product was before this existed.
+    const system = parseSizeSystem(sizeSystem)
     const offeredSizes: string[] = Array.isArray(sizes) ? sizes : []
     const offeredColors: string[] = Array.isArray(colors) ? colors : []
     const variantRows = normaliseVariants(variants, offeredSizes, offeredColors)
@@ -179,6 +184,7 @@ export async function POST(request: NextRequest) {
         price: parsedPrice,
         salePrice: parsedSalePrice,
         categoryId,
+        sizeSystem: system,
         sizes: offeredSizes,
         colors: offeredColors,
         // Rejected rather than stored if it names a pair the product is not

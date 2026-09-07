@@ -23,6 +23,8 @@ export const PRODUCT_CARD_SELECT = {
   salePrice: true,
   images: true,
   sizes: true,
+  // Which run the sizes belong to, so a card's size row sorts correctly.
+  sizeSystem: true,
   colors: true,
   // Inventory is per (size, colour) now, so a card cannot read one number off
   // the product. These three columns are narrow and there is at most one row

@@ -95,6 +95,14 @@ model Product {
   colorImages ProductColorImage[]
   category   Category    @relation(fields: [categoryId], references: [id])
   categoryId String
+  /// Which run this product's sizes are drawn from.
+  ///
+  /// The shop sells two kinds of thing. Shoes run 35-41; socks and similar run
+  /// XS-XL, sometimes paired as XS/S. The labels are stored the same way — plain
+  /// strings in `sizes` — but the run decides which options the dashboard
+  /// offers, how they sort, and whether the EU/CM/US conversion table means
+  /// anything at all. Defaulted to NUMERIC so every existing shoe is unchanged.
+  sizeSystem SizeSystem  @default(NUMERIC)
   /// Which sizes and colours this shoe is SOLD in. The quantities live on
   /// ProductVariant — these two only decide which rows the grid offers.
   sizes      String[]
@@ -119,6 +127,15 @@ model Product {
   @@index([categoryId])
   @@index([isActive])
   @@index([createdAt])
+}
+
+/// The two size runs the shop sells in.
+enum SizeSystem {
+  /// EU shoe sizes: 35, 36, 37…
+  NUMERIC
+  /// XS, S, M, L, XL — and paired labels like XS/S where a product is made that
+  /// way. Stored as plain strings, so a pair is just its own label.
+  LETTER
 }
 
 /// Photos of one colour of one product.

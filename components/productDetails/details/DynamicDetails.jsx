@@ -10,7 +10,7 @@ import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { resolveColor } from "@/lib/products/colors";
-import { buildSizeOptions } from "@/lib/products/sizes";
+import { buildSizeOptions, parseSizeSystem } from "@/lib/products/sizes";
 import { stockFor, totalStock } from "@/lib/products/variants";
 import {
   parseStoredSelections,
@@ -91,9 +91,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
     () =>
       buildSizeOptions(
         product.sizes,
-        (size) => stockFor(variants, size, activeColor) > 0
+        (size) => stockFor(variants, size, activeColor) > 0,
+        parseSizeSystem(product.sizeSystem)
       ),
-    [product.sizes, variants, activeColor]
+    [product.sizes, product.sizeSystem, variants, activeColor]
   );
 
   const storageKey = selectionStorageKey(product.slug);

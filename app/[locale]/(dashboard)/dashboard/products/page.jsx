@@ -248,7 +248,9 @@ export default function ProductsPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent // Wider: the stock grid is colours down and sizes across, and at eight
+          // sizes it was scrolling inside a dialog that had room to spare.
+          className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProduct ? t("editProduct") : t("addNewProduct")}

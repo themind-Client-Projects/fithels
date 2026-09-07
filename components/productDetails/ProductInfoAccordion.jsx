@@ -7,7 +7,12 @@ import {
   AccordionTrigger,
   AccordionPanel,
 } from "@/components/ui/accordion";
-import { SIZE_CONVERSIONS, formatCm } from "@/lib/products/sizes";
+import {
+  SIZE_CONVERSIONS,
+  formatCm,
+  hasConversionTable,
+  parseSizeSystem,
+} from "@/lib/products/sizes";
 
 /**
  * The product page's information sections: description, size guide, delivery.
@@ -29,6 +34,8 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
 
   const description = ar ? product.descAr : product.descEn;
   const sizeNote = ar ? product.sizeGuideAr : product.sizeGuideEn;
+  // Only shoes have an EU/CM/US chart; a letter run has none to show.
+  const showConversions = hasConversionTable(parseSizeSystem(product.sizeSystem));
   const delivery = ar ? product.deliveryAr : product.deliveryEn;
 
   return (
@@ -55,6 +62,12 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
         </AccordionItem>
       )}
 
+      {/* The conversion table belongs to shoes.
+          A letter-sized product has no EU/CM/US equivalent, and inventing one
+          would be worse than omitting it for someone choosing a size they
+          cannot try on — so the section appears only when the shop has written
+          its own note for it. */}
+      {(showConversions || sizeNote) && (
       <AccordionItem className="acc__item" value="size-guide">
         <AccordionTrigger className="acc__head">
           <span>{ar ? "دليل المقاسات" : "Size guide"}</span>
@@ -62,6 +75,7 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
         </AccordionTrigger>
         <AccordionPanel className="acc__panel">
           <div className="acc__body">
+            {showConversions && (
             <div className="acc__tablewrap">
               <table className="acc__table">
                 <thead>
@@ -97,10 +111,12 @@ export default function ProductInfoAccordion({ product, locale = "ar" }) {
                 </tbody>
               </table>
             </div>
+            )}
             {sizeNote && <p className="acc__text">{sizeNote}</p>}
           </div>
         </AccordionPanel>
       </AccordionItem>
+      )}
 
       {delivery && (
         <AccordionItem className="acc__item" value="delivery">

@@ -15,9 +15,11 @@ import { normaliseVariants, totalStock } from "@/lib/products/variants";
 import { resolveColor } from "@/lib/products/colors";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  CANONICAL_SIZES,
   DEFAULT_PRODUCT_SIZES,
   SIZE_CONVERSIONS,
+  SIZE_SYSTEMS,
+  parseSizeSystem,
+  sizesForSystem,
 } from "@/lib/products/sizes";
 
 export default function ProductForm({ product, onSuccess, onCancel }) {
@@ -50,21 +52,49 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   // Seeded only when creating. On edit the product's own sizes are shown as they
   // are, including an empty list: clearing the sizes is a deliberate state and
   // must not be silently repopulated with defaults.
+  /**
+   * Which run this product's sizes come from.
+   *
+   * Shoes are 35-41; socks and similar are XS-XL, sometimes paired as XS/S.
+   * Asked outright rather than guessed from the labels, because a product with
+   * no sizes ticked yet gives nothing to guess from.
+   */
+  const [sizeSystem, setSizeSystem] = useState(() =>
+    parseSizeSystem(product?.sizeSystem)
+  );
+
   const [sizes, setSizes] = useState(() =>
     isEditing
       ? (product?.sizes ?? []).map((size) => String(size).trim()).filter(Boolean)
       : [...DEFAULT_PRODUCT_SIZES]
   );
 
+  /**
+   * Switching run clears the sizes, and it has to.
+   *
+   * The two runs share no labels, so keeping them would leave a shoe carrying
+   * "M" — a size the picker no longer shows, that no stock row can be entered
+   * against, and that the storefront would render as an unbuyable extra. Better
+   * to empty the row than to keep something unreachable in it.
+   */
+  const chooseSizeSystem = (next) => {
+    if (next === sizeSystem) return;
+    setSizeSystem(next);
+    setSizes([]);
+    setVariants([]);
+  };
+
   // Sizes this product already carries that fall outside the canonical run get
   // their own rows, so opening an older product in the new picker cannot quietly
   // discard them. Derived from the product rather than from the live selection,
   // so unticking one does not make its row disappear mid-edit.
+  const sizeRun = sizesForSystem(sizeSystem);
+
   const extraSizes = (isEditing ? (product?.sizes ?? []) : [])
     .map((size) => String(size).trim())
-    .filter((size) => size && !CANONICAL_SIZES.includes(size));
+    .filter((size) => size && !sizeRun.includes(size));
 
-  const sizeRows = [...CANONICAL_SIZES, ...extraSizes];
+  const sizeRows = [...sizeRun, ...extraSizes];
 
   const toggleSize = (size) =>
     setSizes((prev) =>
@@ -285,6 +315,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       categoryId,
       // Emitted in canonical order whatever order the boxes were ticked in, so
       // the stored array is stable and diffs stay readable.
+      sizeSystem,
       sizes: sizeRows.filter((size) => sizes.includes(size)),
       colors: Array.isArray(colors) ? colors : [],
       // Cleaned against what is actually ticked, so a quantity typed for a
@@ -535,6 +566,41 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-2.5">
           <Label className="text-start text-sm font-bold text-foreground">{t("sizes")}</Label>
+
+          {/* Which run, asked before the sizes themselves — the answer decides
+              what the list below even contains. */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {SIZE_SYSTEMS.map((system) => {
+              const active = sizeSystem === system;
+              return (
+                <label
+                  key={system}
+                  className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition-colors ${
+                    active
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="sizeSystem"
+                    checked={active}
+                    onChange={() => chooseSizeSystem(system)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-primary"
+                  />
+                  <span className="text-start">
+                    <span className="block text-sm font-bold text-foreground">
+                      {t(`sizeSystem.${system}`)}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                      {t(`sizeSystemHint.${system}`)}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
           <p className="text-start text-xs text-muted-foreground">{t("sizesHint")}</p>
           {/* One row per size, stacked. A label wraps each row so the whole row
               is the hit target, not just the 16px box — and so the checkbox and
@@ -544,7 +610,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-muted/20 p-2">
             {sizeRows.map((size) => {
               const checked = sizes.includes(size);
-              const isExtra = !CANONICAL_SIZES.includes(size);
+              const isExtra = !sizeRun.includes(size);
               const cm = SIZE_CONVERSIONS.find((row) => row.eu === size)?.cm;
               return (
                 <label
