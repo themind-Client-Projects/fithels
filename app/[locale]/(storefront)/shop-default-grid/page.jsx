@@ -24,7 +24,7 @@ export default async function ShopDefaultGridPage({ params }) {
 
   const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     // This had neither a column list nor a limit: it fetched every active
     // product with its full description text and rendered them all at once.
     take: SHOP_GRID_LIMIT,
@@ -49,11 +49,20 @@ export default async function ShopDefaultGridPage({ params }) {
       oldPrice: originalPrice,
       // Cover and hover from the SAME colour — the gallery is ordered by
       // colour, so images[0] and images[1] can be two different shoes.
-      imgSrc: cardImages(p.images, p.colorImages, p.colors).cover || "/images/products/womens/women-1.jpg",
-      imgHover: cardImages(p.images, p.colorImages, p.colors).hover || "/images/products/womens/women-2.jpg",
+      imgSrc:
+        cardImages(p.images, p.colorImages, p.colors).cover ||
+        "/images/products/womens/women-1.jpg",
+      imgHover:
+        cardImages(p.images, p.colorImages, p.colors).hover ||
+        "/images/products/womens/women-2.jpg",
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
+      // Which run those sizes belong to. Without it the card assumes the
+      // numeric ladder and draws 35-41 struck through on a product sold in
+      // XS/S - M/L - XL. PRODUCT_CARD_SELECT has always fetched this column;
+      // nothing forwarded it.
+      sizeSystem: p.sizeSystem,
       // The template expects colors as swatches: { bgColor, imgSrc }
       colors: resolveProductColors(p.colors, p.images, p.colorImages),
       // Any pair left, in any size or colour. A card cannot say more than

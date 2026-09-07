@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { resolveColor } from "@/lib/products/colors";
+import { compareSizes } from "@/lib/products/sizes";
 
 /**
  * What a product's stock is actually made of.
@@ -31,13 +32,18 @@ export default function StockBreakdown({ row }) {
   const t = useTranslations("Dashboard");
   const [open, setOpen] = useState(false);
 
-  // Sizes in numeric order, from the sizes the product is actually sold in.
+  // Sizes in their own run's order, from the sizes the product is sold in.
+  //
+  // compareSizes, not localeCompare: this table is read down the size column
+  // while restocking, and localeCompare lists the letter run as
+  // L, M, M/L, S, XL, XL/XXL, XS, XS/S — unreadable for exactly the products
+  // the letter run was added for.
   const sizes = useMemo(
     () =>
       Object.keys(row.bySize ?? {}).sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
+        compareSizes(a, b, row.sizeSystem)
       ),
-    [row.bySize]
+    [row.bySize, row.sizeSystem]
   );
 
   const colors = useMemo(() => Object.keys(row.byColor ?? {}), [row.byColor]);

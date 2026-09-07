@@ -95,6 +95,11 @@ export default async function RelatedProducts({ product, locale }) {
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
+      // Which run those sizes belong to. Without it the card assumes the
+      // numeric ladder and draws 35-41 struck through on a product sold in
+      // XS/S - M/L - XL. PRODUCT_CARD_SELECT has always fetched this column;
+      // nothing forwarded it.
+      sizeSystem: p.sizeSystem,
       colors: resolveProductColors(p.colors, p.images, p.colorImages),
       // Any pair left, in any size or colour. A card cannot say more than
       // that without becoming a stock report; the product page is where a

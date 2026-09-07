@@ -11,6 +11,8 @@ import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
+import { getDisplayRate } from '../lib/currency'
+import { compareSizes } from '../lib/products/sizes'
 import {
   parsePeriod,
   periodStart,
@@ -58,7 +60,10 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   const allOrders = await prisma.order.findMany({ select: ORDER_SHAPE })
   const products = await prisma.product.findMany({
     select: {
-      id: true, titleAr: true, titleEn: true, isActive: true, images: true, sizes: true, colors: true,
+      // sizeSystem included so this reconciles the SAME shape the route builds;
+      // omitting it would silently sort every product as NUMERIC here and pass.
+      id: true, titleAr: true, titleEn: true, isActive: true, images: true, sizes: true,
+      sizeSystem: true, colors: true,
       variants: { select: { size: true, color: true, stock: true } },
     },
   })
@@ -198,16 +203,59 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   }
   check('inventory: per-size totals reconcile', sizeMismatch, 0)
 
+  // Every product's pair list must come back in its own run's order. This is
+  // what the restock table is read down; localeCompare used to give the letter
+  // run as L, M, M/L, S, XL, XS, XS/S.
+  let unsorted = 0
+  for (const row of inventory.products) {
+    for (let i = 1; i < row.byPair.length; i += 1) {
+      const prev = row.byPair[i - 1]
+      const cur = row.byPair[i]
+      const bySize = compareSizes(prev.size, cur.size, row.sizeSystem)
+      if (bySize > 0 || (bySize === 0 && prev.color.localeCompare(cur.color) > 0)) {
+        unsorted += 1
+      }
+    }
+  }
+  check('inventory: pairs sorted in their own size run', unsorted, 0)
+
   /* Customers. */
   const productTitles = new Map(products.map((p) => [p.id, p.titleAr || p.titleEn]))
+  // The same never-ordered cohort the route passes, so this reconciles the
+  // shape the dashboard actually renders rather than a simpler one.
+  const neverOrdered = await prisma.user.findMany({
+    where: { role: 'CUSTOMER', orders: { none: {} } },
+    select: { id: true, name: true, email: true, phone: true },
+  })
   const customers = summariseCustomers(
-    periodOrders as AnalyticsOrder[], allOrders as AnalyticsOrder[], productTitles
+    periodOrders as AnalyticsOrder[], allOrders as AnalyticsOrder[], productTitles,
+    getDisplayRate(), neverOrdered
   )
   const spendInPeriod = customers.reduce((s, c) => s + c.spend, 0)
   check('customers: period spend sums to collected', spendInPeriod, sales.collected)
 
   const knownCustomers = await prisma.order.groupBy({ by: ['userId'] })
-  check('customers: rows == everyone who ever ordered', customers.length, knownCustomers.length)
+  check(
+    'customers: rows == everyone who ordered + everyone who never did',
+    customers.length,
+    knownCustomers.length + neverOrdered.length
+  )
+
+  // A never-ordered customer must land in "new" and nowhere else, and must not
+  // be counted as inactive — they never went quiet, they never started.
+  const newRows = customers.filter((c) => c.tier === 'new')
+  check('customers: never-ordered are all "new"',
+    neverOrdered.filter((u) => newRows.some((r) => r.id === u.id)).length,
+    neverOrdered.length)
+  check('customers: never-ordered are never "inactive"',
+    customers.filter((c) => c.inactive && c.lifetimeOrders === 0).length, 0)
+
+  // Every row holds exactly one tier, so the four segment counts partition the
+  // table. If this drifts the legend stops adding up to the rows beneath it.
+  check('customers: tiers partition the table',
+    (['vip', 'repeat', 'purchased', 'new'] as const)
+      .reduce((s, t) => s + customers.filter((c) => c.tier === t).length, 0),
+    customers.length)
 
   /* Best sellers must account for exactly the units sold. */
   const top = summariseTopProducts(periodOrders as AnalyticsOrder[], productTitles)

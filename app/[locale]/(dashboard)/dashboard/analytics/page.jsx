@@ -22,9 +22,15 @@ const PERIODS = ["1m", "3m", "6m", "12m"];
 const TIER_STYLE = {
   vip: "bg-violet-50 text-violet-700 border-violet-200",
   repeat: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  new: "bg-sky-50 text-sky-700 border-sky-200",
-  inactive: "bg-amber-50 text-amber-700 border-amber-200",
+  purchased: "bg-sky-50 text-sky-700 border-sky-200",
+  new: "bg-muted/40 text-muted-foreground border-border",
 };
+
+/** Ordered strongest first, so the summary row reads as a ladder. */
+const TIERS = ["vip", "repeat", "purchased", "new"];
+
+/** Inactive is a flag beside the tier, never one of them. */
+const INACTIVE_STYLE = "bg-amber-50 text-amber-700 border-amber-200";
 
 function Figure({ icon: Icon, label, value, hint, tone }) {
   return (
@@ -170,9 +176,18 @@ export default function AnalyticsPage() {
       key: "tier", header: t("tierLabel"), align: "center",
       sortValue: (c) => c.tier,
       render: (c) => (
-        <Badge variant="outline" className={`${TIER_STYLE[c.tier]} font-bold`}>
-          {t(`tier${c.tier[0].toUpperCase()}${c.tier.slice(1)}`)}
-        </Badge>
+        <div className="flex flex-col items-center gap-1">
+          <Badge variant="outline" className={`${TIER_STYLE[c.tier]} font-bold`}>
+            {t(`tier${c.tier[0].toUpperCase()}${c.tier.slice(1)}`)}
+          </Badge>
+          {/* Shown beside the tier, not instead of it — a VIP who has gone
+              quiet is still a VIP, and that is the pair worth acting on. */}
+          {c.inactive && (
+            <Badge variant="outline" className={`${INACTIVE_STYLE} text-[10px] font-bold`}>
+              {t("inactiveLabel")}
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -230,9 +245,12 @@ export default function AnalyticsPage() {
 
   const customerFilters = useMemo(() => [
     { key: "all", label: t("allLabel") },
-    { key: "vip", label: t("tierVip"), test: (c) => c.tier === "vip" },
-    { key: "repeat", label: t("tierRepeat"), test: (c) => c.tier === "repeat" },
-    { key: "inactive", label: t("tierInactive"), test: (c) => c.tier === "inactive" },
+    ...TIERS.map((tier) => ({
+      key: tier,
+      label: t(`tier${tier[0].toUpperCase()}${tier.slice(1)}`),
+      test: (c) => c.tier === tier,
+    })),
+    { key: "inactive", label: t("inactiveLabel"), test: (c) => c.inactive },
     { key: "cancelled", label: t("withCancellations"), test: (c) => c.cancelledOrders > 0 },
   ], [t]);
 
@@ -479,11 +497,27 @@ export default function AnalyticsPage() {
           {/* ── Customers ─────────────────────────────────────────── */}
           <Section title={t("customersSection")} note={t("customersNote")}>
             <div className="mb-3 flex flex-wrap gap-2">
-              {["vip", "repeat", "new", "inactive"].map((tier) => (
-                <Badge key={tier} variant="outline" className={`${TIER_STYLE[tier]} font-bold`}>
-                  {t(`tier${tier[0].toUpperCase()}${tier.slice(1)}`)}: {data.segments[tier]}
+              {TIERS.map((tier) => (
+                <Badge
+                  key={tier}
+                  variant="outline"
+                  className={`${TIER_STYLE[tier]} font-bold`}
+                  // The rule behind the label, on hover. A tier nobody can
+                  // explain gets argued with instead of used — and "مكرر"
+                  // says nothing about where it starts or stops.
+                  title={t(`tier${tier[0].toUpperCase()}${tier.slice(1)}Hint`)}
+                >
+                  {t(`tier${tier[0].toUpperCase()}${tier.slice(1)}`)}: {data.segments[tier] ?? 0}
                 </Badge>
               ))}
+              {/* Counted separately because it overlaps every tier above. */}
+              <Badge
+                variant="outline"
+                className={`${INACTIVE_STYLE} font-bold`}
+                title={t("tierInactiveHint")}
+              >
+                {t("inactiveLabel")}: {data.segments.inactive ?? 0}
+              </Badge>
             </div>
 
             <AnalyticsTable

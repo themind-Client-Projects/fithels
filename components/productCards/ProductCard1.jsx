@@ -1,7 +1,17 @@
 "use client";
 import React, { useEffect, useState } from "react";
+
+/**
+ * How many times the sale banner repeats.
+ *
+ * A marquee needs enough copies to fill the strip while it scrolls; five text
+ * items with a bolt between them is what the original ten hand-written blocks
+ * amounted to.
+ */
+const MARQUEE_REPEATS = 5;
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import CountdownTimer from "../common/Countdown";
 import { useLocale } from "next-intl";
 import { buildSizeOptions } from "@/lib/products/sizes";
@@ -15,6 +25,7 @@ export default function ProductCard1({
 }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
   const locale = useLocale();
+  const t = useTranslations("shop");
 
   useEffect(() => {
     setCurrentImage(product.imgSrc);
@@ -31,7 +42,10 @@ export default function ProductCard1({
           isNotImageRatio ? "aspect-ratio-0" : ""
         } ${radiusClass} `}
       >
-        <Link href={`/${locale}/product-detail/${product.id}`} className="product-img">
+        <Link
+          href={`/${locale}/product-detail/${product.id}`}
+          className="product-img"
+        >
           <Image
             className="lazyload img-product"
             src={currentImage}
@@ -53,93 +67,28 @@ export default function ProductCard1({
           />
         </Link>
         {product.hotSale && (
+          /* The banner used to be ten hand-written copies of "Hot Sale 25% OFF"
+             — untranslated, so it read English over an Arabic card, and with the
+             percentage typed in, so a shoe at 40% off still announced 25%. It is
+             one translated string carrying the product's REAL discount now,
+             repeated by the loop the marquee needs rather than by hand. */
           <div className="marquee-product bg-main">
             <div className="marquee-wrapper">
               <div className="initial-child-container">
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-              </div>
-            </div>
-            <div className="marquee-wrapper">
-              <div className="initial-child-container">
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
+                {Array.from({ length: MARQUEE_REPEATS }).map((_, i) => (
+                  <React.Fragment key={i}>
+                    <div className="marquee-child-item">
+                      <p className="font-2 text-btn-uppercase fw-6 text-white">
+                        {t("hotSale", {
+                          percent: product.salePercentage ?? "",
+                        })}
+                      </p>
+                    </div>
+                    <div className="marquee-child-item">
+                      <span className="icon icon-lightning text-critical" />
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           </div>
@@ -152,12 +101,18 @@ export default function ProductCard1({
         {product.sizes && (
           <div className="variant-wrap size-list">
             <ul className="variant-box">
-              {/* The whole size run, not only the sizes this product carries, so
-                  a gap reads as "sold out in that size" rather than as a size
-                  the shop has never heard of. Availability comes straight from
-                  Product.sizes; buildSizeOptions only decides what to show and
-                  in what order, and never hides a size the product does have. */}
-              {buildSizeOptions(product.sizes).map(({ size, available }) => (
+              {/* Numeric products show the whole 35-41 ladder, so a gap reads
+                  as "sold out in that size" rather than as a size the shop has
+                  never heard of. Letter products show only what they are sold
+                  in — XS/S is not a product missing XS. buildSizeOptions makes
+                  that call from the system, which is why it must be passed;
+                  defaulting to NUMERIC struck through six sizes that never
+                  existed. It never hides a size the product does have. */}
+              {buildSizeOptions(
+                product.sizes,
+                undefined,
+                product.sizeSystem,
+              ).map(({ size, available }) => (
                 <li
                   key={size}
                   className={`size-item${available ? "" : " size-item--out"}`}
@@ -165,8 +120,8 @@ export default function ProductCard1({
                     available
                       ? undefined
                       : locale === "ar"
-                      ? "غير متوفر"
-                      : "Not available"
+                        ? "غير متوفر"
+                        : "Not available"
                   }
                 >
                   {size}
@@ -187,13 +142,6 @@ export default function ProductCard1({
               </div>
             </div>
           </div>
-        )}
-        {product.oldPrice ? (
-          <div className="on-sale-wrap">
-            <span className="on-sale-item">-25%</span>
-          </div>
-        ) : (
-          ""
         )}
       </div>
       <div className="card-product-info">

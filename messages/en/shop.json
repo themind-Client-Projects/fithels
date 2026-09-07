@@ -55,5 +55,6 @@
   "freeSize": "Free size",
   "viewProducts": "View products",
   "all": "All",
-  "close": "Close"
+  "close": "Close",
+  "hotSale": "Hot Sale {percent} OFF"
 }

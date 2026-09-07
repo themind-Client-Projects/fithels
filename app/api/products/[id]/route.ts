@@ -164,11 +164,34 @@ export async function PUT(
         ? normaliseColorImages(colorImages ?? existing.colorImages, nextColors)
         : undefined
 
+    /**
+     * The photos on this product that no colour has ever claimed.
+     *
+     * `keep` exists so photographing one colour cannot destroy a gallery the
+     * shop built before per-colour photos existed. But passing the whole of
+     * `existing.images` kept the COLOUR photos too — and `existing.images` is
+     * itself a previously derived gallery, so every colour photo ever uploaded
+     * was re-injected on every save. Deleting a photo from a colour therefore
+     * did nothing: it came straight back, and `galleryFor` then served it to
+     * un-photographed colours as an "unclaimed" fallback, so the deleted shot
+     * reappeared on the storefront under a different colour.
+     *
+     * Subtracting what the colours previously held leaves exactly the legacy
+     * photos `keep` was written to protect, and lets a colour photo actually be
+     * removed.
+     */
+    const previouslyClaimed = new Set(
+      existing.colorImages.flatMap((row) => row.images ?? [])
+    )
+    const legacyImages = (existing.images ?? []).filter(
+      (url) => !previouslyClaimed.has(url)
+    )
+
     // Same rule as create: when colour photos are in play the gallery is what
     // they add up to, so it cannot drift from what was actually uploaded.
     const gallery =
       colorImageRows !== undefined && colorImageRows.length > 0
-        ? deriveGallery(colorImageRows, nextColors, existing.images)
+        ? deriveGallery(colorImageRows, nextColors, legacyImages)
         : undefined
 
     const product = await prisma.product.update({

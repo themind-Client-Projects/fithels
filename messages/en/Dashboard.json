@@ -260,8 +260,7 @@
   "tierVip": "VIP",
   "tierRepeat": "Repeat",
   "tierNew": "New",
-  "tierInactive": "Inactive",
-  "tierVipHint": "Spent $100 or more all time",
+  "tierVipHint": "5 or more purchases, or a single invoice of 150,000 IQD or more",
   "tierInactiveHint": "Bought before but nothing in this period — worth a campaign",
   "neverOrdered": "None",
   "inventorySection": "Inventory",
@@ -290,7 +289,7 @@
   "outOfStockFilter": "Out of stock",
   "lowStockFilter": "Running low",
   "inStockFilter": "In stock",
-  "customersNote": "\"Cancelled\" counts orders cancelled inside the period. \"Completion rate\" is paid orders divided by all their orders, all time — the order count sits beside it, because a rate over two orders means far less than the same rate over twenty.",
+  "customersNote": "The tier is judged on everything a customer has ever done, not on the period alone. Inactive is a separate flag: a VIP who has gone quiet stays a VIP and reads as inactive too, which is the pair most worth a campaign.",
   "noData": "No data",
   "totalSales": "Total sales",
   "totalSalesHint": "Collected + awaiting collection — orders that stand, cancelled ones excluded",
@@ -309,5 +308,10 @@
     "NUMERIC": "35 to 41 — for shoes. Shows the EU/CM/US conversion table on the product page.",
     "LETTER": "XS to XL, with paired sizes like XS/S available. No conversion table."
   },
-  "sizeSystemSwitchWarning": "Changing the size type clears the sizes and the stock entered against them, because the two runs share no size."
+  "sizeSystemSwitchWarning": "Changing the size type clears the sizes and the stock entered against them, because the two runs share no size.",
+  "tierPurchased": "Purchased",
+  "tierNewHint": "Has an account, has not bought yet",
+  "tierPurchasedHint": "One completed purchase",
+  "tierRepeatHint": "Between 2 and 4 purchases",
+  "inactiveLabel": "Inactive"
 }

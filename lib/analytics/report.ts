@@ -1,3 +1,6 @@
+import { DEFAULT_USD_TO_IQD_RATE } from '@/lib/currency'
+import { compareSizes, type SizeSystem } from '@/lib/products/sizes'
+
 /**
  * Dashboard analytics.
  *
@@ -83,6 +86,15 @@ export interface AnalyticsProduct {
   isActive: boolean
   images: string[]
   sizes: string[]
+  /**
+   * Which run those sizes belong to.
+   *
+   * Needed only so the stock tables can SORT them. Without it they fell back to
+   * localeCompare, which lists the letter run as L, M, M/L, S, XL, XL/XXL, XS,
+   * XS/S — the restock table is read down the size column, so that ordering
+   * makes it unreadable for exactly the products it was added for.
+   */
+  sizeSystem?: SizeSystem
   colors: string[]
   variants: AnalyticsVariant[]
 }
@@ -214,12 +226,61 @@ export function summariseSales(orders: readonly AnalyticsOrder[]) {
 
 /* ── Customers ──────────────────────────────────────────────────────────── */
 
-/** Spend at or above this (USD, all-time) makes a customer VIP. */
-export const VIP_SPEND = 100
-/** Two or more paid orders makes a customer a repeat buyer. */
+/**
+ * WHAT A CUSTOMER IS, BY HOW OFTEN THEY HAVE BOUGHT.
+ *
+ *   0 paid orders   new        — they have an account and have never bought
+ *   1               purchased  — one completed purchase
+ *   2-4             repeat     — buying again
+ *   5 or more       vip
+ *
+ * Plus one override: a SINGLE invoice at or above VIP_INVOICE_IQD makes them
+ * vip whatever the count. Someone who spends that much once is not a one-off in
+ * any sense the shop cares about, and waiting for a fifth order to say so is
+ * the wrong way round.
+ *
+ * The threshold is an INVOICE, not a lifetime total — five orders of 30,000
+ * each is a repeat customer, one order of 150,000 is not the same thing. It is
+ * held in dinars because that is the number the shop quoted, and converted to
+ * the stored currency through the one rate the app already has, so a change to
+ * that rate cannot leave this reading a different amount than every price on
+ * the site.
+ *
+ * ADMIN ONLY. Nothing on the storefront reads a tier — a shopper being labelled
+ * to their face is a different product decision, and not one that was asked for.
+ */
+export const VIP_ORDERS = 5
 export const REPEAT_ORDERS = 2
+export const VIP_INVOICE_IQD = 150_000
 
-export type CustomerTier = 'vip' | 'repeat' | 'new' | 'inactive'
+export type CustomerTier = 'vip' | 'repeat' | 'purchased' | 'new'
+
+/**
+ * Which tier a customer falls in.
+ *
+ * Pure and exported so the rule can be checked directly, without a database or
+ * a page — this is the kind of ladder that goes wrong silently at a boundary.
+ *
+ * @param paidOrders   Completed purchases, all-time.
+ * @param largestPaid  Their biggest single paid invoice, in the stored currency.
+ * @param rate         Stored currency → IQD, so the threshold means what it says.
+ */
+export function customerTier(
+  paidOrders: number,
+  largestPaid: number,
+  rate: number
+): CustomerTier {
+  // The invoice override needs a purchase to override FROM. Guarded rather than
+  // assumed: `largestPaid` is only ever built from paid orders, so zero orders
+  // means zero here in practice — but this is exported and pure, and a caller
+  // passing lifetime spend by mistake would otherwise make a customer who has
+  // never bought anything the shop's most valuable one.
+  if (paidOrders >= 1 && largestPaid * rate >= VIP_INVOICE_IQD) return 'vip'
+  if (paidOrders >= VIP_ORDERS) return 'vip'
+  if (paidOrders >= REPEAT_ORDERS) return 'repeat'
+  if (paidOrders >= 1) return 'purchased'
+  return 'new'
+}
 
 export interface CustomerRow {
   id: string
@@ -245,6 +306,20 @@ export interface CustomerRow {
   lifetimeOrders: number
   lifetimeSpend: number
   lifetimeCancelled: number
+  /** Completed purchases, all-time — what the tier ladder is judged on. */
+  lifetimePaidOrders: number
+  /** Their single biggest paid invoice, which can promote them on its own. */
+  largestPaidOrder: number
+  /**
+   * Nothing from them inside the selected window, though they have bought
+   * before.
+   *
+   * A FLAG, not a tier. It used to overwrite the tier, so a customer who spends
+   * heavily and then goes quiet stopped reading as valuable at the exact moment
+   * that mattered most. The two answer different questions — what they are
+   * worth, and whether they are still around — and a campaign list wants both.
+   */
+  inactive: boolean
   /**
    * Share of their orders that were actually paid for, all-time, 0-1.
    *
@@ -259,14 +334,30 @@ export interface CustomerRow {
   tier: CustomerTier
 }
 
+/** A registered customer, for the ones who have never placed an order. */
+export interface RegisteredCustomer {
+  id: string
+  name: string | null
+  email: string
+  phone: string | null
+}
+
 /**
  * @param periodOrders Orders placed inside the window.
  * @param allOrders    Every order ever, for lifetime figures and last-seen.
+ * @param neverOrdered Registered customers with no order at all. Without them
+ *   "new" is a tier nobody can hold: every row came from an order, so the only
+ *   way to be new was to place one and never pay. The people who signed up and
+ *   have not bought yet — the ones actually worth a first-purchase nudge — were
+ *   missing from the page entirely.
  */
 export function summariseCustomers(
   periodOrders: readonly AnalyticsOrder[],
   allOrders: readonly AnalyticsOrder[],
-  productTitles: ReadonlyMap<string, string>
+  productTitles: ReadonlyMap<string, string>,
+  /** Stored currency → IQD, for the invoice threshold. */
+  rate: number = DEFAULT_USD_TO_IQD_RATE,
+  neverOrdered: readonly RegisteredCustomer[] = []
 ): CustomerRow[] {
   const rows = new Map<string, CustomerRow>()
 
@@ -280,6 +371,8 @@ export function summariseCustomers(
         phone: o.user?.phone ?? null,
         orders: 0, paidOrders: 0, cancelledOrders: 0, spend: 0,
         lifetimeOrders: 0, lifetimeSpend: 0, lifetimeCancelled: 0,
+        lifetimePaidOrders: 0, largestPaidOrder: 0,
+        inactive: false,
         completionRate: 0,
         lastOrderAt: null,
         products: [],
@@ -308,11 +401,36 @@ export function summariseCustomers(
 
     if (isPaid(o)) {
       row.lifetimeSpend += money(o.total)
+      row.lifetimePaidOrders += 1
+      row.largestPaidOrder = Math.max(row.largestPaidOrder, money(o.total))
       lifetimePaid.set(o.userId, (lifetimePaid.get(o.userId) ?? 0) + 1)
       let seen = boughtProducts.get(o.userId)
       if (!seen) boughtProducts.set(o.userId, (seen = new Set()))
       for (const item of o.items) seen.add(item.productId)
     }
+  }
+
+  // Seeded after the order pass so a stale list can never blank out a real
+  // customer's figures: anyone who turns up here AND has an order keeps the
+  // row the orders built.
+  for (const u of neverOrdered) {
+    if (rows.has(u.id)) continue
+    rows.set(u.id, {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      orders: 0, paidOrders: 0, cancelledOrders: 0, spend: 0,
+      lifetimeOrders: 0, lifetimeSpend: 0, lifetimeCancelled: 0,
+      lifetimePaidOrders: 0, largestPaidOrder: 0,
+      // Never active, so never INactive — that flag means "went quiet", and
+      // someone who has not started cannot have stopped.
+      inactive: false,
+      completionRate: 0,
+      lastOrderAt: null,
+      products: [],
+      tier: 'new',
+    })
   }
 
   const inPeriod = new Set<string>()
@@ -335,15 +453,13 @@ export function summariseCustomers(
       .map((id) => productTitles.get(id) ?? id)
       .sort()
 
-    // Tiers are judged on ALL-TIME behaviour, so a good customer does not stop
-    // being one because the window is short. "Inactive" is the exception and is
-    // deliberately period-relative: it means "bought before, nothing from them
-    // in this window", which is exactly the list to target with a campaign.
-    if (row.lifetimeSpend >= VIP_SPEND) row.tier = 'vip'
-    else if (row.lifetimeOrders >= REPEAT_ORDERS) row.tier = 'repeat'
-    else row.tier = 'new'
+    // Judged on ALL-TIME behaviour, so a good customer does not stop being one
+    // because the window happens to be short.
+    row.tier = customerTier(row.lifetimePaidOrders, row.largestPaidOrder, rate)
 
-    if (!inPeriod.has(row.id) && row.lifetimeOrders > 0) row.tier = 'inactive'
+    // Separately: are they still around? Period-relative on purpose — "bought
+    // before, nothing in this window" is exactly the campaign list.
+    row.inactive = !inPeriod.has(row.id) && row.lifetimeOrders > 0
   }
 
   return [...rows.values()].sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
@@ -377,6 +493,8 @@ export interface InventoryRow {
   byColor: Record<string, number>
   /** Sellable units per size and colour. */
   byPair: Array<{ size: string; color: string; stock: number }>
+  /** Passed through so the table can sort sizes in their own run's order. */
+  sizeSystem: SizeSystem
   outOfStock: boolean
   lowStock: boolean
 }
@@ -421,11 +539,15 @@ export function summariseInventory(
       byPair.push({ size: v.size, color: v.color, stock })
     }
 
-    byPair.sort((a, b) => a.size.localeCompare(b.size, undefined, { numeric: true }) || a.color.localeCompare(b.color))
+    const system = p.sizeSystem ?? 'NUMERIC'
+    byPair.sort(
+      (a, b) => compareSizes(a.size, b.size, system) || a.color.localeCompare(b.color)
+    )
 
     const reserved = reservedByProduct.get(p.id) ?? 0
 
     return {
+      sizeSystem: system,
       id: p.id,
       titleAr: p.titleAr,
       titleEn: p.titleEn,

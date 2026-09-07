@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { noStoreJson } from '@/lib/api-response'
+import { getDisplayRate } from '@/lib/currency'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -66,41 +67,55 @@ export async function GET(request: NextRequest) {
       user: { select: { id: true, name: true, email: true, phone: true } },
     } as const
 
-    const [periodOrders, allOrders, products, placedInPeriod] = await Promise.all([
-      prisma.order.findMany({
-        where: { createdAt: { gte: since } },
-        select: ORDER_SHAPE,
-        orderBy: { createdAt: 'desc' },
-        take: MAX_ORDERS,
-      }),
+    const [periodOrders, allOrders, products, placedInPeriod, neverOrdered] =
+      await Promise.all([
+        prisma.order.findMany({
+          where: { createdAt: { gte: since } },
+          select: ORDER_SHAPE,
+          orderBy: { createdAt: 'desc' },
+          take: MAX_ORDERS,
+        }),
 
-      // Lifetime rows drive "how much has this customer ever spent" and "when
-      // did we last hear from them", neither of which the window may truncate —
-      // a customer who has not ordered inside it is precisely the one worth
-      // finding.
-      prisma.order.findMany({
-        select: ORDER_SHAPE,
-        orderBy: { createdAt: 'desc' },
-        take: MAX_ORDERS,
-      }),
+        // Lifetime rows drive "how much has this customer ever spent" and "when
+        // did we last hear from them", neither of which the window may truncate —
+        // a customer who has not ordered inside it is precisely the one worth
+        // finding.
+        prisma.order.findMany({
+          select: ORDER_SHAPE,
+          orderBy: { createdAt: 'desc' },
+          take: MAX_ORDERS,
+        }),
 
-      prisma.product.findMany({
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          isActive: true,
-          // Only the first photo is rendered, but Postgres has no cheap way to
-          // slice an array column, and these are short paths.
-          images: true,
-          sizes: true,
-          colors: true,
-          variants: { select: { size: true, color: true, stock: true } },
-        },
-      }),
+        prisma.product.findMany({
+          select: {
+            id: true,
+            titleAr: true,
+            titleEn: true,
+            isActive: true,
+            // Only the first photo is rendered, but Postgres has no cheap way to
+            // slice an array column, and these are short paths.
+            images: true,
+            sizes: true,
+            // Only so the stock tables sort sizes in their own run's order.
+            sizeSystem: true,
+            colors: true,
+            variants: { select: { size: true, color: true, stock: true } },
+          },
+        }),
 
-      prisma.order.count({ where: { createdAt: { gte: since } } }),
-    ])
+        prisma.order.count({ where: { createdAt: { gte: since } } }),
+
+        // Signed up, never ordered. Not derivable from the order tables — which
+        // is exactly why "new" was a tier nobody could hold: every row came from
+        // an order, so the only way to be new was to order and never pay. Staff
+        // accounts are excluded; an admin who has never shopped here is not a
+        // sales lead.
+        prisma.user.findMany({
+          where: { role: 'CUSTOMER', orders: { none: {} } },
+          select: { id: true, name: true, email: true, phone: true },
+          take: MAX_ORDERS,
+        }),
+      ])
 
     const productTitles = new Map(products.map((p) => [p.id, p.titleAr || p.titleEn]))
     const productImages = new Map(products.map((p) => [p.id, p.images?.[0] ?? null]))
@@ -116,7 +131,11 @@ export async function GET(request: NextRequest) {
     const customers = summariseCustomers(
       periodOrders as AnalyticsOrder[],
       allOrders as AnalyticsOrder[],
-      productTitles
+      productTitles,
+      // The same rate the prices use, so the VIP invoice threshold means what
+      // the shop quoted it as.
+      getDisplayRate(),
+      neverOrdered
     )
     const inventory = summariseInventory(products, liveOrders as AnalyticsOrder[])
     const topProducts = summariseTopProducts(
@@ -128,8 +147,12 @@ export async function GET(request: NextRequest) {
     const segments = {
       vip: customers.filter((c) => c.tier === 'vip').length,
       repeat: customers.filter((c) => c.tier === 'repeat').length,
+      purchased: customers.filter((c) => c.tier === 'purchased').length,
       new: customers.filter((c) => c.tier === 'new').length,
-      inactive: customers.filter((c) => c.tier === 'inactive').length,
+      // A FLAG, not a tier: someone can be vip AND inactive, which is the
+      // combination most worth a campaign. Counting it off `c.tier` (as this
+      // did) returned 0 forever once inactive stopped being a tier.
+      inactive: customers.filter((c) => c.inactive).length,
     }
 
     return noStoreJson({

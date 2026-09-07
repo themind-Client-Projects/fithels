@@ -55,5 +55,6 @@
   "freeSize": "مقاس حر",
   "viewProducts": "عرض المنتجات",
   "all": "الكل",
-  "close": "إغلاق"
+  "close": "إغلاق",
+  "hotSale": "تخفيض {percent}"
 }

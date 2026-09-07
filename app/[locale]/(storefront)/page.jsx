@@ -26,11 +26,11 @@ export async function generateMetadata({ params }) {
 
 export default async function HomePage({ params }) {
   const { locale } = await params;
-  
+
   // Fetch products from database
   const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: 12, // Limit for home page
     // Only the columns a card renders. Without this the descriptions (Text)
     // travelled with all 12 rows on every request.
@@ -57,11 +57,20 @@ export default async function HomePage({ params }) {
       oldPrice: originalPrice,
       // Cover and hover from the SAME colour — the gallery is ordered by
       // colour, so images[0] and images[1] can be two different shoes.
-      imgSrc: cardImages(p.images, p.colorImages, p.colors).cover || "/images/products/womens/women-1.jpg",
-      imgHover: cardImages(p.images, p.colorImages, p.colors).hover || "/images/products/womens/women-2.jpg",
+      imgSrc:
+        cardImages(p.images, p.colorImages, p.colors).cover ||
+        "/images/products/womens/women-1.jpg",
+      imgHover:
+        cardImages(p.images, p.colorImages, p.colors).hover ||
+        "/images/products/womens/women-2.jpg",
       isOnSale: isSale,
       salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
+      // Which run those sizes belong to. Without it the card assumes the
+      // numeric ladder and draws 35-41 struck through on a product sold in
+      // XS/S - M/L - XL. PRODUCT_CARD_SELECT has always fetched this column;
+      // nothing forwarded it.
+      sizeSystem: p.sizeSystem,
       colors: resolveProductColors(p.colors, p.images, p.colorImages),
       // Any pair left, in any size or colour. A card cannot say more than
       // that without becoming a stock report; the product page is where a
@@ -75,7 +84,11 @@ export default async function HomePage({ params }) {
       // Create some logic for "New Arrivals", "Best Seller", "On Sale"
       // Right now they're all "New Arrivals" because we ordered by desc
       // But we can add them to specific tabs based on data:
-      tabFilterOptions2: ["New Arrivals", isSale ? "On Sale" : "", "Best Seller"].filter(Boolean)
+      tabFilterOptions2: [
+        "New Arrivals",
+        isSale ? "On Sale" : "",
+        "Best Seller",
+      ].filter(Boolean),
     };
   });
 

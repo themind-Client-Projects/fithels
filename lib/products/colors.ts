@@ -140,19 +140,33 @@ export function resolveProductColors(
   const list = Array.isArray(colors) ? colors : []
   const photos = Array.isArray(images) ? images : []
 
+  /**
+   * Photos that belong to some OTHER colour, so they can never stand in for a
+   * colour that has none of its own.
+   *
+   * The fallback here used to be positional — colour[i] paired with images[i] —
+   * which was only ever a coincidence, and once colours had their own galleries
+   * it became actively wrong: on a product where black is photographed and red
+   * is not, red's swatch previewed a black shoe. Falling back to an UNCLAIMED
+   * photo is the same rule galleryFor and cardImages already follow, so the
+   * card's cover and its swatches finally agree about what a colour looks like.
+   */
+  const claimed = new Set(
+    (colorImages ?? []).flatMap((row) => row.images ?? [])
+  )
+  const unclaimed = photos.filter((url) => !claimed.has(url))
+
   return list.map((name, index) => {
     // The colour's OWN cover when it has one.
-    //
-    // The positional fallback below is the old behaviour, and it was never more
-    // than a coincidence: colour[i] was paired with images[i], so a product
-    // with three colours and five photos matched them by accident, and
-    // reordering the gallery silently pointed every swatch at a different shoe.
-    // It is kept only for products photographed before colours had galleries.
     const own = colorImages?.find((row) => row.color === name)?.images?.[0]
+
+    // Positional only among the photos NO colour claims — that is the
+    // pre-per-colour catalogue, where position was the only pairing there was.
+    const generic = unclaimed[index] || unclaimed[0]
 
     return {
       ...resolveColor(name),
-      imgSrc: own || photos[index] || photos[0] || '',
+      imgSrc: own || generic || '',
     }
   })
 }

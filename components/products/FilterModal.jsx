@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import RangeSlider from "react-range-slider-input";
 import { useTranslations } from "next-intl";
 import { resolveColor } from "@/lib/products/colors";
+import { compareSizes } from "@/lib/products/sizes";
 import { AVAILABILITY_OPTIONS, NO_FILTER } from "@/lib/products/filters";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import {
@@ -100,18 +101,22 @@ export default function FilterModal({ allProps, products = [] }) {
 
     return {
       // Sizes arrive in whatever order the catalogue happened to yield, which
-      // put 40 before 35 in the panel. Numbers sort as numbers so "9" cannot
-      // land after "10"; anything non-numeric sorts alphabetically after them.
+      // put 40 before 35 in the panel.
+      //
+      // compareSizes, not a comparator of our own: the inline one here sorted
+      // anything non-numeric with localeCompare, so the letter run came out
+      // L, M, S, XL, XS, XS/S — L before M before S, XL before XS. The shared
+      // comparator ranks a paired label by its first component, which is the
+      // only ordering a size row can be read in. Numbers still come first,
+      // since the two runs share no size and have to be listed somewhere.
       sizes: [...sizeCounts.keys()]
         .sort((a, b) => {
-          const na = Number(a);
-          const nb = Number(b);
-          const aNum = Number.isFinite(na);
-          const bNum = Number.isFinite(nb);
-          if (aNum && bNum) return na - nb;
+          const aNum = Number.isFinite(Number(a));
+          const bNum = Number.isFinite(Number(b));
+          if (aNum && bNum) return Number(a) - Number(b);
           if (aNum) return -1;
           if (bNum) return 1;
-          return String(a).localeCompare(String(b));
+          return compareSizes(a, b, "LETTER");
         })
         .map((name) => ({ name, count: sizeCounts.get(name) })),
       // Resolved to a real swatch. This built `bg-color-${name}` before, which
