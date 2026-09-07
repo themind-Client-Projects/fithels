@@ -3,6 +3,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { resolveColor } from "@/lib/products/colors";
+import { isFreeSize } from "@/lib/products/sizes";
 import { stockFor, totalStock, variantKey } from "@/lib/products/variants";
 
 /**
@@ -68,7 +69,7 @@ export default function VariantStockGrid({
               </th>
               {sizes.map((size) => (
                 <th key={size} className="p-2 text-center text-xs font-bold">
-                  {size}
+                  {isFreeSize(size) ? t("freeSize") : size}
                 </th>
               ))}
               <th className="p-2 text-center text-xs font-bold text-muted-foreground">

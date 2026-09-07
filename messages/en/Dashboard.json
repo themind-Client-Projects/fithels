@@ -315,5 +315,6 @@
   "tierRepeatHint": "Between 2 and 4 purchases",
   "inactiveLabel": "Inactive",
   "optional": "Optional",
-  "priceIndependentHint": "The dollar price and the dinar price are set independently — neither is converted from the other. What you type in dinars is exactly what the customer sees and pays through Wayle."
+  "priceIndependentHint": "The dollar price and the dinar price are set independently — neither is converted from the other. What you type in dinars is exactly what the customer sees and pays through Wayle.",
+  "freeSize": "Free size"
 }

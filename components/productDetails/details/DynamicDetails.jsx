@@ -12,7 +12,7 @@ import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { useCurrencyStore } from "@/stores/useCurrencyStore";
 import { resolvePrice } from "@/lib/products/price";
 import { resolveColor } from "@/lib/products/colors";
-import { buildSizeOptions, parseSizeSystem } from "@/lib/products/sizes";
+import { buildSizeOptions, isFreeSize, parseSizeSystem } from "@/lib/products/sizes";
 import { stockFor, totalStock } from "@/lib/products/variants";
 import {
   parseStoredSelections,
@@ -604,9 +604,12 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                         }
                         style={{
                           position: "relative",
-                          minWidth: "48px",
+                          // "Free Size" is a phrase, not a code, so its box is a
+                          // rectangle wide enough to read rather than a square
+                          // that clips. Every other size keeps the square.
+                          minWidth: isFreeSize(size) ? "120px" : "48px",
                           height: "48px",
-                          padding: "0 12px",
+                          padding: isFreeSize(size) ? "0 18px" : "0 12px",
                           border: isSelected
                             ? "2px solid #111"
                             : "1px solid #ced4da",
@@ -631,7 +634,7 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                             "border-color 160ms ease, background-color 160ms ease, color 160ms ease",
                         }}
                       >
-                        {size}
+                        {isFreeSize(size) ? (ar ? "مقاس حر" : "Free size") : size}
                       </button>
                     );
                   })}

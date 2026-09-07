@@ -61,6 +61,23 @@ export const CANONICAL_SIZES: readonly string[] = [
  * throwing, and buildSizeOptions shows a LETTER product exactly the sizes it is
  * sold in. verify-catalogue.ts would report it.
  */
+/**
+ * One size fits all.
+ *
+ * Stored as this exact English token, like every other size label, because the
+ * stored value is a KEY: ProductVariant, OrderItem and the selection state all
+ * reference a size by it, and a value that changed with the reader's language
+ * would key differently in Arabic than in English. It is the one size label
+ * that is a WORD rather than a code, so it is the only one translated for
+ * display — see `freeSize` in shop.json.
+ */
+export const FREE_SIZE = "Free Size";
+
+/** True for the one-size-fits-all label, whatever case it was stored in. */
+export function isFreeSize(size: unknown): boolean {
+  return String(size ?? '').trim().toLowerCase() === FREE_SIZE.toLowerCase();
+}
+
 export const LETTER_SIZES: readonly string[] = [
   "XS",
   "S",
@@ -69,6 +86,9 @@ export const LETTER_SIZES: readonly string[] = [
   "XL",
   "XS/S",
   "M/L",
+  // Last in the run: it is not a point on the ladder, it is the absence of one,
+  // so it reads as a separate choice after the sizes rather than between them.
+  FREE_SIZE,
 ];
 
 /** The run a product draws its sizes from. */

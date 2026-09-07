@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { resolveColor } from "@/lib/products/colors";
-import { compareSizes } from "@/lib/products/sizes";
+import { compareSizes, isFreeSize } from "@/lib/products/sizes";
 
 /**
  * What a product's stock is actually made of.
@@ -99,7 +99,9 @@ export default function StockBreakdown({ row }) {
               key={size}
               className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs ${tone(qty)}`}
             >
-              <span className="font-bold">{size}</span>
+              <span className="font-bold">
+                {isFreeSize(size) ? t("freeSize") : size}
+              </span>
               <span className="tabular-nums">{qty}</span>
             </span>
           );
@@ -128,7 +130,7 @@ export default function StockBreakdown({ row }) {
                 <th className="p-2 text-start font-bold">{t("colors")}</th>
                 {sizes.map((size) => (
                   <th key={size} className="p-2 text-center font-bold">
-                    {size}
+                    {isFreeSize(size) ? t("freeSize") : size}
                   </th>
                 ))}
               </tr>

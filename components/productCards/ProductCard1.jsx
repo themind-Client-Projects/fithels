@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import CountdownTimer from "../common/Countdown";
 import { useLocale } from "next-intl";
-import { buildSizeOptions } from "@/lib/products/sizes";
+import { buildSizeOptions, isFreeSize } from "@/lib/products/sizes";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { useCurrencyStore } from "@/stores/useCurrencyStore";
 export default function ProductCard1({
@@ -132,7 +132,9 @@ export default function ProductCard1({
               ).map(({ size, available }) => (
                 <li
                   key={size}
-                  className={`size-item${available ? "" : " size-item--out"}`}
+                  className={`size-item${available ? "" : " size-item--out"}${
+                    isFreeSize(size) ? " size-item--free" : ""
+                  }`}
                   title={
                     available
                       ? undefined
@@ -141,7 +143,7 @@ export default function ProductCard1({
                         : "Not available"
                   }
                 >
-                  {size}
+                  {isFreeSize(size) ? t("freeSize") : size}
                 </li>
               ))}
             </ul>

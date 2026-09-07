@@ -768,6 +768,31 @@ tr:hover > .tbl-pin-cell {
   pointer-events: none;
 }
 
+/* "Free size" on the card's size strip.
+ *
+ * Every other entry is a code — 38, XL, XS/S — and reads fine as bare text in a
+ * row of them. This one is a phrase, so without a box it runs into its
+ * neighbours and stops looking like a size at all. A bordered rectangle says
+ * "this is the size" the way the squares do on the product page.
+ *
+ * Logical properties so the padding mirrors in Arabic, and `nowrap` so the
+ * phrase never breaks across two lines inside its own box. */
+.card-product .size-item--free {
+  padding-inline: 8px;
+  padding-block: 2px;
+  border: 1px solid rgba(24, 24, 24, 0.22);
+  border-radius: 4px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* Struck through would be unreadable across a phrase, so an unavailable free
+ * size dims and drops its border weight instead. */
+.card-product .size-item--free.size-item--out {
+  text-decoration: none;
+  border-color: rgba(24, 24, 24, 0.12);
+}
+
 /* Accordion — product information sections and the home page FAQ (description / size guide / delivery).
  *
  * Markup comes from components/ui/accordion (base-ui); the look is here, in

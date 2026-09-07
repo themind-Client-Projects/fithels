@@ -18,6 +18,7 @@ import {
   DEFAULT_PRODUCT_SIZES,
   SIZE_CONVERSIONS,
   SIZE_SYSTEMS,
+  isFreeSize,
   parseSizeSystem,
   sizesForSystem,
 } from "@/lib/products/sizes";
@@ -766,7 +767,10 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
                       checked ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
-                    {size}
+                    {/* The one size label that is a word rather than a code, so
+                        it reads in the admin's language. The STORED value is
+                        still the English token — it keys the stock rows. */}
+                    {isFreeSize(size) ? t("freeSize") : size}
                   </span>
                   <span className="ms-auto text-xs text-muted-foreground">
                     {isExtra
