@@ -23,6 +23,33 @@ function secretMatches(provided: string | null, expected: string): boolean {
  * Authenticated either by CRON_SECRET (for a scheduler) or by an admin session
  * (so it can be triggered by hand). Never left open — it mutates stock.
  */
+/**
+ * GET — for a scheduler only.
+ *
+ * Vercel Cron invokes a path with GET and, when CRON_SECRET is set, sends it as
+ * `Authorization: Bearer <CRON_SECRET>`. The route previously exposed only
+ * POST, so a configured cron would have received 405 every run and the sweep
+ * would still never have happened.
+ *
+ * Deliberately NOT accepting an admin session the way POST does: a GET that
+ * mutates stock and authorises from a cookie is reachable from any page a
+ * logged-in admin visits. The secret is the only key here.
+ */
+export async function GET(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || !secretMatches(request.headers.get('authorization'), cronSecret)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const released = await releaseExpiredIntents()
+    return NextResponse.json({ released })
+  } catch (error) {
+    console.error('Payment expiry sweep failed', error)
+    return NextResponse.json({ error: 'Sweep failed' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const provided = request.headers.get('authorization')

@@ -58,5 +58,11 @@
   "paymentSignedOutTitle": "Sign in to see your order",
   "paymentSignedOutDesc": "Your payment was received. Sign in with the same account to follow its status.",
   "savedDeliveryTitle": "Delivery details saved",
-  "savedDeliveryHint": "Filled in from your last order — edit them if anything has changed."
+  "savedDeliveryHint": "Filled in from your last order — edit them if anything has changed.",
+  "orderFailed": "We could not place your order. Please try again.",
+  "refusalUnavailable": "\"{product}\" is no longer available. Remove it from your cart to continue.",
+  "refusalPickVariant": "Choose a size and colour for \"{product}\" before placing the order.",
+  "refusalNotSold": "\"{product}\" is not sold in {size} / {color}. Please pick another option.",
+  "refusalStock": "Only {available} left of \"{product}\" in {size} / {color}. Reduce the quantity or pick another option.",
+  "refusalStockRace": "One of the items in your cart just went out of stock. Please review your cart and try again."
 }

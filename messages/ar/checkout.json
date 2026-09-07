@@ -58,5 +58,11 @@
   "paymentSignedOutTitle": "سجّلي الدخول لعرض طلبك",
   "paymentSignedOutDesc": "تم استلام دفعتك. سجّلي الدخول بالحساب نفسه لمتابعة حالة الطلب.",
   "savedDeliveryTitle": "معلومات التوصيل محفوظة",
-  "savedDeliveryHint": "عبّأناها من طلبك السابق — عدّليها إن تغيّر شيء."
+  "savedDeliveryHint": "عبّأناها من طلبك السابق — عدّليها إن تغيّر شيء.",
+  "orderFailed": "تعذّر تأكيد الطلب. حاول مرة أخرى.",
+  "refusalUnavailable": "المنتج «{product}» لم يعد متوفرًا. احذفه من السلة ثم أكمل الطلب.",
+  "refusalPickVariant": "اختر المقاس واللون للمنتج «{product}» قبل إتمام الطلب.",
+  "refusalNotSold": "المنتج «{product}» غير متوفر بالمقاس {size} واللون {color}. اختر خيارًا آخر.",
+  "refusalStock": "لم يتبقَّ سوى {available} من «{product}» بالمقاس {size} واللون {color}. قلّل الكمية أو اختر خيارًا آخر.",
+  "refusalStockRace": "نفد أحد المنتجات في سلتك للتو. راجع السلة ثم حاول مرة أخرى."
 }

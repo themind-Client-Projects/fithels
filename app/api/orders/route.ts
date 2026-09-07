@@ -245,16 +245,30 @@ export async function POST(request: NextRequest) {
 
       const product = productById.get(productId)
 
+      // EVERY REFUSAL BELOW CARRIES A `reason` AND THE PRODUCT'S NAME IN BOTH
+      // LANGUAGES.
+      //
+      // The `error` string is English and stays for API consumers and logs, but
+      // the checkout is Arabic-first and RTL: it used to show these verbatim in
+      // a browser alert(), English sentence and English product title, to a
+      // shopper reading Arabic. The client translates from `reason` now and
+      // names the product in the language being read. Same shape the coupon
+      // refusals already use.
       if (!product) {
         return noStoreJson(
-          { error: `Product not found: ${productId}` },
+          { error: `Product not found: ${productId}`, reason: 'PRODUCT_NOT_FOUND' },
           { status: 404 }
         )
       }
 
       if (!product.isActive) {
         return noStoreJson(
-          { error: `Product is not available: ${product.titleEn}` },
+          {
+            error: `Product is not available: ${product.titleEn}`,
+            reason: 'PRODUCT_UNAVAILABLE',
+            titleEn: product.titleEn,
+            titleAr: product.titleAr,
+          },
           { status: 400 }
         )
       }
@@ -264,7 +278,12 @@ export async function POST(request: NextRequest) {
       // selling whatever it felt like.
       if (!size || !color) {
         return noStoreJson(
-          { error: `Choose a size and colour for ${product.titleEn}` },
+          {
+            error: `Choose a size and colour for ${product.titleEn}`,
+            reason: 'VARIANT_REQUIRED',
+            titleEn: product.titleEn,
+            titleAr: product.titleAr,
+          },
           { status: 400 }
         )
       }
@@ -275,7 +294,14 @@ export async function POST(request: NextRequest) {
 
       if (!variant) {
         return noStoreJson(
-          { error: `${product.titleEn} is not sold in ${size} / ${color}` },
+          {
+            error: `${product.titleEn} is not sold in ${size} / ${color}`,
+            reason: 'VARIANT_NOT_SOLD',
+            titleEn: product.titleEn,
+            titleAr: product.titleAr,
+            size,
+            color,
+          },
           { status: 400 }
         )
       }
@@ -299,6 +325,12 @@ export async function POST(request: NextRequest) {
         return noStoreJson(
           {
             error: `Insufficient stock for ${product.titleEn} (${size} / ${color}). Available: ${variant.stock}`,
+            reason: 'INSUFFICIENT_STOCK',
+            titleEn: product.titleEn,
+            titleAr: product.titleAr,
+            size,
+            color,
+            available: variant.stock,
           },
           { status: 400 }
         )
@@ -443,6 +475,7 @@ export async function POST(request: NextRequest) {
           return noStoreJson(
             {
               error: 'Order total is below the online payment minimum.',
+              reason: 'BELOW_ONLINE_MINIMUM',
               code: error.code,
               minimumIqd: WAYLE_MIN_AMOUNT_IQD,
               amountIqd: error.amountIQD,
@@ -686,7 +719,10 @@ export async function POST(request: NextRequest) {
         })
 
       return noStoreJson(
-        { error: 'Could not start the online payment. Please try again or choose cash on delivery.' },
+        {
+          error: 'Could not start the online payment. Please try again or choose cash on delivery.',
+          reason: 'PAYMENT_START_FAILED',
+        },
         { status: 502 }
       )
     }
@@ -705,7 +741,10 @@ export async function POST(request: NextRequest) {
     // Losing a stock race is a client-visible condition, not a server fault.
     if (error instanceof InsufficientStockError) {
       return noStoreJson(
-        { error: 'One of the items just went out of stock. Please review your cart.' },
+        {
+          error: 'One of the items just went out of stock. Please review your cart.',
+          reason: 'STOCK_RACE',
+        },
         { status: 409 }
       )
     }

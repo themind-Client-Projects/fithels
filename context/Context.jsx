@@ -288,8 +288,24 @@ export default function Context({ children }) {
           Number(item.priceIqd) > 0 &&
           // Drop fixture items saved before add-to-cart required a catalogue
           // product. One of these left in storage made every checkout fail.
-          item.dbId
+          item.dbId &&
+          // A line with no size and colour cannot be ordered: POST /api/orders
+          // refuses it, and it refuses the WHOLE basket, not just that line. It
+          // is also unfixable from the cart page, which has no size or colour
+          // editor — so a single stale line left every future checkout failing
+          // with no way out but clearing storage by hand. Dropping it here
+          // costs the shopper one re-add and unblocks the basket.
+          item.selectedSize &&
+          item.selectedColor
       );
+
+      // Say so rather than shrinking the cart in silence. A basket that loses a
+      // line between visits with no explanation reads as the shop losing it.
+      if (validItems.length < items.length) {
+        console.warn(
+          `Dropped ${items.length - validItems.length} stale cart line(s) that could no longer be ordered.`
+        );
+      }
       if (validItems.length) {
         setCartProducts(validItems);
       }

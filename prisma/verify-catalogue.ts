@@ -286,6 +286,35 @@ async function main() {
     )
   }
 
+  // 10. Stock held off the shelf by orders that have neither shipped nor been
+  //     cancelled. This is CORRECT for a live order — the units are spoken for —
+  //     but an order that has sat unconfirmed for weeks is almost certainly dead,
+  //     and its stock is unsellable until someone decides. Wayle checkouts expire
+  //     themselves after PAYMENT_INTENT_TTL_MINUTES; a cash order has no such
+  //     clock, because only the shop knows whether it is still going to happen.
+  //     Reported every run so it cannot rot unseen; not a gate failure, because
+  //     cancelling a real customer's order is the shop's call, not a script's.
+  const STALE_DAYS = 14
+  const staleCutoff = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000)
+  const holding = await prisma.order.findMany({
+    where: {
+      status: { notIn: ['CANCELLED', 'DELIVERED'] },
+      createdAt: { lt: staleCutoff },
+    },
+    select: {
+      id: true, createdAt: true, status: true, paymentStatus: true, paymentMethod: true,
+      items: { select: { quantity: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+  const stale = holding.map((o) => ({
+    product: o.id.slice(0, 12),
+    issue:
+      `${o.paymentMethod} ${o.status}/${o.paymentStatus}, ` +
+      `${Math.floor((Date.now() - o.createdAt.getTime()) / 86_400_000)} days old, ` +
+      `holding ${o.items.reduce((sum, i) => sum + i.quantity, 0)} unit(s) off the shelf`,
+  }))
+
   const bySystem = products.reduce<Record<string, number>>((acc, p) => {
     acc[p.sizeSystem] = (acc[p.sizeSystem] ?? 0) + 1
     return acc
@@ -300,6 +329,14 @@ async function main() {
   console.log(`  order lines         ${items.length}`)
   console.log(`  unreturnable units  ${unreturnable}`)
   console.log()
+
+  if (stale.length > 0) {
+    console.log(
+      `${stale.length} ORDER(S) HOLDING STOCK FOR OVER ${STALE_DAYS} DAYS — confirm or cancel them to free the units:`
+    )
+    for (const o of stale) console.log(`  ${o.product.padEnd(28)} ${o.issue}`)
+    console.log()
+  }
 
   if (legacy.length > 0) {
     console.log(`${legacy.length} PRE-MIGRATION LINE(S) — not repairable in code, fix by hand if ever cancelled:`)

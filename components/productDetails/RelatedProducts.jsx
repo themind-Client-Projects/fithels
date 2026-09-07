@@ -6,7 +6,7 @@ import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { resolveProductColors } from "@/lib/products/colors";
 import { cardImages } from "@/lib/products/colorImages";
 import { cardPricing } from "@/lib/products/price";
-import { totalStock } from "@/lib/products/variants";
+import { stockedColors, stockedSizes, totalStock } from "@/lib/products/variants";
 
 /**
  * "You may also like" under the product detail.
@@ -102,8 +102,12 @@ export default async function RelatedProducts({ product, locale }) {
       // shopper finds out whether THEIR size is there.
       inStock: totalStock(p.variants) > 0,
       variants: p.variants,
-      filterColor: p.colors,
-      filterSizes: p.sizes,
+      // What the product can be BOUGHT in, not what it is sold in. Matching on
+      // the sold-in lists meant "size 41" returned shoes with zero 41s — and
+      // "size 41 + in stock" returned them too, which is the whole point of
+      // per-pair inventory undone on the busiest page in the shop.
+      filterColor: stockedColors(p.variants),
+      filterSizes: stockedSizes(p.variants),
       filterBrands: [],
     };
   });

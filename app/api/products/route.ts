@@ -33,9 +33,15 @@ export async function GET(request: NextRequest) {
     const wantsInactive = searchParams.get('includeInactive') === 'true'
     let includeInactive = false
 
+    // Resolved once, for BOTH decisions below: which products are listed, and
+    // how much of each one is described. The per-pair stock matrix is a sales
+    // report — how many of every size in every colour, for the whole catalogue —
+    // and this endpoint is public, so it is staff-only.
+    const user = await getAuthUser()
+    const isStaff = user?.role === 'ADMIN' || user?.role === 'EMPLOYEE'
+
     if (wantsInactive) {
-      const user = await getAuthUser()
-      if (!user || (user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+      if (!isStaff) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       includeInactive = true
@@ -75,7 +81,26 @@ export async function GET(request: NextRequest) {
     // `stock` is answered as a derived total so every existing consumer — the
     // dashboard list, the order builder, the reorder button — keeps reading one
     // number, while the rows behind it stay the only stored truth.
-    return NextResponse.json(products.map(withStockTotal))
+    const withTotals = products.map(withStockTotal)
+
+    if (isStaff) return NextResponse.json(withTotals)
+
+    /**
+     * Public callers get the total and not the breakdown.
+     *
+     * The storefront needs to know whether a product can be bought at all — the
+     * search drawer renders an "in stock" state from it — but nothing on the
+     * storefront reads this endpoint's per-pair rows, and handing them out let
+     * anyone read exact counts for every size and colour in the catalogue with
+     * one unauthenticated request. Pages that DO need per-size availability
+     * (the grid, the product page) query the database directly through
+     * PRODUCT_CARD_SELECT and are unaffected.
+     *
+     * `descEn`/`descAr` go too: unbounded Text nobody renders from here.
+     */
+    return NextResponse.json(
+      withTotals.map(({ variants: _variants, descEn: _descEn, descAr: _descAr, ...rest }) => rest)
+    )
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(

@@ -164,7 +164,9 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
    * open while a sale goes through used to put the sold pairs back on the shelf
    * the moment anything on the page was saved, including just a price.
    */
-  const [variantsBaseline] = useState(() => product?.variants ?? []);
+  const [variantsBaseline, setVariantsBaseline] = useState(
+    () => product?.variants ?? []
+  );
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
 
   /**
@@ -323,6 +325,36 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
     }
   };
 
+  /**
+   * Re-read this product's stock after a save that did not visibly succeed.
+   *
+   * Stock is submitted as a DELTA against `variantsBaseline` — the numbers the
+   * form was first given — so that a stale form cannot overwrite live
+   * inventory. That makes a retry dangerous in exactly one case: the request
+   * committed but the response never arrived (a dropped tablet connection, a
+   * gateway timing out after the write). Save is re-enabled, the box still
+   * reads 8, the baseline still reads 5, and pressing it again applies +3 to a
+   * row that already holds 8.
+   *
+   * Re-reading closes it. After a failure the baseline is whatever the database
+   * now holds, so a retry applies the difference from the truth — nothing if
+   * the write landed, the real edit if it did not. Silent on failure: this runs
+   * on an error path already showing a message, and a second one would only
+   * confuse. The baseline simply stays as it was, which is the state before
+   * this existed.
+   */
+  const resyncBaseline = async () => {
+    if (!isEditing || !product?.id) return;
+    try {
+      const res = await fetch(`/api/products/${product.id}`);
+      if (!res.ok) return;
+      const fresh = await res.json();
+      if (Array.isArray(fresh?.variants)) setVariantsBaseline(fresh.variants);
+    } catch {
+      // Nothing to do: leaving the old baseline is no worse than before.
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -390,6 +422,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       });
 
       if (!res.ok) {
+        await resyncBaseline();
         const data = await res.json().catch(() => ({}));
         // Server sends a stable `reason` so this Arabic-first dashboard can show
         // a translated message instead of the English fallback.
@@ -409,6 +442,9 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
 
       onSuccess?.();
     } catch (err) {
+      // A thrown fetch means the RESPONSE was lost, not that the write was —
+      // the request may well have committed. Re-sync before re-enabling Save.
+      await resyncBaseline();
       setError(t("uploadError.GENERIC"));
       console.error(err);
     } finally {

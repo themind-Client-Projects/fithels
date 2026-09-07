@@ -29,6 +29,8 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** Why the last submit was refused, already translated. */
+  const [submitError, setSubmitError] = useState("");
   
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
@@ -201,6 +203,9 @@ function CheckoutContent() {
       return;
     }
     setErrors({});
+    // A fresh attempt clears the last refusal, so a stale message cannot sit
+    // under a button that is now working.
+    setSubmitError("");
 
     setIsSubmitting(true);
 
@@ -246,7 +251,7 @@ function CheckoutContent() {
         if (err.code === "WAYLE_MIN_AMOUNT") {
           throw new Error(t("paymentBelowMinimum"));
         }
-        throw new Error(err.error || "Order failed");
+        throw new Error(refusalMessage(err));
       }
 
       const order = await res.json();
@@ -264,7 +269,11 @@ function CheckoutContent() {
         }
         // Hand off to Wayle's hosted page. The webhook confirms the payment
         // separately; /checkout/return polls for that.
-        window.location.href = order.paymentUrl;
+        // assign(), not `location.href = …`. Identical behaviour — same
+        // navigation, same history entry — but a method call rather than an
+        // assignment to a binding outside the component, which is what
+        // react-hooks/immutability objects to.
+        window.location.assign(order.paymentUrl);
         return;
       }
 
@@ -272,7 +281,10 @@ function CheckoutContent() {
       setOrderPlaced(true);
     } catch (error) {
       console.error("Order error:", error);
-      alert(error.message || "فشل في تأكيد الطلب. حاول مرة أخرى.");
+      // Shown in the page, not in a browser alert(). An alert is chrome the
+      // shop cannot lay out, style or translate, and it sat unreadably over an
+      // RTL Arabic checkout carrying an English sentence from the server.
+      setSubmitError(error.message || t("orderFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -416,6 +428,48 @@ function CheckoutContent() {
     ? Math.min(applied.discountIqd ?? 0, displayTotalIqd)
     : 0;
   const payableShownIqd = Math.max(0, displayTotalIqd - discountShownIqd);
+
+  /**
+   * Turns a refusal from POST /api/orders into a sentence in the shopper's
+   * language.
+   *
+   * The server's `error` is English and names the product by its English
+   * title — fine for logs and API consumers, wrong for an Arabic-first RTL
+   * checkout, which is what it used to display verbatim. `reason` is the
+   * stable machine-readable code; the product's name arrives in both
+   * languages beside it.
+   */
+  const refusalMessage = (err) => {
+    const name = (locale === "ar" ? err?.titleAr : err?.titleEn) || err?.titleEn || "";
+    switch (err?.reason) {
+      case "PRODUCT_NOT_FOUND":
+      case "PRODUCT_UNAVAILABLE":
+        return t("refusalUnavailable", { product: name });
+      case "VARIANT_REQUIRED":
+        return t("refusalPickVariant", { product: name });
+      case "VARIANT_NOT_SOLD":
+        return t("refusalNotSold", {
+          product: name,
+          size: err.size ?? "",
+          color: err.color ?? "",
+        });
+      case "INSUFFICIENT_STOCK":
+        return t("refusalStock", {
+          product: name,
+          size: err.size ?? "",
+          color: err.color ?? "",
+          available: err.available ?? 0,
+        });
+      case "STOCK_RACE":
+        return t("refusalStockRace");
+      case "PAYMENT_START_FAILED":
+        return t("paymentFailedStart");
+      default:
+        // No known reason: say something true rather than echoing the server's
+        // English at an Arabic reader.
+        return t("orderFailed");
+    }
+  };
 
   const orderItemsPayload = () =>
     isSingleProduct && singleProduct
@@ -758,6 +812,26 @@ function CheckoutContent() {
                   </h5>
                 </div>
               </div>
+
+              {/* Refusals land here, in the shopper's language, next to the
+                  button that produced them — role="alert" so a screen reader
+                  announces it without stealing focus. */}
+              {submitError ? (
+                <p
+                  role="alert"
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    background: "#fdecec",
+                    color: "#a4262c",
+                    fontSize: "0.875rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {submitError}
+                </p>
+              ) : null}
 
               {displayItems.length > 0 ? (
                 <button
