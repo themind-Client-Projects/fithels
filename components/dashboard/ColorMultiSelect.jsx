@@ -36,6 +36,50 @@ export default function ColorMultiSelect({
    * click away, so starting there makes the wheel look like it did nothing.
    */
   const [customHex, setCustomHex] = useState("#c0392b");
+  /**
+   * What is typed in the hex box, kept apart from `customHex`.
+   *
+   * The box holds the RAW text and the swatch holds a parsed colour, so an
+   * unfinished or invalid entry leaves the swatch on its last good value
+   * instead of blanking it — and the box keeps exactly what was typed rather
+   * than rewriting it under the cursor.
+   *
+   * It does not make the preview monotonic: "#dc1" is a valid three-digit hex
+   * on the way to "#dc143c", so the swatch does pass through one wrong colour
+   * mid-word. Suppressing that would mean refusing three-digit hex, or only
+   * updating on blur, and both cost more than the flicker does.
+   */
+  const [hexInput, setHexInput] = useState("#c0392b");
+
+  /**
+   * Read a typed hex.
+   *
+   * Tolerant of what people actually paste: a missing "#", stray spaces, upper
+   * case, and the three-digit shorthand. Returns null for anything else so the
+   * caller can leave the swatch alone rather than blanking it mid-keystroke.
+   */
+  const parseHex = (raw) => {
+    const t = String(raw ?? "").trim().replace(/^#/, "");
+    if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(t)) return null;
+    const full =
+      t.length === 3
+        ? t.split("").map((c) => c + c).join("")
+        : t;
+    return `#${full.toLowerCase()}`;
+  };
+
+  /** Typing in the hex box drives the wheel. */
+  const onHexTyped = (raw) => {
+    setHexInput(raw);
+    const parsed = parseHex(raw);
+    if (parsed) setCustomHex(parsed);
+  };
+
+  /** Turning the wheel drives the hex box. */
+  const onWheelPicked = (hex) => {
+    setCustomHex(hex);
+    setHexInput(hex);
+  };
 
   /** Record (or clear) the swatch for one name without disturbing the others. */
   const setHex = (name, hex) => {
@@ -125,6 +169,11 @@ export default function ColorMultiSelect({
         <div className="flex flex-wrap gap-2">
           {customSelected.map((name) => {
             const swatch = resolveColor(name, hexes);
+            // Whether the SHOP chose this colour, as opposed to it falling back
+            // to the neutral chip. An unset swatch is the state that started
+            // all this — a grey dot with nothing saying it could be changed —
+            // so it says so, with a dashed ring and a tooltip.
+            const chosen = Boolean(parseHex(hexes?.[name]));
             return (
               <span
                 key={name}
@@ -134,9 +183,19 @@ export default function ColorMultiSelect({
                     edit button would be a second thing to find for something
                     the colour itself already represents. */}
                 <label
-                  className="relative h-4 w-4 shrink-0 cursor-pointer rounded-full ring-1 ring-black/15"
+                  className={`relative h-4 w-4 shrink-0 cursor-pointer rounded-full ${
+                    chosen
+                      ? "ring-1 ring-black/15"
+                      : "ring-2 ring-dashed ring-primary/60"
+                  }`}
                   style={{ backgroundColor: swatch.hex }}
-                  title={locale === "en" ? "Pick this colour" : "اختر هذا اللون"}
+                  title={
+                    chosen
+                      ? `${name} — ${swatch.hex}`
+                      : locale === "en"
+                        ? "No colour chosen — click to pick one"
+                        : "لم يُختر لون — اضغط لاختياره"
+                  }
                 >
                   <input
                     type="color"
@@ -179,7 +238,7 @@ export default function ColorMultiSelect({
           <input
             type="color"
             value={customHex}
-            onChange={(e) => setCustomHex(e.target.value)}
+            onChange={(e) => onWheelPicked(e.target.value)}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             aria-label={locale === "en" ? "Pick a colour" : "اختر لونًا"}
           />
@@ -198,6 +257,30 @@ export default function ColorMultiSelect({
             locale === "en" ? "Other colour…" : "لون آخر… مثل قرمزي"
           }
           className="h-10 flex-1 rounded-xl border border-border bg-muted/30 px-3 text-sm"
+        />
+        {/* Either way of saying the same thing: turn the wheel, or type the
+            code. Designers work in hex and copy it from wherever the product
+            photo was graded; the wheel is for choosing by eye. They drive each
+            other, so neither is a second place the truth can live. */}
+        <input
+          value={hexInput}
+          onChange={(e) => onHexTyped(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addCustom();
+            }
+          }}
+          placeholder="#dc143c"
+          spellCheck={false}
+          dir="ltr"
+          aria-label={locale === "en" ? "Hex colour" : "رمز اللون"}
+          aria-invalid={hexInput.trim() !== "" && !parseHex(hexInput)}
+          className={`h-10 w-28 rounded-xl border bg-muted/30 px-3 font-mono text-sm ${
+            hexInput.trim() !== "" && !parseHex(hexInput)
+              ? "border-destructive/60"
+              : "border-border"
+          }`}
         />
         <button
           type="button"
