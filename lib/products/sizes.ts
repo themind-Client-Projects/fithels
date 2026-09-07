@@ -50,6 +50,16 @@ export const CANONICAL_SIZES: readonly string[] = [
  * product made as XS/S is one thing the shop stocks and counts, not two. A shop
  * ticks whichever shape it actually sells, and mixing them on one product is
  * allowed because some ranges genuinely do — XS/S, M/L, then a standalone XL.
+ *
+ * XL is the top of the run. XXL and XL/XXL were offered and the shop does not
+ * sell either, so they only ever appeared as options nobody could pick
+ * truthfully — in the dashboard's size picker, and on any card or product page
+ * that drew the run. Nothing was ever stocked or ordered in them.
+ *
+ * A product that somehow still carries "XXL" is not broken by this: letterRank
+ * returns Infinity for a label outside the run, so it sorts last rather than
+ * throwing, and buildSizeOptions shows a LETTER product exactly the sizes it is
+ * sold in. verify-catalogue.ts would report it.
  */
 export const LETTER_SIZES: readonly string[] = [
   "XS",
@@ -57,10 +67,8 @@ export const LETTER_SIZES: readonly string[] = [
   "M",
   "L",
   "XL",
-  "XXL",
   "XS/S",
   "M/L",
-  "XL/XXL",
 ];
 
 /** The run a product draws its sizes from. */
