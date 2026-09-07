@@ -67,7 +67,7 @@ export default async function HomePage({ params }) {
       // XS/S - M/L - XL. PRODUCT_CARD_SELECT has always fetched this column;
       // nothing forwarded it.
       sizeSystem: p.sizeSystem,
-      colors: resolveProductColors(p.colors, p.images, p.colorImages),
+      colors: resolveProductColors(p.colors, p.images, p.colorImages, p.colorHex),
       // Any pair left, in any size or colour. A card cannot say more than
       // that without becoming a stock report; the product page is where a
       // shopper finds out whether THEIR size is there.

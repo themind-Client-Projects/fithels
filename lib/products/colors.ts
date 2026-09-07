@@ -98,15 +98,86 @@ function fallback(name: string): ColorOption {
 }
 
 /**
+ * A product's own swatches, as stored in `Product.colorHex`.
+ *
+ * Deliberately `unknown`: this arrives from a Prisma Json column (typed
+ * JsonValue) and from request bodies, and every entry is validated at runtime
+ * below anyway. Narrowing the TYPE would only force a cast at each of the
+ * twelve call sites without making any of them safer.
+ */
+export type ColorHexMap = unknown
+
+/** #rgb or #rrggbb. Anything else is ignored rather than written into a style. */
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+
+/**
+ * Perceived brightness, so a pale custom colour gets the same border that
+ * white and beige get in the built-in palette.
+ *
+ * Rec. 601 luma: green dominates how bright a colour looks, blue barely
+ * registers. A flat average calls #ffff00 (yellow) dark and it disappears
+ * against a white card.
+ */
+function isLightHex(hex: string): boolean {
+  let h = hex.slice(1)
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 > 165
+}
+
+/**
+ * Look the name up in the product's own swatches.
+ *
+ * Exact key first, then the same normalisation the palette uses, so a colour
+ * saved as "قرمزي" still matches a variant row recording "قرمزي " with a
+ * stray space.
+ */
+function fromProduct(name: string, custom: ColorHexMap): ColorOption | null {
+  if (!custom || typeof custom !== 'object') return null
+
+  const map = custom as Record<string, unknown>
+  const raw = String(name ?? '')
+  let hex: unknown = map[raw]
+
+  if (!hex) {
+    const needle = normaliseForSearch(raw)
+    const hit = Object.entries(map).find(
+      ([key]) => normaliseForSearch(key) === needle
+    )
+    hex = hit?.[1]
+  }
+
+  if (typeof hex !== 'string' || !HEX.test(hex.trim())) return null
+  const clean = hex.trim().toLowerCase()
+
+  return {
+    key: fallback(raw).key,
+    nameAr: raw,
+    nameEn: raw,
+    hex: clean,
+    isLight: isLightHex(clean),
+  }
+}
+
+/**
  * Resolve a stored colour name to a swatch.
  *
- * Matches on the Arabic name, the English name or the slug, under the same
- * normalisation used for search — so "ابيض" (bare alef, what most phone
- * keyboards produce) still finds "أبيض".
+ * Checks the product's own swatches first, then matches on the Arabic name, the
+ * English name or the slug, under the same normalisation used for search — so
+ * "ابيض" (bare alef, what most phone keyboards produce) still finds "أبيض".
  */
-export function resolveColor(name: string): ColorOption {
+export function resolveColor(name: string, custom?: ColorHexMap): ColorOption {
   const needle = normaliseForSearch(String(name ?? ''))
   if (!needle) return fallback('')
+
+  // The product's own swatch WINS over the built-in palette. The shop chose it
+  // deliberately for this name; a containment match against a stock palette is
+  // a guess, and "أسود لامع" resolving to plain black is exactly the guess an
+  // explicit choice should override.
+  const own = fromProduct(name, custom)
+  if (own) return own
 
   const exact = LOOKUP.find(([alias]) => alias === needle)
   if (exact) return exact[1]
@@ -135,7 +206,9 @@ export function colorLabel(option: ColorOption, locale: string): string {
 export function resolveProductColors(
   colors: readonly string[] | null | undefined,
   images: readonly string[] | null | undefined,
-  colorImages?: readonly { color: string; images: string[] }[] | null
+  colorImages?: readonly { color: string; images: string[] }[] | null,
+  /** The product's own swatches, from Product.colorHex. */
+  custom?: ColorHexMap
 ): Array<ColorOption & { imgSrc: string }> {
   const list = Array.isArray(colors) ? colors : []
   const photos = Array.isArray(images) ? images : []
@@ -165,8 +238,39 @@ export function resolveProductColors(
     const generic = unclaimed[index] || unclaimed[0]
 
     return {
-      ...resolveColor(name),
+      ...resolveColor(name, custom),
       imgSrc: own || generic || '',
     }
   })
+}
+
+/**
+ * Clean the { name: hex } map a product stores for its own swatches.
+ *
+ * Drops any entry whose colour is not actually sold — the same rule the stock
+ * rows and the per-colour photos follow, so unticking a colour cannot leave a
+ * swatch behind that reappears the moment it is ticked again.
+ *
+ * Also drops anything that is not a real hex. This value is written straight
+ * into a `background-color`, so it must never carry arbitrary text from a
+ * request body.
+ */
+export function normaliseColorHex(
+  input: unknown,
+  colors: readonly string[]
+): Record<string, string> {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {}
+
+  const sold = new Set(colors)
+  const out: Record<string, string> = {}
+
+  for (const [name, hex] of Object.entries(input as Record<string, unknown>)) {
+    if (!sold.has(name)) continue
+    if (typeof hex !== 'string') continue
+    const clean = hex.trim().toLowerCase()
+    if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/.test(clean)) continue
+    out[name] = clean
+  }
+
+  return out
 }

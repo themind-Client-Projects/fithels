@@ -23,7 +23,14 @@ import { stockFor, totalStock, variantKey } from "@/lib/products/variants";
  * Sizes and colours come from the choices already made above it. Nothing is
  * asked for twice, and a pair that is not sold has no box at all.
  */
-export default function VariantStockGrid({ sizes, colors, variants, onChange }) {
+export default function VariantStockGrid({
+  sizes,
+  colors,
+  variants,
+  onChange,
+  /** The product's own swatches, so a custom colour is not a grey dot here. */
+  colorHex = {},
+}) {
   const t = useTranslations("Dashboard");
 
   const setCell = (size, color, raw) => {
@@ -71,7 +78,7 @@ export default function VariantStockGrid({ sizes, colors, variants, onChange }) 
           </thead>
           <tbody>
             {colors.map((color) => {
-              const swatch = resolveColor(color);
+              const swatch = resolveColor(color, colorHex);
               const rowTotal = sizes.reduce(
                 (sum, size) => sum + stockFor(variants, size, color),
                 0

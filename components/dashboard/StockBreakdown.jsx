@@ -70,7 +70,7 @@ export default function StockBreakdown({ row }) {
         <div className="flex flex-wrap items-center gap-1.5">
           {colors.map((color) => {
             const qty = row.byColor[color] ?? 0;
-            const swatch = resolveColor(color);
+            const swatch = resolveColor(color, row.colorHex);
             return (
               <span
                 key={color}
@@ -135,7 +135,7 @@ export default function StockBreakdown({ row }) {
             </thead>
             <tbody>
               {colors.map((color) => {
-                const swatch = resolveColor(color);
+                const swatch = resolveColor(color, row.colorHex);
                 return (
                   <tr key={color} className="border-t border-border">
                     <th className="p-2 text-start font-medium">

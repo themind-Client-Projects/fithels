@@ -20,9 +20,33 @@ import { COLOR_PALETTE, resolveColor } from "@/lib/products/colors";
  * Colours outside the palette are still allowed (and shown as chips), because
  * the shop must be able to sell something we did not think of.
  */
-export default function ColorMultiSelect({ value = [], onChange }) {
+export default function ColorMultiSelect({
+  value = [],
+  onChange,
+  /** { name: hex } chosen by the shop, for colours the palette does not know. */
+  hexes = {},
+  onHexChange,
+}) {
   const locale = useLocale();
   const [customName, setCustomName] = useState("");
+  /**
+   * The wheel's current colour, for the name being typed.
+   *
+   * A sensible mid-tone rather than black: black is already in the palette one
+   * click away, so starting there makes the wheel look like it did nothing.
+   */
+  const [customHex, setCustomHex] = useState("#c0392b");
+
+  /** Record (or clear) the swatch for one name without disturbing the others. */
+  const setHex = (name, hex) => {
+    if (!onHexChange) return;
+    onHexChange((prev) => {
+      const next = { ...(prev ?? {}) };
+      if (hex) next[name] = hex;
+      else delete next[name];
+      return next;
+    });
+  };
 
   // Memoised: a fresh `[]` on every render would change the identity that the
   // useMemo below depends on, so it recomputed each time.
@@ -58,7 +82,13 @@ export default function ColorMultiSelect({ value = [], onChange }) {
     const already = selected.some(
       (n) => resolveColor(n).key === resolveColor(name).key
     );
-    if (!already) onChange([...selected, name]);
+    if (!already) {
+      onChange([...selected, name]);
+      // The wheel's colour belongs to THIS name. Recorded on add rather than
+      // derived later, because the name is all that gets stored and the palette
+      // cannot guess "قرمزي".
+      setHex(name, customHex);
+    }
     setCustomName("");
   };
 
@@ -94,20 +124,37 @@ export default function ColorMultiSelect({ value = [], onChange }) {
       {customSelected.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {customSelected.map((name) => {
-            const swatch = resolveColor(name);
+            const swatch = resolveColor(name, hexes);
             return (
               <span
                 key={name}
                 className="flex items-center gap-2 rounded-full border border-dashed border-border bg-muted/30 px-3 py-1.5 text-xs"
               >
-                <span
-                  className="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15"
+                {/* The swatch IS the control — click it to re-pick. A separate
+                    edit button would be a second thing to find for something
+                    the colour itself already represents. */}
+                <label
+                  className="relative h-4 w-4 shrink-0 cursor-pointer rounded-full ring-1 ring-black/15"
                   style={{ backgroundColor: swatch.hex }}
-                />
+                  title={locale === "en" ? "Pick this colour" : "اختر هذا اللون"}
+                >
+                  <input
+                    type="color"
+                    value={swatch.hex}
+                    onChange={(e) => setHex(name, e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    aria-label={
+                      locale === "en" ? `Colour for ${name}` : `لون ${name}`
+                    }
+                  />
+                </label>
                 {name}
                 <button
                   type="button"
-                  onClick={() => onChange(selected.filter((n) => n !== name))}
+                  onClick={() => {
+                    onChange(selected.filter((n) => n !== name));
+                    setHex(name, null);
+                  }}
                   aria-label={`remove ${name}`}
                   className="text-muted-foreground hover:text-destructive"
                 >
@@ -120,6 +167,23 @@ export default function ColorMultiSelect({ value = [], onChange }) {
       )}
 
       <div className="flex gap-2">
+        {/* The wheel sits with the name field, so a colour is named and shown
+            in one action. Typing alone was the whole problem: "قرمزي" is not in
+            the palette, so the chip rendered a neutral grey dot and the shop
+            had no way to say what the colour actually looks like. */}
+        <label
+          className="relative h-10 w-12 shrink-0 cursor-pointer rounded-xl border border-border ring-1 ring-inset ring-black/5"
+          style={{ backgroundColor: customHex }}
+          title={locale === "en" ? "Pick a colour" : "اختر لونًا"}
+        >
+          <input
+            type="color"
+            value={customHex}
+            onChange={(e) => setCustomHex(e.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            aria-label={locale === "en" ? "Pick a colour" : "اختر لونًا"}
+          />
+        </label>
         <input
           value={customName}
           onChange={(e) => setCustomName(e.target.value)}
@@ -130,7 +194,9 @@ export default function ColorMultiSelect({ value = [], onChange }) {
               addCustom();
             }
           }}
-          placeholder={locale === "en" ? "Other colour…" : "لون آخر…"}
+          placeholder={
+            locale === "en" ? "Other colour…" : "لون آخر… مثل قرمزي"
+          }
           className="h-10 flex-1 rounded-xl border border-border bg-muted/30 px-3 text-sm"
         />
         <button

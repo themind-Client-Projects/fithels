@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
             // Only so the stock tables sort sizes in their own run's order.
             sizeSystem: true,
             colors: true,
+            colorHex: true,
             variants: { select: { size: true, color: true, stock: true } },
           },
         }),

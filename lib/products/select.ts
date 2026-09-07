@@ -30,6 +30,9 @@ export const PRODUCT_CARD_SELECT = {
   // Which run the sizes belong to, so a card's size row sorts correctly.
   sizeSystem: true,
   colors: true,
+  // The shop's chosen swatch per colour NAME. Without it a colour outside the
+  // built-in palette renders as a neutral grey dot.
+  colorHex: true,
   // Inventory is per (size, colour) now, so a card cannot read one number off
   // the product. These three columns are narrow and there is at most one row
   // per pair, which is cheaper than it looks — and the card needs them anyway

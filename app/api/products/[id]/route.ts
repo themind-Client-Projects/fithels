@@ -5,6 +5,7 @@ import {
   withStockTotal,
 } from '@/lib/products/variants'
 import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
+import { normaliseColorHex } from '@/lib/products/colors'
 import { prisma } from '@/lib/prisma'
 import { parseSizeSystem } from '@/lib/products/sizes'
 import { getAuthUser } from '@/lib/auth-utils'
@@ -94,6 +95,7 @@ export async function PUT(
       sizes,
       sizeSystem,
       colors,
+      colorHex,
       variants,
       colorImages,
       variantsBaseline,
@@ -212,6 +214,16 @@ export async function PUT(
      * photos `keep` was written to protect, and lets a colour photo actually be
      * removed.
      */
+    // Cleaned against the colours the product will have AFTER this save, like
+    // the stock rows and the photos above it.
+    const swatches =
+      colorHex !== undefined || colors !== undefined
+        ? normaliseColorHex(
+            colorHex ?? existing.colorHex,
+            nextColors
+          )
+        : undefined
+
     const previouslyClaimed = new Set(
       existing.colorImages.flatMap((row) => row.images ?? [])
     )
@@ -241,6 +253,7 @@ export async function PUT(
         ...(deliveryAr !== undefined && { deliveryAr: deliveryAr || null }),
         ...(parsedPrice !== undefined && { price: parsedPrice }),
         ...(parsedPriceIqd !== undefined && { priceIqd: parsedPriceIqd }),
+        ...(swatches !== undefined && { colorHex: swatches }),
         ...(parsedSalePriceIqd !== undefined && { salePriceIqd: parsedSalePriceIqd }),
         ...(parsedSalePrice !== undefined && { salePrice: parsedSalePrice }),
         ...(categoryId !== undefined && { categoryId }),

@@ -481,7 +481,7 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                     {product.colors.map((color) => {
                       // The name alone left the shopper guessing what "بيج" or
                       // "وردي داكن" actually looks like; the dot answers that.
-                      const swatch = resolveColor(color);
+                      const swatch = resolveColor(color, product.colorHex);
                       const isActive = activeColor === color;
                       // How many units of this colour are already chosen, so the
                       // shopper can see their basket while switching colours.

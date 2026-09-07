@@ -106,6 +106,8 @@ export interface AnalyticsProduct {
    */
   sizeSystem?: SizeSystem
   colors: string[]
+  /** The shop's chosen swatch per colour name, for the stock tables. */
+  colorHex?: unknown
   variants: AnalyticsVariant[]
 }
 
@@ -515,6 +517,8 @@ export interface InventoryRow {
   byPair: Array<{ size: string; color: string; stock: number }>
   /** Passed through so the table can sort sizes in their own run's order. */
   sizeSystem: SizeSystem
+  /** Passed through so a custom colour renders as itself, not a grey dot. */
+  colorHex?: unknown
   outOfStock: boolean
   lowStock: boolean
 }
@@ -568,6 +572,7 @@ export function summariseInventory(
 
     return {
       sizeSystem: system,
+      colorHex: p.colorHex ?? null,
       id: p.id,
       titleAr: p.titleAr,
       titleEn: p.titleEn,

@@ -148,6 +148,17 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   // now, so there is nothing to parse back out of a text field.
   const [colors, setColors] = useState(product?.colors ?? []);
   /**
+   * The swatch chosen for each colour NAME, as { "قرمزي": "#dc143c" }.
+   *
+   * Only the swatch lives here. The NAME stays the stored value everywhere it
+   * matters — stock rows, order lines and per-colour photos are all keyed by
+   * it — so picking a colour from the wheel changes how a chip looks and
+   * nothing else.
+   */
+  const [colorHex, setColorHex] = useState(
+    () => product?.colorHex ?? {}
+  );
+  /**
    * Stock, one entry per (size, colour) pair.
    *
    * Held as a flat list rather than a nested map so it is exactly what the api
@@ -398,6 +409,12 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       sizeSystem,
       sizes: sizeRows.filter((size) => sizes.includes(size)),
       colors: Array.isArray(colors) ? colors : [],
+      // Only the swatches for colours still ticked. Leaving an entry for an
+      // unticked colour would resurrect its swatch the moment it is re-added,
+      // which is the same trap the per-colour photos had.
+      colorHex: Object.fromEntries(
+        Object.entries(colorHex).filter(([name]) => colors.includes(name))
+      ),
       // Cleaned against what is actually ticked, so a quantity typed for a
       // colour that was later unticked is not sent at all.
       variants: normaliseVariants(
@@ -767,7 +784,12 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </div>
         <div className="flex flex-col gap-2.5">
           <Label htmlFor="colors" className="text-start text-sm font-bold text-foreground">{t("colors")}</Label>
-          <ColorMultiSelect value={colors} onChange={setColors} />
+          <ColorMultiSelect
+            value={colors}
+            onChange={setColors}
+            hexes={colorHex}
+            onHexChange={setColorHex}
+          />
         </div>
       </div>
 
@@ -787,7 +809,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
 
           <div className="flex flex-col gap-3">
             {colors.map((color) => {
-              const swatch = resolveColor(color);
+              const swatch = resolveColor(color, colorHex);
               const shots = imagesForColor(color);
 
               return (
@@ -875,6 +897,7 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
           {t("stockPerVariantHint")}
         </p>
         <VariantStockGrid
+          colorHex={colorHex}
           sizes={sizeRows.filter((size) => sizes.includes(size))}
           colors={Array.isArray(colors) ? colors : []}
           variants={variants}

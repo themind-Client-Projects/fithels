@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
 import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
+import { normaliseColorHex } from '@/lib/products/colors'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
       sizes,
       sizeSystem,
       colors,
+      colorHex,
       variants,
       colorImages,
       isActive,
@@ -167,6 +169,9 @@ export async function POST(request: NextRequest) {
     const offeredColors: string[] = Array.isArray(colors) ? colors : []
     const variantRows = normaliseVariants(variants, offeredSizes, offeredColors)
     const colorImageRows = normaliseColorImages(colorImages, offeredColors)
+    // Sanitised server-side: this value is written straight into a CSS
+    // background-color, so it can never be taken from the request as-is.
+    const swatches = normaliseColorHex(colorHex, offeredColors)
     // Derived, never taken from the client: the dashboard has one uploader now,
     // per colour, so the product gallery is whatever those add up to. A second
     // stored copy is a second thing to keep in step.
@@ -227,6 +232,7 @@ export async function POST(request: NextRequest) {
         deliveryAr: deliveryAr || null,
         price: parsedPrice,
         priceIqd: parsedPriceIqd,
+        colorHex: swatches,
         salePriceIqd: parsedSalePriceIqd,
         salePrice: parsedSalePrice,
         categoryId,

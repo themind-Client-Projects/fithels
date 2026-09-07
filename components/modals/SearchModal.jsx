@@ -38,7 +38,7 @@ export default function SearchModal() {
               ...cardPricing(p),
               imgSrc: cardImages(p.images, p.colorImages, p.colors).cover,
               imgHover: cardImages(p.images, p.colorImages, p.colors).hover,
-              colors: resolveProductColors(p.colors, p.images, p.colorImages),
+              colors: resolveProductColors(p.colors, p.images, p.colorImages, p.colorHex),
               sizes: p.sizes,
               inStock: p.stock > 0,
             };

@@ -124,6 +124,22 @@ model Product {
   /// ProductVariant — these two only decide which rows the grid offers.
   sizes      String[]
   colors     String[]
+  /// The swatch for each colour NAME, as { "قرمزي": "#dc143c" }.
+  ///
+  /// Colours are stored as names, and the name is the key everywhere it
+  /// matters — ProductVariant, OrderItem, ProductColorImage all reference it —
+  /// so the name has to stay the stored value. Only the SWATCH was ever
+  /// derived, from a fixed palette of 21 names, and anything outside it fell
+  /// back to a neutral grey dot: an admin typing "قرمزي" saw the word but no
+  /// colour.
+  ///
+  /// Keyed by name rather than aligned by index with `colors`, because pairing
+  /// two arrays by position is exactly how colours and photos were matched
+  /// before, and it was only ever a coincidence that survived until someone
+  /// reordered one of them.
+  ///
+  /// Optional: a colour the built-in palette knows needs no entry here.
+  colorHex   Json?
   /// Inventory, one row per (size, colour) pair actually held.
   ///
   /// This replaced a single `stock Int` on the product. That number covered
