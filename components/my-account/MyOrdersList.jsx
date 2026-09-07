@@ -200,7 +200,7 @@ export default function MyOrdersList() {
                       })}
                     </span>
                     <span style={{ fontWeight: 600, fontSize: "16px" }}>
-                      <CurrencyFormatter price={order.total} />
+                      <CurrencyFormatter price={order.total} priceIqd={order.totalIqd} />
                     </span>
                   </div>
 

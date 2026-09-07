@@ -5,6 +5,7 @@ import RangeSlider from "react-range-slider-input";
 import { useTranslations } from "next-intl";
 import { resolveColor } from "@/lib/products/colors";
 import { compareSizes } from "@/lib/products/sizes";
+import { useCurrencyStore } from "@/stores/useCurrencyStore";
 import { AVAILABILITY_OPTIONS, NO_FILTER } from "@/lib/products/filters";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import {
@@ -78,6 +79,9 @@ function Row({ active, onClick, swatch, label, count }) {
 export default function FilterModal({ allProps, products = [] }) {
   const t = useTranslations("shop");
 
+  const { currency } = useCurrencyStore();
+  const showingUsd = currency !== "IQD";
+
   const { sizes, colors, maxPrice, availabilityCounts } = useMemo(() => {
     const sizeCounts = new Map();
     const colorCounts = new Map();
@@ -94,7 +98,11 @@ export default function FilterModal({ allProps, products = [] }) {
       // A product listing the same size twice must not count twice.
       new Set(p.filterSizes ?? []).forEach((s) => bump(sizeCounts, s));
       new Set(p.filterColor ?? []).forEach((c) => bump(colorCounts, c));
-      if (p.price > maxP) maxP = p.price;
+      // The ceiling in the currency on screen. Taking it from the dollar
+      // column while the cards show dinars gave a slider whose top end did not
+      // correspond to any price in the list.
+      const shown = showingUsd ? Number(p.price) || 0 : Number(p.priceIqd) || 0;
+      if (shown > maxP) maxP = shown;
       if (p.inStock) inStockCount += 1;
       else outOfStockCount += 1;
     });
@@ -130,7 +138,7 @@ export default function FilterModal({ allProps, products = [] }) {
       maxPrice: maxP,
       availabilityCounts: { true: inStockCount, false: outOfStockCount },
     };
-  }, [products]);
+  }, [products, showingUsd]);
 
   /**
    * The price range, clamped to what the catalogue actually holds.
@@ -195,7 +203,10 @@ export default function FilterModal({ allProps, products = [] }) {
                     {t("minPrice")}
                   </span>
                   <span className="filter-panel__priceval">
-                    <CurrencyFormatter price={price[0]} />
+                    <CurrencyFormatter
+                      price={showingUsd ? price[0] : null}
+                      priceIqd={showingUsd ? null : price[0]}
+                    />
                   </span>
                 </div>
                 <div className="filter-panel__price">
@@ -203,7 +214,10 @@ export default function FilterModal({ allProps, products = [] }) {
                     {t("maxPrice")}
                   </span>
                   <span className="filter-panel__priceval">
-                    <CurrencyFormatter price={price[1]} />
+                    <CurrencyFormatter
+                      price={showingUsd ? price[1] : null}
+                      priceIqd={showingUsd ? null : price[1]}
+                    />
                   </span>
                 </div>
               </div>

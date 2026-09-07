@@ -9,11 +9,42 @@ import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import FilterMeta from "./FilterMeta";
 import { useTranslations } from "next-intl";
+import { useCurrencyStore } from "@/stores/useCurrencyStore";
+
+/**
+ * The price to filter and sort on: the one the shopper is actually looking at.
+ *
+ * The dollar and dinar prices are set independently, so they need not even be
+ * in the same ORDER. A shoe at $10 / 50,000 IQD and one at $20 / 40,000 IQD
+ * sort one way in dollars and the other way in dinars — sorting an Arabic
+ * shopper's "cheapest first" by the dollar column put the more expensive shoe
+ * first. Filtering had the same problem: the range came from the dollar prices
+ * while the cards underneath showed dinars.
+ */
+const activePrice = (item, usd) =>
+  usd ? Number(item?.price) || 0 : Number(item?.priceIqd) || 0;
 
 export default function Products1({ parentClass = "flat-spacing", products = [] }) {
   const t = useTranslations("shop");
+  const { currency } = useCurrencyStore();
+  const showingUsd = currency !== "IQD";
   const [activeLayout, setActiveLayout] = useState(4);
+
   const [state, dispatch] = useReducer(reducer, initialState);
+  /**
+   * Switching currency invalidates the price range, so it is reset.
+   *
+   * The range is a pair of raw numbers in whatever currency was on screen when
+   * it was dragged. A shopper who narrows to 0-40 in dollars and then switches
+   * to dinars would otherwise be filtering to "at most 40 IQD" — which matches
+   * nothing, and reads as an empty shop rather than as a stale filter.
+   *
+   * [0, 1000] is the reducer's own "matches everything" sentinel; FilterModal
+   * clamps what it DISPLAYS to the real catalogue ceiling.
+   */
+  useEffect(() => {
+    dispatch({ type: "SET_PRICE", payload: [0, 1000] });
+  }, [showingUsd]);
   const {
     price,
     availability,
@@ -107,27 +138,32 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
       filteredArrays = [...filteredArrays, filteredByonSale];
     }
 
-    const filteredByPrice = [...products].filter(
-      (elm) => elm.price >= price[0] && elm.price <= price[1]
-    );
+    const filteredByPrice = [...products].filter((elm) => {
+      const value = activePrice(elm, showingUsd);
+      return value >= price[0] && value <= price[1];
+    });
     filteredArrays = [...filteredArrays, filteredByPrice];
 
     const commonItems = [...products].filter((item) =>
       filteredArrays.every((array) => array.includes(item))
     );
     dispatch({ type: "SET_FILTERED", payload: commonItems });
-  }, [price, availability, color, size, brands, activeFilterOnSale, products]);
+  }, [price, availability, color, size, brands, activeFilterOnSale, products, showingUsd]);
 
   useEffect(() => {
     if (sortingOption === "Price Ascending") {
       dispatch({
         type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => a.price - b.price),
+        payload: [...filtered].sort(
+          (a, b) => activePrice(a, showingUsd) - activePrice(b, showingUsd)
+        ),
       });
     } else if (sortingOption === "Price Descending") {
       dispatch({
         type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => b.price - a.price),
+        payload: [...filtered].sort(
+          (a, b) => activePrice(b, showingUsd) - activePrice(a, showingUsd)
+        ),
       });
     } else if (sortingOption === "Title Ascending") {
       dispatch({
@@ -143,7 +179,7 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
       dispatch({ type: "SET_SORTED", payload: filtered });
     }
     dispatch({ type: "SET_CURRENT_PAGE", payload: 1 });
-  }, [filtered, sortingOption]);
+  }, [filtered, sortingOption, showingUsd]);
   return (
     <>
       <section className={parentClass}>

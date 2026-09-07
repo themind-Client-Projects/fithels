@@ -6,6 +6,10 @@ import { prisma } from '@/lib/prisma'
  * every historic order would render a 0.00 subtotal next to a correct total.
  *
  * Safe to re-run: it only touches rows that still carry the default.
+ *
+ * Kept in step with the dinar columns. Writing `subtotal` alone would leave
+ * `subtotalIqd` at 0, and the dashboard reads the dinar figure — so a re-run
+ * would have replaced a correct subtotal with a blank one on every screen.
  */
 async function main() {
   // Any row whose subtotal never got written, regardless of discount. The
@@ -13,7 +17,10 @@ async function main() {
   // written by a build that knew about `discount` but not `subtotal`.
   const stale = await prisma.order.findMany({
     where: { subtotal: 0, total: { gt: 0 } },
-    select: { id: true, total: true, discount: true },
+    select: {
+      id: true, total: true, discount: true,
+      totalIqd: true, discountIqd: true,
+    },
   })
 
   for (const order of stale) {
@@ -21,7 +28,10 @@ async function main() {
       where: { id: order.id },
       // total is the payable amount, so the subtotal it came from is
       // total + whatever discount was recorded against it.
-      data: { subtotal: order.total + (order.discount ?? 0) },
+      data: {
+        subtotal: order.total + (order.discount ?? 0),
+        subtotalIqd: order.totalIqd + (order.discountIqd ?? 0),
+      },
     })
   }
 

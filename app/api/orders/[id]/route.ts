@@ -50,8 +50,14 @@ export async function GET(
                 slug: true,
                 titleEn: true,
                 titleAr: true,
+                // BOTH currencies. ReorderButton rebuilds a cart line from
+                // these, and a line with no dinar price is dropped by the cart's
+                // hydration guard on the next page load — so omitting them here
+                // makes "order again" from the order page silently do nothing.
                 price: true,
+                priceIqd: true,
                 salePrice: true,
+                salePriceIqd: true,
                 images: true,
                 // So a receipt shows the colour that was actually bought.
                 colorImages: { select: { color: true, images: true } },

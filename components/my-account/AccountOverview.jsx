@@ -151,11 +151,17 @@ export default function AccountOverview() {
   const spent = orders
     .filter((o) => o.paymentStatus === "PAID")
     .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  // Summed in dinars from the stored dinar totals. Converting the dollar sum
+  // would show the customer a lifetime figure a few dinars off what they
+  // actually paid, because the two prices are set independently.
+  const spentIqd = orders
+    .filter((o) => o.paymentStatus === "PAID")
+    .reduce((sum, o) => sum + (Number(o.totalIqd) || 0), 0);
 
   const stats = [
     { label: t("totalOrders"), value: orders.length },
     { label: t("activeOrders"), value: active },
-    { label: t("totalSpent"), value: <CurrencyFormatter price={spent} /> },
+    { label: t("totalSpent"), value: <CurrencyFormatter price={spent} priceIqd={spentIqd} /> },
   ];
 
   return (
@@ -230,7 +236,7 @@ export default function AccountOverview() {
                           </div>
                           <div style={{ textAlign: "end" }}>
                             <div style={{ fontWeight: 700 }}>
-                              <CurrencyFormatter price={order.total} />
+                              <CurrencyFormatter price={order.total} priceIqd={order.totalIqd} />
                             </div>
                             <div style={{ fontSize: "12px", color: p.tone, fontWeight: 600 }}>
                               {p.method} · {p.label}

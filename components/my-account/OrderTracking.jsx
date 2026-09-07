@@ -314,13 +314,17 @@ export default function OrderTracking({ orderId }) {
                       {item.product?.titleAr || item.product?.titleEn || t("unknownProduct")}
                     </div>
                     <div className="text-secondary" style={{ fontSize: "13px" }}>
-                      {t("quantity")}: {item.quantity} × <CurrencyFormatter price={item.price} />
+                      {t("quantity")}: {item.quantity} ×{" "}
+                      <CurrencyFormatter price={item.price} priceIqd={item.priceIqd} />
                       {item.size && <span> · {t("size")}: {item.size}</span>}
                       {item.color && <span> · {t("color")}: {item.color}</span>}
                     </div>
                   </div>
                   <div style={{ fontWeight: 600 }}>
-                    <CurrencyFormatter price={item.price * item.quantity} />
+                    <CurrencyFormatter
+                      price={item.price * item.quantity}
+                      priceIqd={item.priceIqd * item.quantity}
+                    />
                   </div>
                 </div>
               ))}
@@ -373,21 +377,34 @@ export default function OrderTracking({ orderId }) {
                 <>
                   <div className="d-flex justify-content-between" style={{ marginBottom: "8px" }}>
                     <span className="text-secondary">{t("subtotal")}</span>
-                    <span><CurrencyFormatter price={order.subtotal} /></span>
+                    <span>
+                      <CurrencyFormatter
+                        price={order.subtotal}
+                        priceIqd={order.subtotalIqd}
+                      />
+                    </span>
                   </div>
                   <div className="d-flex justify-content-between" style={{ marginBottom: "8px", color: "#059669" }}>
                     <span>
                       {t("discount")}
                       {order.couponCode ? ` (${order.couponCode})` : ""}
                     </span>
-                    <span>− <CurrencyFormatter price={order.discount} /></span>
+                    <span>
+                      −{" "}
+                      <CurrencyFormatter
+                        price={order.discount}
+                        priceIqd={order.discountIqd}
+                      />
+                    </span>
                   </div>
                 </>
               )}
               <hr style={{ margin: "12px 0", borderColor: "#f1f5f9" }} />
               <div className="d-flex justify-content-between">
                 <h5>{t("total")}</h5>
-                <h5><CurrencyFormatter price={order.total} /></h5>
+                <h5>
+                  <CurrencyFormatter price={order.total} priceIqd={order.totalIqd} />
+                </h5>
               </div>
 
               <div style={{ marginTop: "20px" }}>

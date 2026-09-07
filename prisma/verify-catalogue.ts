@@ -265,6 +265,21 @@ async function main() {
     )
   }
 
+  // 9. minSubtotal and maxDiscount are DOLLAR gates. The dinar basket is summed
+  //    from independent dinar prices, so a gate of $50 does not correspond to
+  //    any particular dinar basket — the shopper is shown one threshold in
+  //    dinars and judged against another in dollars. None are set today.
+  const gatedCoupons = await prisma.coupon.findMany({
+    where: { OR: [{ minSubtotal: { not: null } }, { maxDiscount: { not: null } }] },
+    select: { code: true, minSubtotal: true, maxDiscount: true },
+  })
+  for (const c of gatedCoupons) {
+    note(
+      `coupon ${c.code}`,
+      `has a dollar threshold (minSubtotal=${c.minSubtotal}, maxDiscount=${c.maxDiscount}) judged against a basket whose dinar total is set independently — the shopper is shown one figure and gated on another.`
+    )
+  }
+
   const bySystem = products.reduce<Record<string, number>>((acc, p) => {
     acc[p.sizeSystem] = (acc[p.sizeSystem] ?? 0) + 1
     return acc

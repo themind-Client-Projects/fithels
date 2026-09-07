@@ -233,9 +233,11 @@ async function main() {
 
   const all = await prisma.product.findMany({
     where: { isActive: true },
-    select: { price: true, salePrice: true },
+    // The STORED dinar prices. Converting the dollar ones would report a range
+    // the shop never set — the two are independent now.
+    select: { priceIqd: true, salePriceIqd: true },
   })
-  const dinars = all.map((p) => Math.round((p.salePrice ?? p.price) * RATE))
+  const dinars = all.map((p) => p.salePriceIqd ?? p.priceIqd)
   console.log(
     `catalogue now ${Math.min(...dinars)}–${Math.max(...dinars)} IQD across ${all.length} products`
   )
