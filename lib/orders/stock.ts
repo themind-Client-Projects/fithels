@@ -80,7 +80,7 @@ export async function releaseOrderStock(
       continue
     }
 
-    await tx.productVariant.updateMany({
+    const credited = await tx.productVariant.updateMany({
       where: {
         productId: item.productId,
         size: item.size,
@@ -88,5 +88,19 @@ export async function releaseOrderStock(
       },
       data: { stock: { increment: item.quantity } },
     })
+
+    // Matching no row means the pair is gone: a colour retired, a size dropped,
+    // or the product moved from numeric sizing to letters, which clears every
+    // size it had. The cancellation is still correct — there is genuinely
+    // nowhere to put those units back — but the shop ends up short by exactly
+    // this many with nothing to explain it, so it says so rather than
+    // succeeding quietly. This was the last silent branch left in this file.
+    if (credited.count === 0) {
+      console.warn(
+        `[stock] order ${orderId}: ${item.quantity} unit(s) of product ` +
+          `${item.productId} (${item.size} / ${item.color}) could not be ` +
+          `returned — that pair no longer exists on the product. Adjust by hand.`
+      )
+    }
   }
 }

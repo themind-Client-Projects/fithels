@@ -8,6 +8,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Plus, Trash2, Package, User, MapPin, Phone } from "lucide-react";
+import { stockFor } from "@/lib/products/variants";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function CreateOrderPage() {
@@ -73,6 +74,21 @@ export default function CreateOrderPage() {
     if (errors.customer) setErrors((prev) => ({ ...prev, customer: false }));
   };
 
+  /**
+   * The first (size, colour) with anything left, falling back to the first of
+   * each so a product with nothing in stock still adds and reports honestly.
+   */
+  const firstAvailablePair = (product) => {
+    const sizes = product.sizes ?? [];
+    const colors = product.colors ?? [];
+    for (const size of sizes) {
+      for (const color of colors) {
+        if (stockFor(product.variants, size, color) > 0) return { size, color };
+      }
+    }
+    return { size: sizes[0] || "", color: colors[0] || "" };
+  };
+
   const handleAddProduct = (product) => {
     const existing = orderItems.find((item) => item.productId === product.id);
     if (existing) return; // already added
@@ -84,10 +100,15 @@ export default function CreateOrderPage() {
         titleEn: product.titleEn,
         price: product.salePrice || product.price,
         quantity: 1,
-        size: product.sizes?.[0] || "",
-        color: product.colors?.[0] || "",
+        // Opened on a pair that actually HAS stock rather than simply the first
+        // one listed. Stock is per (size, colour) now, so a product with
+        // twenty-six in total can easily have none in its first size — and the
+        // admin would only find out when the whole order was rejected at
+        // submit, with nothing on screen having said so.
+        ...firstAvailablePair(product),
         sizes: product.sizes || [],
         colors: product.colors || [],
+        variants: product.variants || [],
         image: product.images?.[0] || "",
       },
     ]);
@@ -307,15 +328,48 @@ export default function CreateOrderPage() {
                           <div style={{ flex: "1", minWidth: "80px" }}>
                             <label style={{ fontSize: "0.7rem", color: "#6c757d", fontWeight: 600, display: "block", marginBottom: "4px" }}>{t("size")}</label>
                             <select value={item.size} onChange={(e) => updateItem(index, "size", e.target.value)} style={inputStyle(false)}>
-                              {item.sizes.map((s) => <option key={s} value={s}>{s}</option>)}
+                              {/* Each option carries what is left of it in the
+                                  colour currently chosen, so a pair with none
+                                  is visible before the order is submitted
+                                  rather than after the api rejects it. */}
+                              {item.sizes.map((s) => {
+                                const left = stockFor(item.variants, s, item.color);
+                                return (
+                                  <option key={s} value={s}>
+                                    {s} {left > 0 ? `(${left})` : `— ${t("outOfStockLabel")}`}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                         )}
+                        {/* What this exact pair has left, beside the quantity
+                            that will be ordered against it. */}
+                        {(() => {
+                          const left = stockFor(item.variants, item.size, item.color);
+                          const over = item.quantity > left;
+                          return (
+                            <div style={{ flex: "1", minWidth: "90px" }}>
+                              <label style={{ fontSize: "0.7rem", color: "#6c757d", fontWeight: 600, display: "block", marginBottom: "4px" }}>{t("sellableLabel")}</label>
+                              <div style={{ fontSize: "0.875rem", fontWeight: 700, padding: "0.5rem 0", color: over ? "#dc2626" : left <= 2 ? "#d97706" : "#1a1a2e" }}>
+                                {left}
+                                {over && <span style={{ fontSize: "0.7rem", fontWeight: 600, marginInlineStart: "6px" }}>{t("outOfStockLabel")}</span>}
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {item.colors.length > 0 && (
                           <div style={{ flex: "1", minWidth: "80px" }}>
                             <label style={{ fontSize: "0.7rem", color: "#6c757d", fontWeight: 600, display: "block", marginBottom: "4px" }}>{t("color")}</label>
                             <select value={item.color} onChange={(e) => updateItem(index, "color", e.target.value)} style={inputStyle(false)}>
-                              {item.colors.map((c) => <option key={c} value={c}>{c}</option>)}
+                              {item.colors.map((c) => {
+                                const left = stockFor(item.variants, item.size, c);
+                                return (
+                                  <option key={c} value={c}>
+                                    {c} {left > 0 ? `(${left})` : `— ${t("outOfStockLabel")}`}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                         )}
