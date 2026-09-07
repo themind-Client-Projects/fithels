@@ -82,8 +82,12 @@ export default function DashboardOverviewPage() {
     },
     {
       header: t("total"),
-      accessorKey: "total",
-      cell: ({ row }) => <span className="font-bold text-sm text-foreground">{formatCurrency(row.total)}</span>,
+      // totalIqd, not total. formatCurrency stopped converting when the stats
+      // endpoint began reporting dinars, so feeding it the USD column printed
+      // the dollar number with an "IQD" suffix — a 58,500 IQD order read
+      // "39 IQD", directly under a revenue card showing the correct figure.
+      accessorKey: "totalIqd",
+      cell: ({ row }) => <span className="font-bold text-sm text-foreground">{formatCurrency(row.totalIqd)}</span>,
     },
     {
       header: t("status"),

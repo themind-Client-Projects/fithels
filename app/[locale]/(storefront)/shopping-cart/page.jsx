@@ -1,7 +1,6 @@
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar from "@/components/headers/Topbar";
-import RecentProducts from "@/components/otherPages/RecentProducts";
 import ShopCart from "@/components/otherPages/ShopCart";
 import Link from "next/link";
 import React from "react";
@@ -53,7 +52,12 @@ export default async function ShopingCartPage() {
       </div>
 
       <ShopCart />
-      <RecentProducts />
+      {/* The template's "You may also like" rail is gone. It rendered products
+          from the static fixture — items the shop does not sell, linked by
+          numeric id so every click 404s, add-to-cart already refused by the
+          catalogue guard, and priced by multiplying a dollar figure at the rate
+          this app no longer prices anything with. A real rail wants a query for
+          real products; a fake one on the cart page is worse than none. */}
       <Footer1 />
     </>
   );

@@ -155,10 +155,21 @@ function CheckoutContent() {
         }
         // Functional update: comparing against a captured `applied` would read a
         // stale value, and re-setting an unchanged object would re-run this.
+        // discountIqd travels with discount. Keeping only the dollar half left
+        // the dinar total on screen UNDISCOUNTED — the summary subtracted a
+        // discount it then did not apply, and the figure disagreed with what
+        // the order was created for and what Wayle charged.
         setApplied((prev) =>
-          prev && prev.code === data.code && prev.discount === data.discount
+          prev &&
+          prev.code === data.code &&
+          prev.discount === data.discount &&
+          prev.discountIqd === data.discountIqd
             ? prev
-            : { code: data.code, discount: data.discount }
+            : {
+                code: data.code,
+                discount: data.discount,
+                discountIqd: data.discountIqd,
+              }
         );
       } catch (error) {
         if (error?.name !== "AbortError") {
@@ -441,7 +452,11 @@ function CheckoutContent() {
         return;
       }
 
-      setApplied({ code: data.code, discount: data.discount });
+      setApplied({
+        code: data.code,
+        discount: data.discount,
+        discountIqd: data.discountIqd,
+      });
       setCouponInput(data.code);
     } catch {
       setApplied(null);

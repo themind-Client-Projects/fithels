@@ -310,7 +310,10 @@ async function main() {
     prisma.order.create({
       data: {
         userId: adminUser.id,
+        subtotal: products[0].price + products[1].price,
+        subtotalIqd: products[0].priceIqd + products[1].priceIqd,
         total: products[0].price + products[1].price,
+        totalIqd: products[0].priceIqd + products[1].priceIqd,
         status: 'DELIVERED',
         // A delivered cash order has been paid — money changes hands at the
         // door. Leaving it UNPAID produced a fixture state the payment logic
@@ -329,6 +332,7 @@ async function main() {
               productId: products[0].id,
               quantity: 1,
               price: products[0].price,
+              priceIqd: products[0].priceIqd,
               size: '38',
               color: 'أسود',
             },
@@ -336,6 +340,7 @@ async function main() {
               productId: products[1].id,
               quantity: 1,
               price: products[1].price,
+              priceIqd: products[1].priceIqd,
               size: '39',
               color: 'أسود',
             }
@@ -346,7 +351,10 @@ async function main() {
     prisma.order.create({
       data: {
         userId: adminUser.id,
+        subtotal: products[2].price * 2,
+        subtotalIqd: products[2].priceIqd,
         total: products[2].price * 2,
+        totalIqd: products[2].priceIqd,
         status: 'PROCESSING',
         phone: '+966507654321',
         location: 'جدة، حي الروضة، شارع التحلية، فيلا رقم 5',
@@ -356,6 +364,7 @@ async function main() {
               productId: products[2].id,
               quantity: 2,
               price: products[2].price,
+              priceIqd: products[2].priceIqd,
               size: '37',
               color: 'بيج',
             }
@@ -366,7 +375,10 @@ async function main() {
     prisma.order.create({
       data: {
         userId: adminUser.id,
+        subtotal: products[3].price,
+        subtotalIqd: products[3].priceIqd,
         total: products[3].price,
+        totalIqd: products[3].priceIqd,
         status: 'PENDING',
         notes: 'Urgent delivery if possible',
         phone: '+966509876543',
@@ -377,6 +389,7 @@ async function main() {
               productId: products[3].id,
               quantity: 1,
               price: products[3].price,
+              priceIqd: products[3].priceIqd,
               size: '40',
               color: 'أحمر',
             }

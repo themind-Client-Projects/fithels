@@ -76,7 +76,7 @@ export default function CouponsPage() {
     {
       header: "الرمز",
       accessorKey: "code",
-      cell: (row) => (
+      cell: ({ row }) => (
         <span className="font-mono text-base font-bold text-foreground" dir="ltr">
           {row.code}
         </span>
@@ -85,7 +85,7 @@ export default function CouponsPage() {
     {
       header: "الخصم",
       accessorKey: "value",
-      cell: (row) => (
+      cell: ({ row }) => (
         <span className="font-semibold">
           {row.type === "PERCENT" ? `${row.value}%` : formatMoney(row.value, "IQD")}
           {row.type === "PERCENT" && row.maxDiscount
@@ -97,12 +97,12 @@ export default function CouponsPage() {
     {
       header: "الحد الأدنى للسلة",
       accessorKey: "minSubtotal",
-      cell: (row) => (row.minSubtotal ? formatMoney(row.minSubtotal, "IQD") : "—"),
+      cell: ({ row }) => (row.minSubtotal ? formatMoney(row.minSubtotal, "IQD") : "—"),
     },
     {
       header: "الاستخدام",
       accessorKey: "redeemedCount",
-      cell: (row) => (
+      cell: ({ row }) => (
         <Badge
           variant="outline"
           className="!h-auto rounded-full border-muted-foreground/30 !px-4 !py-1.5 text-sm font-bold shadow-sm"
@@ -115,7 +115,7 @@ export default function CouponsPage() {
     {
       header: "الصلاحية",
       accessorKey: "expiresAt",
-      cell: (row) => (
+      cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
           {fmtDate(row.startsAt)} → {fmtDate(row.expiresAt)}
         </span>
@@ -124,7 +124,7 @@ export default function CouponsPage() {
     {
       header: "الحالة",
       accessorKey: "isActive",
-      cell: (row) => {
+      cell: ({ row }) => {
         // "Active" on its own would be misleading for a coupon that has expired
         // or been fully redeemed — the shop rejects those regardless.
         const expired = row.expiresAt && new Date(row.expiresAt) < new Date();
@@ -155,7 +155,7 @@ export default function CouponsPage() {
     {
       header: "إجراءات",
       accessorKey: "actions",
-      cell: (row) => (
+      cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
             variant="outline"

@@ -4,7 +4,7 @@ import LayoutHandler from "./LayoutHandler";
 import Sorting from "./Sorting";
 import Listview from "./Listview";
 import GridView from "./GridView";
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import FilterMeta from "./FilterMeta";
@@ -32,19 +32,36 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
 
   const [state, dispatch] = useReducer(reducer, initialState);
   /**
-   * Switching currency invalidates the price range, so it is reset.
+   * The top of the price range, in the currency on screen.
    *
-   * The range is a pair of raw numbers in whatever currency was on screen when
-   * it was dragged. A shopper who narrows to 0-40 in dollars and then switches
-   * to dinars would otherwise be filtering to "at most 40 IQD" — which matches
-   * nothing, and reads as an empty shop rather than as a stale filter.
+   * Memoised on the VALUE, not on the products array, so the reset effect below
+   * fires when the ceiling actually changes rather than on every render.
+   */
+  const priceCeiling = useMemo(
+    () =>
+      Math.max(
+        1,
+        Math.ceil(
+          products.reduce((max, p) => Math.max(max, activePrice(p, showingUsd)), 0)
+        )
+      ),
+    [products, showingUsd]
+  );
+
+  /**
+   * The price range is reset to the FULL catalogue range whenever the currency
+   * changes — and on first mount, which is what makes the shop render at all.
    *
-   * [0, 1000] is the reducer's own "matches everything" sentinel; FilterModal
-   * clamps what it DISPLAYS to the real catalogue ceiling.
+   * The reducer's initial range is [0, 1000], a "matches everything" sentinel
+   * from when every price was in dollars. It is not one in dinars: the shop's
+   * cheapest shoe is 1,200 IQD, so filtering [0, 1000] against dinar prices
+   * matched NOTHING and the default-currency shop page rendered zero products.
+   * Anchoring the reset to the real ceiling makes "untouched" mean "everything"
+   * in whichever currency is being shown.
    */
   useEffect(() => {
-    dispatch({ type: "SET_PRICE", payload: [0, 1000] });
-  }, [showingUsd]);
+    dispatch({ type: "SET_PRICE", payload: [0, priceCeiling] });
+  }, [priceCeiling]);
   const {
     price,
     availability,
@@ -134,7 +151,13 @@ export default function Products1({ parentClass = "flat-spacing", products = [] 
       filteredArrays = [...filteredArrays, filteredBysize];
     }
     if (activeFilterOnSale) {
-      const filteredByonSale = [...products].filter((elm) => elm.oldPrice);
+      // "On sale" in the currency being shown. `oldPrice` is the DOLLAR
+      // original, so filtering on it hid a dinar-only discount whose own card
+      // was displaying a SALE badge and a struck-through dinar price — the
+      // facet and the badge disagreeing about the same product.
+      const filteredByonSale = [...products].filter((elm) =>
+        showingUsd ? elm.isOnSaleUsd : elm.isOnSale
+      );
       filteredArrays = [...filteredArrays, filteredByonSale];
     }
 

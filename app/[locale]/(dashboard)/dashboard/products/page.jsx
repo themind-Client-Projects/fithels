@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/currency";
+import { resolvePrice } from "@/lib/products/price";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
 import ProductForm from "@/components/dashboard/ProductForm";
@@ -129,18 +130,26 @@ export default function ProductsPage() {
     {
       header: t("price"),
       accessorKey: "price",
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-0.5">
-          <span className={`font-bold text-base ${row.salePrice ? "line-through text-muted-foreground/60 text-sm" : "text-foreground"}`}>
-            {money(row.price, row.priceIqd)}
-          </span>
-          {row.salePrice && (
-            <span className="font-bold text-emerald-600 text-base">
-              {money(row.salePrice, row.salePriceIqd)}
+      // The column reads in DINARS, so whether it is on sale is a question about
+      // the dinar prices. Gating on the dollar salePrice meant a sale set only
+      // in dinars was hidden entirely, and one set only in dollars produced a
+      // rate-converted "sale price" nobody is ever charged — the exact class of
+      // number this whole change removes. resolvePrice answers per currency.
+      cell: ({ row }) => {
+        const iqd = resolvePrice(row).iqd;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className={`font-bold text-base ${iqd.onSale ? "line-through text-muted-foreground/60 text-sm" : "text-foreground"}`}>
+              {money(row.price, row.priceIqd)}
             </span>
-          )}
-        </div>
-      ),
+            {iqd.onSale && (
+              <span className="font-bold text-emerald-600 text-base">
+                {money(row.salePrice, row.salePriceIqd)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: t("stock"),
