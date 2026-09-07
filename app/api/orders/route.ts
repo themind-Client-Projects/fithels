@@ -10,7 +10,6 @@ import {
   WAYLE_MIN_AMOUNT_IQD,
 } from '@/lib/wayle/config'
 import {
-  usdToIqd,
   assertAboveWayleMinimum,
   WayleMinimumAmountError,
 } from '@/lib/wayle/amounts'
@@ -19,6 +18,7 @@ import { releaseExpiredIntents } from '@/lib/wayle/expire'
 import { cancelOrderAndReleaseStock } from '@/lib/orders/stock'
 import {
   assertCouponUsable,
+  computeDiscountIqd,
   CouponError,
   normaliseCode,
   roundMoney,
@@ -112,7 +112,9 @@ export async function GET(request: NextRequest) {
                 titleEn: true,
                 titleAr: true,
                 price: true,
+                priceIqd: true,
                 salePrice: true,
+                salePriceIqd: true,
                 images: true,
                 // So a receipt shows the colour that was actually bought.
                 colorImages: { select: { color: true, images: true } },
@@ -192,8 +194,13 @@ export async function POST(request: NextRequest) {
 
     // Validate items and calculate the basket subtotal (before any discount).
     let subtotal = 0
-    const orderItemsData: { productId: string; quantity: number; price: number; size: string | null; color: string | null }[] = []
-    const lineItemSources: { label: string; amountUsd: number; image: string | null }[] = []
+    // The dinar basket, summed from the dinar prices. NOT the dollar subtotal
+    // converted: the two prices are set independently by the shop, so there is
+    // no rate that turns one into the other, and this is the figure the
+    // customer is actually charged.
+    let subtotalIqd = 0
+    const orderItemsData: { productId: string; quantity: number; price: number; priceIqd: number; size: string | null; color: string | null }[] = []
+    const lineItemSources: { label: string; amountUsd: number; amountIqd: number; image: string | null }[] = []
     // Demand is accumulated per PAIR — product, size and colour together.
     // Keyed by product alone, two lines for two different sizes of one shoe
     // were checked against the same pool, which is what let the shop sell a
@@ -223,7 +230,9 @@ export async function POST(request: NextRequest) {
         titleEn: true,
         titleAr: true,
         price: true,
+        priceIqd: true,
         salePrice: true,
+        salePriceIqd: true,
         images: true,
         isActive: true,
         variants: { select: { size: true, color: true, stock: true } },
@@ -298,12 +307,19 @@ export async function POST(request: NextRequest) {
       requestedByVariant.set(key, totalRequested)
 
       const itemPrice = product.salePrice ?? product.price
+      // `??` not `||`, matching the line above: a sale price of 0 is a data
+      // error, and `||` would silently fall back to the full price instead.
+      const itemPriceIqd = product.salePriceIqd ?? product.priceIqd
       subtotal += itemPrice * quantity
+      subtotalIqd += itemPriceIqd * quantity
 
       orderItemsData.push({
         productId,
         quantity,
         price: itemPrice,
+        // Snapshotted like the dollar price, so a later reprice cannot rewrite
+        // what this customer was charged.
+        priceIqd: itemPriceIqd,
         size: size || null,
         color: color || null,
       })
@@ -319,6 +335,7 @@ export async function POST(request: NextRequest) {
           ? `${product.titleAr || product.titleEn} — ${variantLabel}`
           : product.titleAr || product.titleEn,
         amountUsd: itemPrice * quantity,
+        amountIqd: itemPriceIqd * quantity,
         image: product.images?.[0] ?? null,
       })
     }
@@ -335,6 +352,7 @@ export async function POST(request: NextRequest) {
     const requestedCode = normaliseCode(body.couponCode)
     let coupon: Awaited<ReturnType<typeof prisma.coupon.findUnique>> = null
     let discount = 0
+    let discountIqdApplied = 0
 
     if (requestedCode) {
       coupon = await prisma.coupon.findUnique({ where: { code: requestedCode } })
@@ -352,6 +370,10 @@ export async function POST(request: NextRequest) {
 
       try {
         discount = assertCouponUsable({ coupon, subtotal, userRedemptions })
+        // The dinar discount is computed against the dinar basket. For a
+        // PERCENT coupon — every coupon this shop has — that is exact and uses
+        // no rate at all.
+        discountIqdApplied = computeDiscountIqd(coupon, subtotalIqd, getUsdToIqdRate())
       } catch (error) {
         if (error instanceof CouponError) {
           return noStoreJson(
@@ -364,6 +386,9 @@ export async function POST(request: NextRequest) {
     }
 
     const total = roundMoney(subtotal - discount)
+    // Whole dinars throughout, so nothing here needs rounding: the line prices
+    // are integers and so is the discount.
+    const totalIqd = Math.max(0, subtotalIqd - discountIqdApplied)
 
     // For online payment, convert and enforce Wayle's floor BEFORE creating
     // anything — so a below-minimum order never becomes a half-built record.
@@ -389,28 +414,26 @@ export async function POST(request: NextRequest) {
     }
 
     if (paymentMethod === 'WAYLE') {
+      // Recorded on the PaymentIntent for reconciliation only. NOTHING below is
+      // converted with it any more: the amounts sent to Wayle are the dinar
+      // prices the shop typed, taken straight through.
       usdToIqdRate = getUsdToIqdRate()
 
-      // Round each line item FIRST, then sum, so the amounts Wayle receives add
-      // up to the total exactly. Rounding the USD total separately would drift
-      // by a dinar against the summed line items at any rate that does not
-      // divide 2-decimal prices evenly (1500 happens to; 1310 does not).
-      lineItemAmountsIqd = lineItemSources.map((source) =>
-        usdToIqd(source.amountUsd, usdToIqdRate)
-      )
+      // The line amounts ARE the stored dinar prices. This used to convert the
+      // dollar amounts at the rate, which could only ever land on multiples of
+      // 15 dinars (one cent) — so a shoe priced at 59,000 IQD was billed as
+      // 58,995. Taking the dinar figure directly means the customer is charged
+      // the number on the page, exactly, and there is nothing left to round.
+      lineItemAmountsIqd = lineItemSources.map((source) => source.amountIqd)
       const grossIqd = lineItemAmountsIqd.reduce((sum, amount) => sum + amount, 0)
 
-      // The discount is converted and subtracted in IQD, then sent to Wayle as
-      // its own `decrease` line. Converting the already-discounted USD total
-      // instead would leave the line items Wayle displays adding up to more
-      // than the amount it collects, and Wayle rejects that mismatch.
+      // Sent to Wayle as its own `decrease` line. Discounting the total instead
+      // would leave the line items Wayle displays adding up to more than the
+      // amount it collects, and Wayle rejects that mismatch.
       //
       // Clamped to the gross so a fixed-amount coupon worth more than the
       // basket cannot produce a negative charge.
-      discountIqd =
-        discount > 0
-          ? Math.min(usdToIqd(discount, usdToIqdRate), grossIqd)
-          : 0
+      discountIqd = Math.min(discountIqdApplied, grossIqd)
 
       amountIqd = grossIqd - discountIqd
       try {
@@ -490,6 +513,13 @@ export async function POST(request: NextRequest) {
           subtotal,
           discount,
           total,
+          // The dinar side of the same three figures. For a Wayle order the
+          // total here is the exact integer the gateway is handed, so the
+          // amount shown on the order and the amount charged are one number
+          // rather than two conversions of one another.
+          subtotalIqd,
+          discountIqd: discountIqdApplied,
+          totalIqd,
           couponId: coupon?.id ?? null,
           // Snapshot of the code, so the order still explains itself if the
           // coupon is later renamed or deleted.

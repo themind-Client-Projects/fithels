@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { formatMoney } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ export default function EditOrderPage() {
   const locale = params?.locale || "ar";
   const orderId = params?.id;
   const t = useTranslations("Dashboard");
+  /** The stored dinar figure, shown exactly. See the orders list for why. */
+  const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -259,21 +261,21 @@ export default function EditOrderPage() {
                 <>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("subtotal")}</span>
-                    <span style={{ fontWeight: 600, fontSize: "0.8rem" }}>{formatMoney(order.subtotal, "IQD")}</span>
+                    <span style={{ fontWeight: 600, fontSize: "0.8rem" }}>{money(order.subtotal, order.subtotalIqd)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ color: "#059669", fontSize: "0.8rem" }}>
                       {t("discount")}{order.couponCode ? ` (${order.couponCode})` : ""}
                     </span>
                     <span style={{ fontWeight: 600, fontSize: "0.8rem", color: "#059669" }}>
-                      − {formatMoney(order.discount, "IQD")}
+                      − {money(order.discount, order.discountIqd)}
                     </span>
                   </div>
                 </>
               )}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6c757d", fontSize: "0.8rem" }}>{t("total")}</span>
-                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{formatMoney(order.total, "IQD")}</span>
+                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#2563eb" }}>{money(order.total, order.totalIqd)}</span>
               </div>
             </div>
           </div>

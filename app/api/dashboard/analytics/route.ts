@@ -50,7 +50,12 @@ export async function GET(request: NextRequest) {
       id: true,
       userId: true,
       total: true,
+      // The dinar figures every money number on the page is built from. Missing
+      // them reads as 0, and the `as AnalyticsOrder[]` cast below means tsc
+      // would not say a word about it.
+      totalIqd: true,
       discount: true,
+      discountIqd: true,
       status: true,
       paymentStatus: true,
       paymentMethod: true,
@@ -60,6 +65,7 @@ export async function GET(request: NextRequest) {
           productId: true,
           quantity: true,
           price: true,
+          priceIqd: true,
           size: true,
           color: true,
         },
@@ -132,9 +138,6 @@ export async function GET(request: NextRequest) {
       periodOrders as AnalyticsOrder[],
       allOrders as AnalyticsOrder[],
       productTitles,
-      // The same rate the prices use, so the VIP invoice threshold means what
-      // the shop quoted it as.
-      getDisplayRate(),
       neverOrdered
     )
     const inventory = summariseInventory(products, liveOrders as AnalyticsOrder[])

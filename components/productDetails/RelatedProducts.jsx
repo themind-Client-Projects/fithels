@@ -5,6 +5,7 @@ import RelatedRail from "@/components/productDetails/RelatedRail";
 import { PRODUCT_CARD_SELECT } from "@/lib/products/select";
 import { resolveProductColors } from "@/lib/products/colors";
 import { cardImages } from "@/lib/products/colorImages";
+import { cardPricing } from "@/lib/products/price";
 import { totalStock } from "@/lib/products/variants";
 
 /**
@@ -75,25 +76,20 @@ export default async function RelatedProducts({ product, locale }) {
 
   const t = await getTranslations({ locale, namespace: "shop" });
 
-  // Same card shape the listing pages build. Kept inline, as they do — the
-  // mapping is small and the alternative is a shared helper that four call
-  // sites would each have to be migrated onto.
+  // Same card shape the listing pages build, through the same helper. It stopped
+  // being worth inlining once prices were held in two independent currencies:
+  // "on sale" and "percent off" then have a separate answer per currency, and
+  // four copies of that would be four chances to get one of them wrong.
   const cards = picks.map((p) => {
-    const isSale = p.salePrice && p.salePrice < p.price;
-    const salePercent = isSale
-      ? Math.round(((p.price - p.salePrice) / p.price) * 100)
-      : null;
+    const pricing = cardPricing(p);
 
     return {
       id: p.slug,
       dbId: p.id,
       title: locale === "ar" ? p.titleAr : p.titleEn,
-      price: p.salePrice || p.price,
-      oldPrice: isSale ? p.price : null,
+      ...pricing,
       imgSrc: cardImages(p.images, p.colorImages, p.colors).cover,
       imgHover: cardImages(p.images, p.colorImages, p.colors).hover,
-      isOnSale: isSale,
-      salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
       // Which run those sizes belong to. Without it the card assumes the
       // numeric ladder and draws 35-41 struck through on a product sold in

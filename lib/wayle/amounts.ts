@@ -19,9 +19,14 @@ export class WayleMinimumAmountError extends Error {
 /**
  * Convert a USD total to whole Iraqi dinars.
  *
- * Wayle charges exactly the integer we send, so this result — not the USD
- * figure — is what gets stored on the PaymentIntent and validated against the
- * webhook later.
+ * NO LONGER ON THE CHARGE PATH. Products carry their own dinar price now, set
+ * independently of the dollar one, and Wayle is handed those integers directly
+ * — so nothing a customer pays is decided by this any more.
+ *
+ * It survives for reconciliation and for reporting, where a dollar figure with
+ * no dinar twin still has to be shown in dinars. Do not reintroduce it into
+ * pricing: converting was what limited every price to a multiple of 15 dinars
+ * (one cent at 1500/USD) and billed an intended 59,000 IQD as 58,995.
  */
 export function usdToIqd(amountUsd: number, rate: number): number {
   if (!Number.isFinite(amountUsd) || amountUsd < 0) {

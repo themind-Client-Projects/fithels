@@ -56,6 +56,7 @@ export interface AnalyticsItem {
   productId: string
   quantity: number
   price: number
+  priceIqd: number
   size: string | null
   color: string | null
 }
@@ -64,7 +65,16 @@ export interface AnalyticsOrder {
   id: string
   userId: string
   total: number
+  /**
+   * The dinar total, stored — not the dollar one at a rate.
+   *
+   * Every money figure the dashboard shows is in dinars, and it used to reach
+   * them by multiplying. Now that a product carries a dinar price the shop set
+   * itself, converting would report a number the shop never charged.
+   */
+  totalIqd: number
   discount: number
+  discountIqd: number
   status: string
   paymentStatus: string
   paymentMethod: string
@@ -131,6 +141,15 @@ function emptyMethod(): MethodBreakdown {
   }
 }
 
+/**
+ * ALL MONEY HERE IS WHOLE DINARS.
+ *
+ * The dashboard reports in dinars and used to get there by multiplying a dollar
+ * figure by the rate. Products now carry a dinar price the shop set itself and
+ * orders store the dinar total actually charged, so converting would report a
+ * number nobody was ever billed. Reading the stored dinars makes every figure
+ * on the page reconcile with the orders table by construction.
+ */
 export function summariseSales(orders: readonly AnalyticsOrder[]) {
   const byMethod: Record<string, MethodBreakdown> = {
     COD: emptyMethod(),
@@ -148,7 +167,7 @@ export function summariseSales(orders: readonly AnalyticsOrder[]) {
   const buyers = new Set<string>()
 
   for (const o of orders) {
-    const total = money(o.total)
+    const total = money(o.totalIqd)
     const method = byMethod[o.paymentMethod] ?? (byMethod[o.paymentMethod] = emptyMethod())
 
     placedAmount += total
@@ -186,7 +205,7 @@ export function summariseSales(orders: readonly AnalyticsOrder[]) {
         method.outstandingAmount += total
       }
       // A discount on a cancelled order cost the shop nothing.
-      discounts += money(o.discount)
+      discounts += money(o.discountIqd)
     }
 
     if (o.paymentStatus === 'FAILED') method.failed += 1
@@ -242,9 +261,8 @@ export function summariseSales(orders: readonly AnalyticsOrder[]) {
  * The threshold is an INVOICE, not a lifetime total — five orders of 30,000
  * each is a repeat customer, one order of 150,000 is not the same thing. It is
  * held in dinars because that is the number the shop quoted, and converted to
- * the stored currency through the one rate the app already has, so a change to
- * that rate cannot leave this reading a different amount than every price on
- * the site.
+ * dinars directly. Nothing here converts: the invoice is stored in the currency
+ * the threshold is written in, so the two are the same kind of number.
  *
  * ADMIN ONLY. Nothing on the storefront reads a tier — a shopper being labelled
  * to their face is a different product decision, and not one that was asked for.
@@ -263,19 +281,23 @@ export type CustomerTier = 'vip' | 'repeat' | 'purchased' | 'new'
  *
  * @param paidOrders   Completed purchases, all-time.
  * @param largestPaid  Their biggest single paid invoice, in the stored currency.
- * @param rate         Stored currency → IQD, so the threshold means what it says.
  */
 export function customerTier(
   paidOrders: number,
-  largestPaid: number,
-  rate: number
+  /** Their biggest single paid invoice, IN DINARS. */
+  largestPaidIqd: number
 ): CustomerTier {
-  // The invoice override needs a purchase to override FROM. Guarded rather than
-  // assumed: `largestPaid` is only ever built from paid orders, so zero orders
-  // means zero here in practice — but this is exported and pure, and a caller
-  // passing lifetime spend by mistake would otherwise make a customer who has
-  // never bought anything the shop's most valuable one.
-  if (paidOrders >= 1 && largestPaid * rate >= VIP_INVOICE_IQD) return 'vip'
+  // Compared directly against the threshold — no rate. The invoice is stored in
+  // dinars now, so a 150,000 IQD order is 150,000 here rather than $100 turned
+  // back into dinars, which could land a few dinars either side of the line and
+  // decide someone's tier on a rounding artefact.
+  //
+  // The override needs a purchase to override FROM. Guarded rather than
+  // assumed: `largestPaidIqd` is only ever built from paid orders, so zero
+  // orders means zero here in practice — but this is exported and pure, and a
+  // caller passing lifetime spend by mistake would otherwise make a customer
+  // who has never bought anything the shop's most valuable one.
+  if (paidOrders >= 1 && largestPaidIqd >= VIP_INVOICE_IQD) return 'vip'
   if (paidOrders >= VIP_ORDERS) return 'vip'
   if (paidOrders >= REPEAT_ORDERS) return 'repeat'
   if (paidOrders >= 1) return 'purchased'
@@ -355,8 +377,6 @@ export function summariseCustomers(
   periodOrders: readonly AnalyticsOrder[],
   allOrders: readonly AnalyticsOrder[],
   productTitles: ReadonlyMap<string, string>,
-  /** Stored currency → IQD, for the invoice threshold. */
-  rate: number = DEFAULT_USD_TO_IQD_RATE,
   neverOrdered: readonly RegisteredCustomer[] = []
 ): CustomerRow[] {
   const rows = new Map<string, CustomerRow>()
@@ -400,9 +420,9 @@ export function summariseCustomers(
     if (!row.lastOrderAt || placedAt > row.lastOrderAt) row.lastOrderAt = placedAt
 
     if (isPaid(o)) {
-      row.lifetimeSpend += money(o.total)
+      row.lifetimeSpend += money(o.totalIqd)
       row.lifetimePaidOrders += 1
-      row.largestPaidOrder = Math.max(row.largestPaidOrder, money(o.total))
+      row.largestPaidOrder = Math.max(row.largestPaidOrder, money(o.totalIqd))
       lifetimePaid.set(o.userId, (lifetimePaid.get(o.userId) ?? 0) + 1)
       let seen = boughtProducts.get(o.userId)
       if (!seen) boughtProducts.set(o.userId, (seen = new Set()))
@@ -440,7 +460,7 @@ export function summariseCustomers(
     inPeriod.add(o.userId)
     if (isPaid(o)) {
       row.paidOrders += 1
-      row.spend += money(o.total)
+      row.spend += money(o.totalIqd)
     }
     if (isCancelled(o)) row.cancelledOrders += 1
   }
@@ -455,7 +475,7 @@ export function summariseCustomers(
 
     // Judged on ALL-TIME behaviour, so a good customer does not stop being one
     // because the window happens to be short.
-    row.tier = customerTier(row.lifetimePaidOrders, row.largestPaidOrder, rate)
+    row.tier = customerTier(row.lifetimePaidOrders, row.largestPaidOrder)
 
     // Separately: are they still around? Period-relative on purpose — "bought
     // before, nothing in this window" is exactly the campaign list.
@@ -617,7 +637,7 @@ export function summariseTopProducts(
       row.units += quantity
       // The price CHARGED on the line, not today's price — a shoe discounted
       // since the sale must not restate what it earned.
-      row.revenue += quantity * money(item.price)
+      row.revenue += quantity * money(item.priceIqd)
     }
   }
 

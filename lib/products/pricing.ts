@@ -21,6 +21,7 @@ export type PricingErrorReason =
   | 'SALE_PRICE_NOT_A_DISCOUNT'
   | 'PRICE_BELOW_EXISTING_SALE_PRICE'
   | 'STOCK_NOT_A_WHOLE_NUMBER'
+  | 'PRICE_NOT_WHOLE_DINARS'
 
 export class PricingValidationError extends Error {
   readonly code = 'INVALID_PRICING' as const
@@ -60,6 +61,49 @@ export function parsePrice(value: unknown): number {
     throw new PricingValidationError('price', 'PRICE_NOT_POSITIVE', 'Price must be greater than zero.')
   }
   return price
+}
+
+/**
+ * The dinar price, which is set INDEPENDENTLY of the dollar one.
+ *
+ * Whole dinars only. The dinar is not subdivided in practice, and the integer
+ * stored here is the exact figure shown on the storefront and handed to Wayle —
+ * a fraction would have to be rounded somewhere, which is the drift this whole
+ * change exists to remove.
+ */
+export function parsePriceIqd(value: unknown, field = 'priceIqd'): number {
+  const price = toNumber(value, field)
+  if (price <= 0) {
+    throw new PricingValidationError(field, 'PRICE_NOT_POSITIVE', 'Price must be greater than zero.')
+  }
+  if (!Number.isInteger(price)) {
+    throw new PricingValidationError(
+      field,
+      'PRICE_NOT_WHOLE_DINARS',
+      'The dinar price must be a whole number.'
+    )
+  }
+  return price
+}
+
+/** The dinar sale price. Optional, and judged against the dinar price. */
+export function parseSalePriceIqd(
+  value: unknown,
+  effectivePriceIqd: number
+): number | null {
+  if (isBlank(value)) return null
+
+  const salePrice = parsePriceIqd(value, 'salePriceIqd')
+
+  if (salePrice >= effectivePriceIqd) {
+    throw new PricingValidationError(
+      'salePriceIqd',
+      'SALE_PRICE_NOT_A_DISCOUNT',
+      'Sale price must be lower than the regular price.'
+    )
+  }
+
+  return salePrice
 }
 
 /**

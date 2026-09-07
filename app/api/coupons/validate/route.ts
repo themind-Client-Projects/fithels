@@ -4,10 +4,12 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   assertCouponUsable,
+  computeDiscountIqd,
   CouponError,
   normaliseCode,
   roundMoney,
 } from '@/lib/coupons/validate'
+import { getUsdToIqdRate } from '@/lib/wayle/config'
 
 /**
  * POST /api/coupons/validate — preview what a code is worth for this basket.
@@ -59,18 +61,32 @@ export async function POST(request: NextRequest) {
 
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, isActive: true },
-      select: { id: true, price: true, salePrice: true },
+      select: { id: true, price: true, priceIqd: true, salePrice: true, salePriceIqd: true },
     })
     const priceById = new Map(
-      products.map((p) => [p.id, p.salePrice ?? p.price] as const)
+      products.map(
+        (p) =>
+          [
+            p.id,
+            {
+              usd: p.salePrice ?? p.price,
+              // `??` so a dinar sale price of 0 is a visible data error rather
+              // than silently falling back to the full price.
+              iqd: p.salePriceIqd ?? p.priceIqd,
+            },
+          ] as const
+      )
     )
 
     let subtotal = 0
+    // Summed independently, because the two prices are set independently.
+    let subtotalIqd = 0
     for (const item of items) {
       const unit = priceById.get(String(item?.productId ?? ''))
       const qty = Number(item?.quantity)
       if (unit === undefined || !Number.isFinite(qty) || qty < 1) continue
-      subtotal += unit * Math.floor(qty)
+      subtotal += unit.usd * Math.floor(qty)
+      subtotalIqd += unit.iqd * Math.floor(qty)
     }
     subtotal = roundMoney(subtotal)
 
@@ -90,6 +106,9 @@ export async function POST(request: NextRequest) {
     })
 
     const discount = assertCouponUsable({ coupon, subtotal, userRedemptions })
+    // The dinar preview, so the figure the checkout subtracts on screen is the
+    // one POST /api/orders will apply to the dinars actually charged.
+    const discountIqd = computeDiscountIqd(coupon, subtotalIqd, getUsdToIqdRate())
 
     return noStoreJson({
       valid: true,
@@ -97,8 +116,11 @@ export async function POST(request: NextRequest) {
       type: coupon.type,
       value: coupon.value,
       subtotal,
+      subtotalIqd,
       discount,
+      discountIqd,
       total: roundMoney(subtotal - discount),
+      totalIqd: Math.max(0, subtotalIqd - discountIqd),
     })
   } catch (error) {
     if (error instanceof CouponError) {

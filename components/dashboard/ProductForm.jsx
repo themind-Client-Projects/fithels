@@ -21,6 +21,28 @@ import {
   parseSizeSystem,
   sizesForSystem,
 } from "@/lib/products/sizes";
+import { groupDigits, ungroupDigits } from "@/lib/currency";
+
+/** Dollars: digits with at most one decimal point. */
+const USD_PATTERN = /^\d*\.?\d*$/;
+/** Dinars: whole numbers only — the dinar is not subdivided in practice. */
+const IQD_PATTERN = /^\d*$/;
+
+/**
+ * Keeps a money field grouped as it is typed, and refuses keystrokes that would
+ * make it not a number.
+ *
+ * Rejecting rather than sanitising: silently dropping a stray character moves
+ * the caret and makes the field feel broken. An ignored keystroke just does
+ * nothing, which is what every other numeric field on the web does.
+ */
+function handleMoneyInput(setter, pattern) {
+  return (event) => {
+    const raw = ungroupDigits(event.target.value);
+    if (!pattern.test(raw)) return;
+    setter(groupDigits(raw));
+  };
+}
 
 export default function ProductForm({ product, onSuccess, onCancel }) {
   const isEditing = !!product;
@@ -34,8 +56,30 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
   const [sizeGuideAr, setSizeGuideAr] = useState(product?.sizeGuideAr || "");
   const [deliveryEn, setDeliveryEn] = useState(product?.deliveryEn || "");
   const [deliveryAr, setDeliveryAr] = useState(product?.deliveryAr || "");
-  const [price, setPrice] = useState(product?.price?.toString() || "");
-  const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || "");
+  /**
+   * Prices, one pair per currency, held as GROUPED STRINGS while being edited.
+   *
+   * The dollar price and the dinar price are independent — neither is converted
+   * from the other, so the shop can price for the Iraqi market directly instead
+   * of picking a dollar figure that happens to land on a round dinar number.
+   * That conversion is what turned an intended 59,000 IQD into 58,995.
+   *
+   * Strings, not numbers, because the field shows "10,000" while it holds
+   * 10000, and because a half-typed value ("10," or "1.") has to survive until
+   * the admin has finished typing it.
+   */
+  const [price, setPrice] = useState(
+    product?.price != null ? groupDigits(String(product.price)) : ""
+  );
+  const [priceIqd, setPriceIqd] = useState(
+    product?.priceIqd ? groupDigits(String(product.priceIqd)) : ""
+  );
+  const [salePrice, setSalePrice] = useState(
+    product?.salePrice != null ? groupDigits(String(product.salePrice)) : ""
+  );
+  const [salePriceIqd, setSalePriceIqd] = useState(
+    product?.salePriceIqd ? groupDigits(String(product.salePriceIqd)) : ""
+  );
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
   /**
    * Which section is showing in the first picker.
@@ -310,8 +354,12 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
       sizeGuideAr,
       deliveryEn,
       deliveryAr,
-      price,
-      salePrice: salePrice || null,
+      // Grouping is a display concern; the API is sent plain digits. Sending
+      // "59,000" would parse as NaN and be rejected as not a number.
+      price: ungroupDigits(price),
+      priceIqd: ungroupDigits(priceIqd),
+      salePrice: ungroupDigits(salePrice) || null,
+      salePriceIqd: ungroupDigits(salePriceIqd) || null,
       categoryId,
       // Emitted in canonical order whatever order the boxes were ticked in, so
       // the stored array is stable and diffs stay readable.
@@ -484,33 +532,68 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         </TabsContent>
       </Tabs>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="price" className="text-start text-sm font-bold text-foreground">{t("price")} ($)</Label>
-          <Input
-            id="price"
-            type="number"
-            step="0.01"
-            min="0"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0.00"
-            className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="salePrice" className="text-start text-sm font-bold text-foreground">{t("salePrice")} ($)</Label>
-          <Input
-            id="salePrice"
-            type="number"
-            step="0.01"
-            min="0"
-            value={salePrice}
-            onChange={(e) => setSalePrice(e.target.value)}
-            placeholder="Optional"
-            className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
-          />
+      {/* Prices, one column per currency.
+          type="text" rather than type="number": a number input rejects the
+          grouping commas outright, and its spinner steps by cents, which is
+          meaningless for a dinar. inputMode still brings up a numeric keypad on
+          the tablet this dashboard runs on. */}
+      <div className="flex flex-col gap-2.5">
+        <p className="text-start text-xs text-muted-foreground">{t("priceIndependentHint")}</p>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="price" className="text-start text-sm font-bold text-foreground">{t("price")} ($)</Label>
+            <Input
+              id="price"
+              type="text"
+              inputMode="decimal"
+              dir="ltr"
+              value={price}
+              onChange={handleMoneyInput(setPrice, USD_PATTERN)}
+              placeholder="0.00"
+              className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="priceIqd" className="text-start text-sm font-bold text-foreground">{t("price")} (د.ع)</Label>
+            <Input
+              id="priceIqd"
+              type="text"
+              inputMode="numeric"
+              dir="ltr"
+              value={priceIqd}
+              onChange={handleMoneyInput(setPriceIqd, IQD_PATTERN)}
+              placeholder="0"
+              className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="salePrice" className="text-start text-sm font-bold text-foreground">{t("salePrice")} ($)</Label>
+            <Input
+              id="salePrice"
+              type="text"
+              inputMode="decimal"
+              dir="ltr"
+              value={salePrice}
+              onChange={handleMoneyInput(setSalePrice, USD_PATTERN)}
+              placeholder={t("optional")}
+              className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+            />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="salePriceIqd" className="text-start text-sm font-bold text-foreground">{t("salePrice")} (د.ع)</Label>
+            <Input
+              id="salePriceIqd"
+              type="text"
+              inputMode="numeric"
+              dir="ltr"
+              value={salePriceIqd}
+              onChange={handleMoneyInput(setSalePriceIqd, IQD_PATTERN)}
+              placeholder={t("optional")}
+              className="h-12 !px-4 !text-start bg-muted/30 focus-visible:ring-primary/20 transition-all rounded-xl"
+            />
+          </div>
         </div>
       </div>
 

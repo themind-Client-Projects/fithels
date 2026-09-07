@@ -10,7 +10,9 @@ import { parseSizeSystem } from '@/lib/products/sizes'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   parsePrice,
+  parsePriceIqd,
   parseSalePrice,
+  parseSalePriceIqd,
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { translatePrismaError } from '@/lib/prisma-errors'
@@ -85,7 +87,9 @@ export async function PUT(
       deliveryEn,
       deliveryAr,
       price,
+      priceIqd,
       salePrice,
+      salePriceIqd,
       categoryId,
       sizes,
       sizeSystem,
@@ -103,10 +107,23 @@ export async function PUT(
 
     let parsedPrice: number | undefined
     let parsedSalePrice: number | null | undefined
+    let parsedPriceIqd: number | undefined
+    let parsedSalePriceIqd: number | null | undefined
     try {
       if (price !== undefined) parsedPrice = parsePrice(price)
       if (salePrice !== undefined) {
         parsedSalePrice = parseSalePrice(salePrice, parsedPrice ?? current.price)
+      }
+
+      // The dinar pair gets exactly the same treatment, judged only against
+      // itself. Checking a dinar sale price against a DOLLAR price would
+      // compare two independent numbers and reject perfectly good prices.
+      if (priceIqd !== undefined) parsedPriceIqd = parsePriceIqd(priceIqd)
+      if (salePriceIqd !== undefined) {
+        parsedSalePriceIqd = parseSalePriceIqd(
+          salePriceIqd,
+          parsedPriceIqd ?? current.priceIqd
+        )
       }
 
       // Lowering the price alone could otherwise leave an untouched sale price
@@ -121,6 +138,21 @@ export async function PUT(
           'price',
           'PRICE_BELOW_EXISTING_SALE_PRICE',
           `This product has a sale price of ${current.salePrice}. The regular price must stay above it — update or clear the sale price first.`
+        )
+      }
+
+      // Same trap, in dinars. Without this the two currencies could disagree
+      // about whether the product is on sale at all.
+      if (
+        parsedPriceIqd !== undefined &&
+        parsedSalePriceIqd === undefined &&
+        current.salePriceIqd !== null &&
+        current.salePriceIqd >= parsedPriceIqd
+      ) {
+        throw new PricingValidationError(
+          'priceIqd',
+          'PRICE_BELOW_EXISTING_SALE_PRICE',
+          `This product has a sale price of ${current.salePriceIqd} IQD. The regular price must stay above it — update or clear the sale price first.`
         )
       }
     } catch (error) {
@@ -208,6 +240,8 @@ export async function PUT(
         ...(deliveryEn !== undefined && { deliveryEn: deliveryEn || null }),
         ...(deliveryAr !== undefined && { deliveryAr: deliveryAr || null }),
         ...(parsedPrice !== undefined && { price: parsedPrice }),
+        ...(parsedPriceIqd !== undefined && { priceIqd: parsedPriceIqd }),
+        ...(parsedSalePriceIqd !== undefined && { salePriceIqd: parsedSalePriceIqd }),
         ...(parsedSalePrice !== undefined && { salePrice: parsedSalePrice }),
         ...(categoryId !== undefined && { categoryId }),
         ...(sizeSystem !== undefined && { sizeSystem: parseSizeSystem(sizeSystem) }),

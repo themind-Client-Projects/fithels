@@ -47,14 +47,14 @@ export async function GET() {
       // Banked. Includes orders later cancelled: the money did arrive, and
       // hiding it would make the ledger disagree with the bank.
       prisma.order.aggregate({
-        _sum: { total: true },
+        _sum: { totalIqd: true },
         _count: true,
         where: { paymentStatus: 'PAID' },
       }),
 
       // Live orders still owing — mostly cash awaiting delivery.
       prisma.order.aggregate({
-        _sum: { total: true },
+        _sum: { totalIqd: true },
         _count: true,
         where: { status: { not: 'CANCELLED' }, paymentStatus: { not: 'PAID' } },
       }),
@@ -63,14 +63,14 @@ export async function GET() {
       // to action by hand; the payment webhook flags them
       // PAID_BUT_ORDER_CANCELLED_NEEDS_RECONCILIATION.
       prisma.order.aggregate({
-        _sum: { total: true },
+        _sum: { totalIqd: true },
         _count: true,
         where: { status: 'CANCELLED', paymentStatus: 'PAID' },
       }),
 
       // What coupons have cost, over orders that actually stand.
       prisma.order.aggregate({
-        _sum: { discount: true },
+        _sum: { discountIqd: true },
         where: { status: { not: 'CANCELLED' } },
       }),
 
@@ -93,16 +93,16 @@ export async function GET() {
 
       // The headline figure. Same key as before so nothing breaks, but it now
       // means collected rather than merely invoiced.
-      totalRevenue: collected._sum.total ?? 0,
+      totalRevenue: collected._sum.totalIqd ?? 0,
       paidOrders: collected._count,
 
-      outstandingRevenue: outstanding._sum.total ?? 0,
+      outstandingRevenue: outstanding._sum.totalIqd ?? 0,
       outstandingOrders: outstanding._count,
 
-      refundDueAmount: refundDue._sum.total ?? 0,
+      refundDueAmount: refundDue._sum.totalIqd ?? 0,
       refundDueOrders: refundDue._count,
 
-      totalDiscounts: discounts._sum.discount ?? 0,
+      totalDiscounts: discounts._sum.discountIqd ?? 0,
 
       activeProducts,
       totalCustomers,

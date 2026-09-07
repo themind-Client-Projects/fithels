@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
   parsePrice,
+  parsePriceIqd,
   parseSalePrice,
+  parseSalePriceIqd,
   PricingValidationError,
 } from '@/lib/products/pricing'
 import { buildProductSlug } from '@/lib/products/slug'
@@ -102,7 +104,9 @@ export async function POST(request: NextRequest) {
       deliveryEn,
       deliveryAr,
       price,
+      priceIqd,
       salePrice,
+      salePriceIqd,
       categoryId,
       sizes,
       sizeSystem,
@@ -113,7 +117,16 @@ export async function POST(request: NextRequest) {
       images,
     } = body
 
-    if (!titleEn || !titleAr || price === undefined || !categoryId) {
+    if (
+      !titleEn ||
+      !titleAr ||
+      price === undefined ||
+      // The dinar price is not optional: it is what the storefront shows and
+      // what Wayle charges, and there is no rate to fall back on now that the
+      // two currencies are set independently.
+      priceIqd === undefined ||
+      !categoryId
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -138,9 +151,15 @@ export async function POST(request: NextRequest) {
 
     let parsedPrice: number
     let parsedSalePrice: number | null
+    let parsedPriceIqd: number
+    let parsedSalePriceIqd: number | null
     try {
       parsedPrice = parsePrice(price)
       parsedSalePrice = parseSalePrice(salePrice, parsedPrice)
+      // Judged on its own terms, against the dinar price — not converted from
+      // the dollar one, which is the whole point of holding both.
+      parsedPriceIqd = parsePriceIqd(priceIqd)
+      parsedSalePriceIqd = parseSalePriceIqd(salePriceIqd, parsedPriceIqd)
     } catch (error) {
       if (error instanceof PricingValidationError) {
         return NextResponse.json(
@@ -182,6 +201,8 @@ export async function POST(request: NextRequest) {
         deliveryEn: deliveryEn || null,
         deliveryAr: deliveryAr || null,
         price: parsedPrice,
+        priceIqd: parsedPriceIqd,
+        salePriceIqd: parsedSalePriceIqd,
         salePrice: parsedSalePrice,
         categoryId,
         sizeSystem: system,

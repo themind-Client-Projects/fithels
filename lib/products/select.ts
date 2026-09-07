@@ -19,8 +19,12 @@ export const PRODUCT_CARD_SELECT = {
   slug: true,
   titleEn: true,
   titleAr: true,
+  // Both currencies. They are set independently, so a card cannot derive one
+  // from the other and needs all four columns.
   price: true,
+  priceIqd: true,
   salePrice: true,
+  salePriceIqd: true,
   images: true,
   sizes: true,
   // Which run the sizes belong to, so a card's size row sorts correctly.

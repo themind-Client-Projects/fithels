@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { formatMoney } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function CreateOrderPage() {
   // Shared formatter so staff see the same figures as the storefront.
-  const formatCurrency = (a) => formatMoney(a, "IQD");
+  /**
+   * Dinars, from the stored dinar price — not the dollar one converted.
+   *
+   * This is the screen staff build a phone order on, so the figure here has to
+   * be the figure on the storefront and on the customer's invoice. Converting
+   * could only land on multiples of 15 dinars and showed 59,000 as 58,995.
+   */
+  const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
   const router = useRouter();
   const params = useParams();
   const locale = params?.locale || "ar";
@@ -99,6 +106,8 @@ export default function CreateOrderPage() {
         titleAr: product.titleAr,
         titleEn: product.titleEn,
         price: product.salePrice || product.price,
+        // The dinar price the customer is actually invoiced.
+        priceIqd: product.salePriceIqd || product.priceIqd,
         quantity: 1,
         // Opened on a pair that actually HAS stock rather than simply the first
         // one listed. Stock is per (size, colour) now, so a product with
@@ -127,6 +136,12 @@ export default function CreateOrderPage() {
 
   const total = orderItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  // Summed in dinars from the dinar line prices. The two product prices are
+  // independent, so this cannot be derived from the dollar total.
+  const totalIqd = orderItems.reduce(
+    (sum, item) => sum + (Number(item.priceIqd) || 0) * item.quantity,
     0
   );
 
@@ -289,7 +304,7 @@ export default function CreateOrderPage() {
                       <div>
                         <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1a1a2e" }}>{p.titleAr}</div>
                         <div style={{ fontSize: "0.75rem", color: "#6c757d" }}>
-                          {formatCurrency(p.salePrice || p.price)} · {t("stock")}: {p.stock}
+                          {money(p.salePrice || p.price, p.salePriceIqd || p.priceIqd)} · {t("stock")}: {p.stock}
                         </div>
                       </div>
                       {!alreadyAdded && <Plus style={{ color: "#2563eb", width: "1.25rem", height: "1.25rem" }} />}
@@ -374,7 +389,7 @@ export default function CreateOrderPage() {
                           </div>
                         )}
                         <div style={{ display: "flex", alignItems: "flex-end" }}>
-                          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "#2563eb" }}>{formatCurrency(item.price * item.quantity)}</span>
+                          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "#2563eb" }}>{money(item.price * item.quantity, item.priceIqd * item.quantity)}</span>
                         </div>
                       </div>
                     </div>
@@ -442,7 +457,7 @@ export default function CreateOrderPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 0", borderTop: "1px solid #f1f3f5" }}>
                 <span style={{ fontWeight: 700, fontSize: "1rem", color: "#1a1a2e" }}>{t("total")}</span>
-                <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#2563eb" }}>{formatCurrency(total)}</span>
+                <span style={{ fontWeight: 700, fontSize: "1.25rem", color: "#2563eb" }}>{money(total, totalIqd)}</span>
               </div>
             </div>
             <div style={{ padding: "0 1.5rem 1.5rem" }}>

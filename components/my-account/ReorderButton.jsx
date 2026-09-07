@@ -66,8 +66,12 @@ export default function ReorderButton({ order, variant = "inline" }) {
         id: product.slug ?? product.id,
         dbId: product.id,
         title: locale === "en" ? product.titleEn : product.titleAr,
-        // Today's price, not the historic one.
+        // Today's price, not the historic one — in both currencies. The dinar
+        // one is required: a cart line without it is dropped on the next page
+        // load, because a missing dinar price would otherwise value the line at
+        // zero.
         price: product.salePrice ?? product.price,
+        priceIqd: product.salePriceIqd ?? product.priceIqd,
         oldPrice:
           product.salePrice && product.salePrice < product.price
             ? product.price

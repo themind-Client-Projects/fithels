@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import AnalyticsTable from "@/components/dashboard/AnalyticsTable";
 import StockBreakdown from "@/components/dashboard/StockBreakdown";
-import { formatMoney } from "@/lib/currency";
 import {
   ShoppingCart, DollarSign, Truck, TicketPercent,
   XCircle, Users, Package, AlertTriangle, Boxes, TrendingUp,
@@ -101,7 +100,19 @@ export default function AnalyticsPage() {
    */
   const loading = !error && (!data || data.period?.key !== period);
 
-  const money = useCallback((usd) => formatMoney(usd || 0, "IQD"), []);
+  /**
+   * Every money figure from this endpoint is ALREADY whole dinars.
+   *
+   * It used to arrive in dollars and be converted here. Products now carry a
+   * dinar price the shop set itself and orders store the dinar total actually
+   * charged, so the report sums dinars — passing them through formatMoney's
+   * IQD branch would multiply by the rate a second time and report 1,500x the
+   * real revenue.
+   */
+  const money = useCallback(
+    (iqd) => `${Math.round(Number(iqd) || 0).toLocaleString("en-US")} IQD`,
+    []
+  );
 
   useEffect(() => {
     /**

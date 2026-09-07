@@ -8,7 +8,8 @@ import { useLocale } from "next-intl";
 
 export default function ShopCart() {
   const locale = useLocale();
-  const { cartProducts, setCartProducts, totalPrice } = useContextElement();
+  const { cartProducts, setCartProducts, totalPrice, totalPriceIqd } =
+    useContextElement();
 
   // Cart lines are identified by product AND variant. Matching on the product
   // id alone meant pressing + on the "L" row incremented the "M" row, and
@@ -85,7 +86,7 @@ export default function ShopCart() {
                             className="tf-cart-item_price text-center"
                           >
                             <div className="cart-price text-button price-on-sale">
-                              <CurrencyFormatter price={elm.price} />
+                              <CurrencyFormatter price={elm.price} priceIqd={elm.priceIqd} />
                             </div>
                           </td>
                           <td
@@ -123,7 +124,10 @@ export default function ShopCart() {
                             className="tf-cart-item_total text-center"
                           >
                             <div className="cart-total text-button total-price">
-                              <CurrencyFormatter price={elm.price * elm.quantity} />
+                              <CurrencyFormatter
+                                price={elm.price * elm.quantity}
+                                priceIqd={elm.priceIqd * elm.quantity}
+                              />
                             </div>
                           </td>
                           <td
@@ -153,12 +157,17 @@ export default function ShopCart() {
                   <h5 className="title">Order Summary</h5>
                   <div className="subtotal text-button d-flex justify-content-between align-items-center">
                     <span>Subtotal</span>
-                    <span className="total"><CurrencyFormatter price={totalPrice} /></span>
+                    <span className="total">
+                      <CurrencyFormatter price={totalPrice} priceIqd={totalPriceIqd} />
+                    </span>
                   </div>
                   <h5 className="total-order d-flex justify-content-between align-items-center">
                     <span>Total</span>
                     <span className="total">
-                      <CurrencyFormatter price={totalPrice ? totalPrice : 0} />
+                      <CurrencyFormatter
+                        price={totalPrice || 0}
+                        priceIqd={totalPriceIqd || 0}
+                      />
                     </span>
                   </h5>
                   <div className="box-progress-checkout">

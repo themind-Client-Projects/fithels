@@ -4,6 +4,7 @@ import { useLocale } from "next-intl";
 
 import ProductCard1 from "../productCards/ProductCard1";
 import { resolveProductColors } from "@/lib/products/colors";
+import { cardPricing } from "@/lib/products/price";
 import { cardImages } from "@/lib/products/colorImages";
 
 /**
@@ -30,14 +31,11 @@ export default function SearchModal() {
         if (cancelled || !Array.isArray(products)) return;
         setLoadedItems(
           products.map((p) => {
-            const onSale = p.salePrice && p.salePrice < p.price;
             return {
               id: p.slug,
               dbId: p.id,
               title: locale === "ar" ? p.titleAr : p.titleEn,
-              price: p.salePrice ?? p.price,
-              oldPrice: onSale ? p.price : null,
-              isOnSale: onSale,
+              ...cardPricing(p),
               imgSrc: cardImages(p.images, p.colorImages, p.colors).cover,
               imgHover: cardImages(p.images, p.colorImages, p.colors).hover,
               colors: resolveProductColors(p.colors, p.images, p.colorImages),

@@ -24,6 +24,65 @@ export function getDisplayRate(): number {
     : DEFAULT_USD_TO_IQD_RATE
 }
 
+export type Currency = 'USD' | 'IQD'
+
+/**
+ * Formats a price that is held in BOTH currencies.
+ *
+ * Prefer this over formatMoney everywhere a real price is shown. The two
+ * figures are set independently by the shop, so neither can be derived from the
+ * other — showing a dinar price means showing the dinar number that was typed,
+ * not the dollar one multiplied by a rate. That multiplication is what made
+ * 59,000 IQD display as 58,995.
+ *
+ * `iqd` is allowed to be null only for legacy rows that predate the dinar
+ * column; those fall back to the old conversion so nothing renders blank.
+ */
+export function formatPrice(
+  usd: number | null | undefined,
+  iqd: number | null | undefined,
+  currency: Currency = 'IQD',
+  locale = 'en-US'
+): string {
+  if (currency === 'IQD') {
+    const dinars = Number(iqd)
+    if (Number.isFinite(dinars) && dinars > 0) {
+      return `${Math.round(dinars).toLocaleString(locale)} IQD`
+    }
+    // No dinar price stored — convert, as the app did before.
+    return formatMoney(usd, 'IQD', locale)
+  }
+  return formatMoney(usd, 'USD', locale)
+}
+
+/**
+ * Groups digits for display inside a text input: "10000" -> "10,000".
+ *
+ * Kept as a string throughout rather than round-tripping through Number, so a
+ * half-typed value survives editing: "10," and "1.5" and "" all have to remain
+ * exactly what the admin typed until they finish. Only the integer part is
+ * grouped; a decimal tail is passed through untouched.
+ */
+export function groupDigits(raw: string): string {
+  const text = String(raw ?? '')
+  if (text === '') return ''
+
+  const negative = text.startsWith('-')
+  const body = negative ? text.slice(1) : text
+
+  const [whole, ...rest] = body.split('.')
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  // A trailing "." is preserved so typing "10000." does not delete the dot.
+  const tail = rest.length > 0 ? `.${rest.join('')}` : body.endsWith('.') ? '.' : ''
+
+  return `${negative ? '-' : ''}${grouped}${tail}`
+}
+
+/** Strips grouping so the value can be parsed or submitted: "10,000" -> "10000". */
+export function ungroupDigits(raw: string): string {
+  return String(raw ?? '').replace(/,/g, '')
+}
+
 /** Formats an amount for display. `currency` is the viewer's chosen currency. */
 export function formatMoney(
   amount: number | null | undefined,

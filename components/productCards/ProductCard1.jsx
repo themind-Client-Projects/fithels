@@ -16,6 +16,7 @@ import CountdownTimer from "../common/Countdown";
 import { useLocale } from "next-intl";
 import { buildSizeOptions } from "@/lib/products/sizes";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useCurrencyStore } from "@/stores/useCurrencyStore";
 export default function ProductCard1({
   product,
   gridClass = "",
@@ -26,15 +27,31 @@ export default function ProductCard1({
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
   const locale = useLocale();
   const t = useTranslations("shop");
+  const { currency } = useCurrencyStore();
 
   useEffect(() => {
     setCurrentImage(product.imgSrc);
   }, [product]);
 
+  /**
+   * The sale facts for the currency actually on screen.
+   *
+   * The dollar and dinar prices are set independently, so a shoe can be 25% off
+   * in dinars and 14% off in dollars at the same time — and the badge sits
+   * directly above the price it describes. Quoting one currency's discount over
+   * the other's price is a number that is simply not true.
+   */
+  const showingUsd = currency !== "IQD";
+  const onSale = showingUsd ? product.isOnSaleUsd : product.isOnSale;
+  const percentOff = showingUsd
+    ? product.salePercentageUsd
+    : product.salePercentage;
+  const oldPriceShown = showingUsd ? product.oldPrice : product.oldPriceIqd;
+
   return (
     <div
       className={`${parentClass} ${gridClass} ${
-        product.isOnSale ? "on-sale" : ""
+        onSale ? "on-sale" : ""
       } ${product.sizes ? "card-product-size" : ""}`}
     >
       <div
@@ -66,7 +83,7 @@ export default function ProductCard1({
             sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 25vw"
           />
         </Link>
-        {product.hotSale && (
+        {onSale && (
           /* The banner used to be ten hand-written copies of "Hot Sale 25% OFF"
              — untranslated, so it read English over an Arabic card, and with the
              percentage typed in, so a shoe at 40% off still announced 25%. It is
@@ -80,7 +97,7 @@ export default function ProductCard1({
                     <div className="marquee-child-item">
                       <p className="font-2 text-btn-uppercase fw-6 text-white">
                         {t("hotSale", {
-                          percent: product.salePercentage ?? "",
+                          percent: percentOff ?? "",
                         })}
                       </p>
                     </div>
@@ -93,9 +110,9 @@ export default function ProductCard1({
             </div>
           </div>
         )}
-        {product.isOnSale && (
+        {onSale && (
           <div className="on-sale-wrap">
-            <span className="on-sale-item">-{product.salePercentage}</span>
+            <span className="on-sale-item">-{percentOff}</span>
           </div>
         )}
         {product.sizes && (
@@ -163,10 +180,13 @@ export default function ProductCard1({
             first — and the old price to its left. The template had them the
             other way round, so the eye landed on the crossed-out number. */}
         <span className="price">
-          <CurrencyFormatter price={product.price} />
-          {product.oldPrice && (
+          <CurrencyFormatter price={product.price} priceIqd={product.priceIqd} />
+          {oldPriceShown && (
             <span className="old-price">
-              <CurrencyFormatter price={product.oldPrice} />
+              <CurrencyFormatter
+                price={product.oldPrice}
+                priceIqd={product.oldPriceIqd}
+              />
             </span>
           )}
         </span>

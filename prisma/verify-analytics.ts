@@ -11,7 +11,6 @@ import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
-import { getDisplayRate } from '../lib/currency'
 import { compareSizes } from '../lib/products/sizes'
 import {
   parsePeriod,
@@ -32,7 +31,11 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pool) })
 
 let failures = 0
 
-/** Money is Float; compare to the cent rather than bit-for-bit. */
+/**
+ * Every money figure is whole dinars now, so the old cent tolerance is no longer
+ * papering over float error — but it is kept for the ratio-style checks
+ * (completion rate) that are genuinely fractional.
+ */
 function check(label: string, mine: number, theirs: number, tolerance = 0.005) {
   const ok = Math.abs(mine - theirs) <= tolerance
   if (!ok) failures += 1
@@ -44,8 +47,12 @@ function check(label: string, mine: number, theirs: number, tolerance = 0.005) {
 
 const ORDER_SHAPE = {
   id: true, userId: true, total: true, discount: true,
+  // The dinar figures the report is built from. The `as AnalyticsOrder[]` casts
+  // below hide their absence from tsc, so omitting them would silently verify
+  // a report where every money figure is zero — and pass.
+  totalIqd: true, discountIqd: true,
   status: true, paymentStatus: true, paymentMethod: true, createdAt: true,
-  items: { select: { productId: true, quantity: true, price: true, size: true, color: true } },
+  items: { select: { productId: true, quantity: true, price: true, priceIqd: true, size: true, color: true } },
   user: { select: { id: true, name: true, email: true, phone: true } },
 } as const
 
@@ -73,9 +80,9 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
 
   /* Money, straight from Postgres. */
   const collected = await prisma.order.aggregate({
-    _sum: { total: true }, where: { ...inWindow, paymentStatus: 'PAID' },
+    _sum: { totalIqd: true }, where: { ...inWindow, paymentStatus: 'PAID' },
   })
-  check('collected', sales.collected, collected._sum.total ?? 0)
+  check('collected', sales.collected, collected._sum.totalIqd ?? 0)
   check(
     'collected orders',
     sales.collectedOrders,
@@ -83,25 +90,25 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   )
 
   const outstanding = await prisma.order.aggregate({
-    _sum: { total: true },
+    _sum: { totalIqd: true },
     where: { ...inWindow, status: { not: 'CANCELLED' }, paymentStatus: { not: 'PAID' } },
   })
-  check('outstanding', sales.outstanding, outstanding._sum.total ?? 0)
+  check('outstanding', sales.outstanding, outstanding._sum.totalIqd ?? 0)
 
   const refund = await prisma.order.aggregate({
-    _sum: { total: true }, where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' },
+    _sum: { totalIqd: true }, where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' },
   })
-  check('refund due', sales.refundDue, refund._sum.total ?? 0)
+  check('refund due', sales.refundDue, refund._sum.totalIqd ?? 0)
 
   const discounts = await prisma.order.aggregate({
-    _sum: { discount: true }, where: { ...inWindow, status: { not: 'CANCELLED' } },
+    _sum: { discountIqd: true }, where: { ...inWindow, status: { not: 'CANCELLED' } },
   })
-  check('discounts (live orders only)', sales.discounts, discounts._sum.discount ?? 0)
+  check('discounts (live orders only)', sales.discounts, discounts._sum.discountIqd ?? 0)
 
   const cancelled = await prisma.order.aggregate({
-    _sum: { total: true }, where: { ...inWindow, status: 'CANCELLED' },
+    _sum: { totalIqd: true }, where: { ...inWindow, status: 'CANCELLED' },
   })
-  check('cancelled amount', sales.cancelledAmount, cancelled._sum.total ?? 0)
+  check('cancelled amount', sales.cancelledAmount, cancelled._sum.totalIqd ?? 0)
   check(
     'cancelled orders',
     sales.cancelledOrders,
@@ -117,10 +124,10 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   /* Payment method split. */
   for (const method of ['COD', 'WAYLE'] as const) {
     const paid = await prisma.order.aggregate({
-      _sum: { total: true },
+      _sum: { totalIqd: true },
       where: { ...inWindow, paymentMethod: method, paymentStatus: 'PAID' },
     })
-    check(`${method}: paid amount`, sales.byMethod[method].paidAmount, paid._sum.total ?? 0)
+    check(`${method}: paid amount`, sales.byMethod[method].paidAmount, paid._sum.totalIqd ?? 0)
     check(
       `${method}: paid orders`,
       sales.byMethod[method].paid,
@@ -151,16 +158,16 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   /* Total sales: what was collected plus what is still owed, straight from
      Postgres rather than from the two figures above added together. */
   const standing = await prisma.order.aggregate({
-    _sum: { total: true }, where: { ...inWindow, status: { not: 'CANCELLED' } },
+    _sum: { totalIqd: true }, where: { ...inWindow, status: { not: 'CANCELLED' } },
   })
   const standingPaid = await prisma.order.aggregate({
-    _sum: { total: true }, where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' },
+    _sum: { totalIqd: true }, where: { ...inWindow, status: 'CANCELLED', paymentStatus: 'PAID' },
   })
   // Orders that stand, plus any cancelled ones whose money was still taken.
   check(
     'TOTAL SALES (collected + outstanding)',
     sales.netSales,
-    (standing._sum.total ?? 0) + (standingPaid._sum.total ?? 0)
+    (standing._sum.totalIqd ?? 0) + (standingPaid._sum.totalIqd ?? 0)
   )
   check(
     'total sales orders',
@@ -229,7 +236,7 @@ async function verifyPeriod(key: PeriodKey, now: Date) {
   })
   const customers = summariseCustomers(
     periodOrders as AnalyticsOrder[], allOrders as AnalyticsOrder[], productTitles,
-    getDisplayRate(), neverOrdered
+    neverOrdered
   )
   const spendInPeriod = customers.reduce((s, c) => s + c.spend, 0)
   check('customers: period spend sums to collected', spendInPeriod, sales.collected)

@@ -14,7 +14,12 @@ import { Banknote, CreditCard, MapPin } from "lucide-react";
 import { orderNumber } from "@/lib/orders/reference";
 
 function CheckoutContent() {
-  const { cartProducts, totalPrice: cartTotal, setCartProducts } = useContextElement();
+  const {
+    cartProducts,
+    totalPrice: cartTotal,
+    totalPriceIqd: cartTotalIqd,
+    setCartProducts,
+  } = useContextElement();
   const { data: session, status } = useSession();
   const isLoaded = status !== "loading";
   const isSignedIn = status === "authenticated";
@@ -358,6 +363,9 @@ function CheckoutContent() {
   // Determine items and total to show
   let displayItems = [];
   let displayTotal = 0;
+  // Summed in dinars from the dinar line prices — never converted from the
+  // dollar total. This is the figure the customer is charged.
+  let displayTotalIqd = 0;
 
   if (isSingleProduct && singleProduct) {
     const qty = parseInt(searchParams.get("qty") || "1", 10);
@@ -367,6 +375,7 @@ function CheckoutContent() {
       id: singleProduct.id,
       title: locale === "ar" ? singleProduct.titleAr : singleProduct.titleEn,
       price: singleProduct.salePrice || singleProduct.price,
+      priceIqd: singleProduct.salePriceIqd || singleProduct.priceIqd,
       quantity: qty,
       selectedSize: size,
       selectedColor: color,
@@ -374,9 +383,12 @@ function CheckoutContent() {
       imgSrc: coverFor(singleProduct.images, singleProduct.colorImages, color)
     }];
     displayTotal = (singleProduct.salePrice || singleProduct.price) * qty;
+    displayTotalIqd =
+      (singleProduct.salePriceIqd || singleProduct.priceIqd) * qty;
   } else {
     displayItems = cartProducts;
     displayTotal = cartTotal;
+    displayTotalIqd = cartTotalIqd;
   }
 
   // The server is the authority on the discount. The effect above re-fetches it
@@ -385,6 +397,14 @@ function CheckoutContent() {
   // negative on screen.
   const discountShown = applied ? Math.min(applied.discount, displayTotal) : 0;
   const payableShown = Math.max(0, Math.round((displayTotal - discountShown) * 100) / 100);
+
+  // The same arithmetic in dinars. The coupon's dinar value comes from the
+  // server beside its dollar one, so the discount a shopper sees subtracted is
+  // the discount actually applied to the dinars they pay.
+  const discountShownIqd = applied
+    ? Math.min(applied.discountIqd ?? 0, displayTotalIqd)
+    : 0;
+  const payableShownIqd = Math.max(0, displayTotalIqd - discountShownIqd);
 
   const orderItemsPayload = () =>
     isSingleProduct && singleProduct
@@ -474,11 +494,15 @@ function CheckoutContent() {
                         {item.selectedSize && <span>{locale === "ar" ? "المقاس:" : "Size:"} {item.selectedSize}</span>}
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                        {item.quantity} × <CurrencyFormatter price={item.price} />
+                        {item.quantity} ×{" "}
+                        <CurrencyFormatter price={item.price} priceIqd={item.priceIqd} />
                       </div>
                     </div>
                     <div style={{ fontWeight: "700", fontSize: "16px" }}>
-                      <CurrencyFormatter price={item.quantity * item.price} />
+                      <CurrencyFormatter
+                        price={item.quantity * item.price}
+                        priceIqd={item.quantity * item.priceIqd}
+                      />
                     </div>
                   </div>
                 ))}
@@ -558,7 +582,12 @@ function CheckoutContent() {
               <div style={{ background: "#f8f9fa", borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
                 <div className="d-flex justify-content-between align-items-center text-button" style={{ marginBottom: "10px" }}>
                   <span>{tShop("subtotal")}</span>
-                  <span><CurrencyFormatter price={displayTotal} /></span>
+                  <span>
+                    <CurrencyFormatter
+                      price={displayTotal}
+                      priceIqd={displayTotalIqd}
+                    />
+                  </span>
                 </div>
 
                 {/* Coupon. Replaces a form whose submit handler was
@@ -616,7 +645,13 @@ function CheckoutContent() {
                 {discountShown > 0 && (
                   <div className="d-flex justify-content-between align-items-center text-button" style={{ marginBottom: "10px", color: "#059669" }}>
                     <span>{t("couponDiscount")}</span>
-                    <span>− <CurrencyFormatter price={discountShown} /></span>
+                    <span>
+                      −{" "}
+                      <CurrencyFormatter
+                        price={discountShown}
+                        priceIqd={discountShownIqd}
+                      />
+                    </span>
                   </div>
                 )}
                 <div className="text-button" style={{ marginBottom: "10px" }}>
@@ -700,7 +735,12 @@ function CheckoutContent() {
                 <hr style={{ margin: "12px 0", borderColor: "#ddd" }} />
                 <div className="d-flex justify-content-between align-items-center">
                   <h5>{tShop("total")}</h5>
-                  <h5><CurrencyFormatter price={payableShown} /></h5>
+                  <h5>
+                    <CurrencyFormatter
+                      price={payableShown}
+                      priceIqd={payableShownIqd}
+                    />
+                  </h5>
                 </div>
               </div>
 

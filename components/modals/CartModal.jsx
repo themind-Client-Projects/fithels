@@ -34,7 +34,8 @@ import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 export default function CartModal() {
   const tShop = useTranslations("shop");
   const tNav = useTranslations("nav");
-  const { cartProducts, setCartProducts, totalPrice } = useContextElement();
+  const { cartProducts, setCartProducts, totalPrice, totalPriceIqd } =
+    useContextElement();
   const locale = useLocale();
 
   // Remove the specific variant line. Filtering by product id alone would drop
@@ -107,7 +108,7 @@ export default function CartModal() {
                         <div className="mini-cart__row">
                           <span className="mini-cart__qty">
                             {product.quantity} ×{" "}
-                            <CurrencyFormatter price={product.price} />
+                            <CurrencyFormatter price={product.price} priceIqd={product.priceIqd} />
                           </span>
                           <button
                             type="button"
@@ -144,7 +145,7 @@ export default function CartModal() {
                 <div className="mini-cart__total">
                   <span>{tShop("subtotal")}</span>
                   <strong>
-                    <CurrencyFormatter price={totalPrice} />
+                    <CurrencyFormatter price={totalPrice} priceIqd={totalPriceIqd} />
                   </strong>
                 </div>
                 <Link

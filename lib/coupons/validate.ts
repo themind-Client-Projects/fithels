@@ -77,6 +77,39 @@ export function computeDiscount(coupon: Coupon, subtotal: number): number {
   return roundMoney(Math.max(0, Math.min(discount, subtotal)))
 }
 
+/**
+ * The same discount, in whole dinars, against the dinar subtotal.
+ *
+ * A PERCENT coupon needs no rate at all: 15% off is 15% off whichever column of
+ * numbers you apply it to, so this is exact and independent of the dollar side.
+ *
+ * A FIXED coupon is the one place a rate survives, because its value is a
+ * DOLLAR amount and the shop has never stated a dinar equivalent. There are no
+ * fixed-amount coupons today; if one is ever created it should carry its own
+ * dinar value rather than be converted here. verify-catalogue.ts fails if one
+ * appears, so this cannot go unnoticed.
+ */
+export function computeDiscountIqd(
+  coupon: Coupon,
+  subtotalIqd: number,
+  rate: number
+): number {
+  if (subtotalIqd <= 0) return 0
+
+  let discount: number
+  if (coupon.type === 'PERCENT') {
+    discount = (subtotalIqd * coupon.value) / 100
+    if (coupon.maxDiscount != null) {
+      discount = Math.min(discount, coupon.maxDiscount * rate)
+    }
+  } else {
+    discount = coupon.value * rate
+  }
+
+  // Whole dinars, and never more than the basket.
+  return Math.max(0, Math.min(Math.round(discount), subtotalIqd))
+}
+
 export interface CouponCheckInput {
   coupon: Coupon
   subtotal: number

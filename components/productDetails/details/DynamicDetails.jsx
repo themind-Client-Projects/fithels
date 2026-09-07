@@ -9,6 +9,8 @@ import React, {
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
+import { useCurrencyStore } from "@/stores/useCurrencyStore";
+import { resolvePrice } from "@/lib/products/price";
 import { resolveColor } from "@/lib/products/colors";
 import { buildSizeOptions, parseSizeSystem } from "@/lib/products/sizes";
 import { stockFor, totalStock } from "@/lib/products/variants";
@@ -68,10 +70,25 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
   // A single photo has nothing to move between; two would show the same picture
   // on both sides of the loop.
   const { addVariantsToCart } = useContextElement();
+  const { currency } = useCurrencyStore();
 
   const title = ar ? product.titleAr : product.titleEn;
-  const hasDiscount = product.salePrice && product.salePrice < product.price;
-  const unitPrice = product.salePrice || product.price;
+
+  /**
+   * The price, resolved in both currencies.
+   *
+   * The dollar and dinar prices are independent numbers the shop typed, so the
+   * dinar shopper must be shown the dinar one exactly — not the dollar one at a
+   * rate, which is what turned an intended 59,000 into 58,995. Every total below
+   * multiplies the figure for its own currency; converting a total would land
+   * somewhere else again.
+   */
+  const pricing = resolvePrice(product);
+  const showingUsd = currency !== "IQD";
+  const shown = showingUsd ? pricing.usd : pricing.iqd;
+  const hasDiscount = shown.onSale;
+  const unitPrice = pricing.usd.current;
+  const unitPriceIqd = pricing.iqd.current;
   // Memoised: `?? []` builds a fresh array whenever the prop is absent, which
   // would change the identity the size memo depends on on every render.
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
@@ -276,7 +293,9 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
       dbId: product.id,
       title,
       price: unitPrice,
-      oldPrice: hasDiscount ? product.price : null,
+      priceIqd: unitPriceIqd,
+      oldPrice: pricing.usd.original,
+      oldPriceIqd: pricing.iqd.original,
       imgSrc: product.images?.[0] || "",
       imgHover: product.images?.[1] || product.images?.[0] || "",
       // Carried so the cart can pick the photo of the colour each LINE is for.
@@ -291,7 +310,20 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
       filterColor: product.colors,
       inStock,
     }),
-    [product, title, unitPrice, hasDiscount, inStock]
+    // `pricing` is rebuilt from `product` on every render, so it is spread into
+    // its own primitive fields rather than listed as an object — depending on
+    // the object would defeat the memo entirely, and depending on neither would
+    // let a stale dinar price reach the cart.
+    [
+      product,
+      title,
+      unitPrice,
+      unitPriceIqd,
+      pricing.usd.original,
+      pricing.iqd.original,
+      hasDiscount,
+      inStock,
+    ]
   );
 
   const requireSelection = () => {
@@ -390,7 +422,7 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                     color: "#1a1a2e",
                   }}
                 >
-                  <CurrencyFormatter price={unitPrice} />
+                  <CurrencyFormatter price={unitPrice} priceIqd={unitPriceIqd} />
                 </span>
                 {hasDiscount && (
                   <>
@@ -401,7 +433,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                         textDecoration: "line-through",
                       }}
                     >
-                      <CurrencyFormatter price={product.price} />
+                      <CurrencyFormatter
+                        price={product.price}
+                        priceIqd={product.priceIqd}
+                      />
                     </span>
                     <span
                       style={{
@@ -633,7 +668,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                           {row.color ? ` · ${row.color}` : ""}
                         </div>
                         <div style={{ fontSize: "12px", color: "#6c757d" }}>
-                          <CurrencyFormatter price={unitPrice * row.quantity} />
+                          <CurrencyFormatter
+                            price={unitPrice * row.quantity}
+                            priceIqd={unitPriceIqd * row.quantity}
+                          />
                         </div>
                       </div>
 
@@ -731,7 +769,10 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                         ? `${totalUnits} قطعة`
                         : `${totalUnits} item${totalUnits === 1 ? "" : "s"}`}
                     </span>
-                    <CurrencyFormatter price={unitPrice * totalUnits} />
+                    <CurrencyFormatter
+                      price={unitPrice * totalUnits}
+                      priceIqd={unitPriceIqd * totalUnits}
+                    />
                   </div>
                 </div>
               )}
@@ -864,6 +905,9 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
         >
           <CurrencyFormatter
             price={totalUnits > 0 ? unitPrice * totalUnits : unitPrice}
+            priceIqd={
+              totalUnits > 0 ? unitPriceIqd * totalUnits : unitPriceIqd
+            }
           />
         </div>
         <button

@@ -5,16 +5,15 @@ import { buildProductSlug } from '@/lib/products/slug'
 /**
  * Seed a catalogue priced for the Iraqi market: 1,000–4,000 IQD.
  *
- * PRICES ARE STORED IN USD. Everything the shopper sees is converted at
- * lib/currency's rate (1500 by default), and the amount sent to Wayle is
- * derived the same way — so the stored figure has to be the USD equivalent,
- * not the dinar value.
+ * PRICES ARE HELD IN BOTH CURRENCIES. The dinar figure below is stored as
+ * itself and is what the storefront shows and Wayle charges; the dollar figure
+ * beside it is a separate price for shoppers browsing in USD.
  *
- * That conversion is why every price below is a multiple of 15 IQD: prices are
- * stored to the cent, and one cent is exactly 15 IQD at this rate. A price of
- * 1,000 IQD is not representable (it would round to 1,005) whereas 1,050 is
- * exact. Picking off-grid numbers would make the displayed price drift from the
- * amount actually charged.
+ * These used to be one number: the dinar price was converted to USD and stored,
+ * and everything reconverted for display. Because prices were stored to the
+ * cent and one cent is 15 IQD at 1500/USD, only multiples of 15 dinars existed —
+ * 1,000 IQD was not representable and became 1,005. Every price below therefore
+ * had to be chosen on that grid. It no longer does.
  *
  * Existing products are REPRICED into the same band rather than deleted:
  * OrderItem.price snapshots what was charged at the time, so past orders keep
@@ -23,15 +22,14 @@ import { buildProductSlug } from '@/lib/products/slug'
 
 const RATE = DEFAULT_USD_TO_IQD_RATE
 
-/** IQD -> the USD figure that renders back to exactly that many dinars. */
-const iqd = (dinars: number): number => {
-  if (dinars % 15 !== 0) {
-    throw new Error(
-      `${dinars} IQD is not representable at ${RATE}/USD — use a multiple of 15`
-    )
-  }
-  return Number((dinars / RATE).toFixed(2))
-}
+/**
+ * The dollar price to sit beside a dinar one.
+ *
+ * A convenience for seeding only — the shop sets the two independently in the
+ * dashboard. No grid restriction any more: the dinar price is stored exactly as
+ * given, so this figure only has to be a sensible dollar equivalent.
+ */
+const usdFor = (dinars: number): number => Number((dinars / RATE).toFixed(2))
 
 const img = (n: number) => `/images/products/womens/women-${n}.jpg`
 
@@ -186,8 +184,8 @@ async function main() {
       continue
     }
 
-    const price = iqd(seed.priceIqd)
-    const salePrice = seed.salePriceIqd ? iqd(seed.salePriceIqd) : null
+    const price = usdFor(seed.priceIqd)
+    const salePrice = seed.salePriceIqd ? usdFor(seed.salePriceIqd) : null
 
     await prisma.product.create({
       data: {
@@ -197,12 +195,13 @@ async function main() {
         descAr: seed.descAr,
         descEn: seed.descEn,
         price,
+        priceIqd: seed.priceIqd,
         salePrice,
+        salePriceIqd: seed.salePriceIqd ?? null,
         categoryId,
         images: seed.images,
         sizes: seed.sizes,
         colors: seed.colors,
-        stock: seed.stock,
         isActive: true,
       },
     })
@@ -220,8 +219,10 @@ async function main() {
     await prisma.product.update({
       where: { id: product.id },
       data: {
-        price: iqd(target.priceIqd),
-        salePrice: target.salePriceIqd ? iqd(target.salePriceIqd) : null,
+        price: usdFor(target.priceIqd),
+        priceIqd: target.priceIqd,
+        salePrice: target.salePriceIqd ? usdFor(target.salePriceIqd) : null,
+        salePriceIqd: target.salePriceIqd ?? null,
       },
     })
     repriced++

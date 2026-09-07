@@ -85,8 +85,25 @@ model Product {
   /// a shipping promise the shop has not actually made is worse than no section.
   deliveryEn String?
   deliveryAr String?
-  price      Float
-  salePrice  Float?
+  /// PRICE IS HELD IN BOTH CURRENCIES, INDEPENDENTLY.
+  ///
+  /// Not one price and a rate. The shop sets a dollar price and a dinar price
+  /// separately, and each is shown to whoever is looking in that currency —
+  /// so the number on the page is the number that was typed, exactly, and
+  /// nothing rounds or drifts on the way.
+  ///
+  /// Deriving one from the other is what this replaced, and it could not be
+  /// made exact: prices were stored to the cent, and one cent is 15 IQD at
+  /// 1500/USD, so only multiples of 15 dinars existed. 59,000 IQD was not
+  /// representable and became 58,995. It also meant changing the rate silently
+  /// repriced the whole catalogue.
+  ///
+  /// `price` is dollars. `priceIqd` is whole dinars — the dinar is not
+  /// subdivided in practice, and it is the figure Wayle is charged.
+  price        Float
+  priceIqd     Int
+  salePrice    Float?
+  salePriceIqd Int?
   /// The default gallery: what a shopper sees before choosing a colour, and
   /// what a card shows. Per-colour photos live on ProductColorImage and take
   /// over once a colour is picked; this stays the fallback, so a product whose
@@ -217,8 +234,10 @@ model Order {
   //
   // Defaulted to 0 for rows written before coupons existed; those are
   // backfilled to subtotal = total, discount = 0.
-  subtotal Float @default(0)
-  discount Float @default(0)
+  subtotal    Float @default(0)
+  subtotalIqd Int   @default(0)
+  discount    Float @default(0)
+  discountIqd Int   @default(0)
 
   // The coupon is recorded by id AND by code. The id is the live link; the code
   // is a snapshot, so an order still shows what was used after the coupon is
@@ -229,6 +248,10 @@ model Order {
   couponRedemption CouponRedemption?
 
   total    Float
+  /// The dinar total actually payable. For a Wayle order this is the integer
+  /// sent to the gateway, so the amount charged and the amount shown are the
+  /// same value rather than two conversions of one another.
+  totalIqd Int         @default(0)
   status   OrderStatus @default(PENDING)
   notes    String?
   phone    String?
@@ -316,7 +339,11 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   productId String
   quantity  Int
+  /// What was charged, in both currencies, snapshotted at order time so a later
+  /// reprice cannot rewrite history. Both are stored because the two product
+  /// prices are independent — one cannot be recovered from the other.
   price     Float
+  priceIqd  Int     @default(0)
   size      String?
   color     String?
 

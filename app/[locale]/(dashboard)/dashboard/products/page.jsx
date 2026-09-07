@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
-import { formatMoney } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
 import ProductForm from "@/components/dashboard/ProductForm";
@@ -83,7 +83,16 @@ export default function ProductsPage() {
   // Shared formatter — these four files each had their own copy that
   // hardcoded $ and en-US, so the dashboard showed a different figure
   // than the storefront for the same order.
-  const formatCurrency = (amount) => formatMoney(amount, "IQD");
+  /**
+   * A price that has a stored dinar figure. Shows that figure exactly.
+   *
+   * The dashboard reads in dinars, and formatCurrency reaches those by
+   * converting the dollar value at a rate — which can only land on multiples of
+   * 15 dinars and showed an intended 59,000 as 58,995. Where the dinar number
+   * is stored (every product price and order total now), show it as it is.
+   * Legacy rows with no dinar value fall back to the conversion.
+   */
+  const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
 
   const columns = [
     {
@@ -123,11 +132,11 @@ export default function ProductsPage() {
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
           <span className={`font-bold text-base ${row.salePrice ? "line-through text-muted-foreground/60 text-sm" : "text-foreground"}`}>
-            {formatCurrency(row.price)}
+            {money(row.price, row.priceIqd)}
           </span>
           {row.salePrice && (
             <span className="font-bold text-emerald-600 text-base">
-              {formatCurrency(row.salePrice)}
+              {money(row.salePrice, row.salePriceIqd)}
             </span>
           )}
         </div>

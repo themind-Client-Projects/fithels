@@ -72,6 +72,10 @@ async function main() {
       sizes: true,
       colors: true,
       sizeSystem: true,
+      price: true,
+      priceIqd: true,
+      salePrice: true,
+      salePriceIqd: true,
       images: true,
       variants: { select: { size: true, color: true, stock: true } },
       colorImages: { select: { color: true, images: true } },
@@ -169,6 +173,43 @@ async function main() {
     if (p.isActive && (p.images ?? []).length === 0) {
       note(p.slug, 'is active but has no images')
     }
+
+    // 7. Both prices must exist and be sane. They are set independently, so
+    //    neither can be recovered from the other — a product missing its dinar
+    //    price cannot be sold to an Iraqi shopper at all, and a zero would be a
+    //    free product with real stock behind it.
+    if (!(p.price > 0)) note(p.slug, `has no dollar price (${p.price})`)
+    if (!(p.priceIqd > 0)) note(p.slug, `has no dinar price (${p.priceIqd})`)
+    if (!Number.isInteger(p.priceIqd)) {
+      note(p.slug, `dinar price ${p.priceIqd} is not a whole number`)
+    }
+
+    // A sale price must be a real discount IN ITS OWN CURRENCY. Checking one
+    // against the other would compare two unrelated numbers.
+    if (p.salePrice != null && !(p.salePrice > 0 && p.salePrice < p.price)) {
+      note(p.slug, `dollar sale price ${p.salePrice} is not a discount on ${p.price}`)
+    }
+    if (
+      p.salePriceIqd != null &&
+      !(p.salePriceIqd > 0 && p.salePriceIqd < p.priceIqd)
+    ) {
+      note(
+        p.slug,
+        `dinar sale price ${p.salePriceIqd} is not a discount on ${p.priceIqd}`
+      )
+    }
+
+    // The two currencies must agree about WHETHER the product is on sale, even
+    // though they need not agree on how much. A product discounted in dinars
+    // but not in dollars shows a SALE badge to one shopper and not the other.
+    const onSaleUsd = p.salePrice != null && p.salePrice < p.price
+    const onSaleIqd = p.salePriceIqd != null && p.salePriceIqd < p.priceIqd
+    if (onSaleUsd !== onSaleIqd) {
+      warn(
+        p.slug,
+        `on sale in ${onSaleUsd ? 'dollars' : 'dinars'} but not in ${onSaleUsd ? 'dinars' : 'dollars'} — the sale badge differs by currency`
+      )
+    }
   }
 
   // 6. Order lines must still resolve to a real pair, otherwise cancelling that
@@ -207,6 +248,21 @@ async function main() {
         note(slug, `order ${it.order.id}: line (${it.size} / ${it.color}) no longer exists — ${it.quantity} unit(s) could not be returned if cancelled`)
       }
     }
+  }
+
+  // 8. A fixed-amount coupon has a DOLLAR value and no dinar twin, so its dinar
+  //    discount is the one figure still reached through the rate. None exist
+  //    today; this fails loudly if one is ever created, rather than letting a
+  //    converted discount quietly reappear in the charge path.
+  const fixedCoupons = await prisma.coupon.findMany({
+    where: { type: { not: 'PERCENT' } },
+    select: { code: true, value: true },
+  })
+  for (const c of fixedCoupons) {
+    note(
+      `coupon ${c.code}`,
+      `is a fixed-amount coupon ($${c.value}) with no dinar value — its dinar discount is converted at the rate. Give it a dinar amount or make it a percentage.`
+    )
   }
 
   const bySystem = products.reduce<Record<string, number>>((acc, p) => {

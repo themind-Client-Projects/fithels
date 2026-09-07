@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { formatMoney } from "@/lib/currency";
 import StatsCard from "@/components/dashboard/StatsCard";
 import OrderStatusBadge from "@/components/dashboard/OrderStatusBadge";
 import DataTable from "@/components/dashboard/DataTable";
@@ -48,7 +47,13 @@ export default function DashboardOverviewPage() {
   // Shared formatter — these four files each had their own copy that
   // hardcoded $ and en-US, so the dashboard showed a different figure
   // than the storefront for the same order.
-  const formatCurrency = (amount) => formatMoney(amount, "IQD");
+  /**
+   * The stats endpoint reports whole dinars now — orders store the dinar total
+   * actually charged — so this formats rather than converts. Passing them
+   * through formatMoney's IQD branch would apply the rate a second time.
+   */
+  const formatCurrency = (amount) =>
+    `${Math.round(Number(amount) || 0).toLocaleString("en-US")} IQD`;
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("ar-SA", {

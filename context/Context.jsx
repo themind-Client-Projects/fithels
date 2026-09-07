@@ -18,13 +18,26 @@ export default function Context({ children }) {
   const [quickViewItem, setQuickViewItem] = useState(null);
   const [quickAddItem, setQuickAddItem] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
+  /**
+   * The basket total in dinars, summed from the dinar line prices.
+   *
+   * Summed independently rather than converted from `totalPrice`, because the
+   * two product prices are set independently: there is no rate that turns one
+   * basket total into the other. Converting would also reintroduce the rounding
+   * this change removed — the dinar total has to be the dinar prices added up,
+   * which is what the customer is charged.
+   */
+  const [totalPriceIqd, setTotalPriceIqd] = useState(0);
   useEffect(() => {
-    const subtotal = cartProducts.reduce((accumulator, product) => {
-      const price = Number(product?.price) || 0;
+    let subtotal = 0;
+    let subtotalIqd = 0;
+    for (const product of cartProducts) {
       const quantity = Number(product?.quantity) || 0;
-      return accumulator + quantity * price;
-    }, 0);
+      subtotal += quantity * (Number(product?.price) || 0);
+      subtotalIqd += quantity * (Number(product?.priceIqd) || 0);
+    }
     setTotalPrice(subtotal);
+    setTotalPriceIqd(subtotalIqd);
   }, [cartProducts]);
 
   // A cart line is a product AND its chosen variant. Keying on the product id
@@ -267,6 +280,12 @@ export default function Context({ children }) {
           item &&
           item.id !== undefined &&
           item.price !== undefined &&
+          // A line saved before prices were held in dinars has no dinar price,
+          // and `Number(undefined) || 0` would silently value it at ZERO — a
+          // free product in the basket total and in what Wayle is asked to
+          // charge. Dropping the line makes the shopper re-add it at the real
+          // price, which is the only safe reading of a stale money field.
+          Number(item.priceIqd) > 0 &&
           // Drop fixture items saved before add-to-cart required a catalogue
           // product. One of these left in storage made every checkout fail.
           item.dbId
@@ -295,6 +314,7 @@ export default function Context({ children }) {
     cartProducts,
     setCartProducts,
     totalPrice,
+    totalPriceIqd,
     addProductToCart,
     addVariantsToCart,
     isAddedToCartProducts,

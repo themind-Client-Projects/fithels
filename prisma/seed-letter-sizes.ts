@@ -62,8 +62,12 @@ async function main() {
     // No EU/CM/US table applies, so the only guidance is what the shop writes.
     sizeGuideAr: 'المقاس XS/S يناسب الطول ١٥٠–١٦٥ سم، و M/L يناسب ١٦٥–١٧٥ سم.',
     sizeGuideEn: 'XS/S fits 150-165cm, M/L fits 165-175cm.',
+    // Both currencies, set independently — the shop prices for Iraq in dinars
+    // and offers a dollar figure alongside it.
     price: 5.2,
+    priceIqd: 7800,
     salePrice: null,
+    salePriceIqd: null,
     categoryId: category.id,
     sizeSystem: 'LETTER' as const,
     sizes: SIZES,

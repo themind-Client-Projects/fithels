@@ -6,6 +6,7 @@ import React from "react";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { resolveProductColors } from "@/lib/products/colors";
+import { cardPricing } from "@/lib/products/price";
 import { cardImages } from "@/lib/products/colorImages";
 import { totalStock } from "@/lib/products/variants";
 import { PRODUCT_CARD_SELECT, SHOP_GRID_LIMIT } from "@/lib/products/select";
@@ -33,20 +34,17 @@ export default async function ShopDefaultGridPage({ params }) {
 
   // Map database products to the format expected by the frontend
   const mappedProducts = dbProducts.map((p) => {
-    const isSale = p.salePrice && p.salePrice < p.price;
-    const currentPrice = p.salePrice || p.price;
-    const originalPrice = isSale ? p.price : null;
-    let salePercent = null;
-    if (isSale) {
-      salePercent = Math.round(((p.price - p.salePrice) / p.price) * 100);
-    }
+    // Both currencies at once. The dollar and dinar prices are independent, so
+    // "is it on sale" and "how much off" have a different answer in each and
+    // cannot be worked out from one pair of numbers.
+    const pricing = cardPricing(p);
+    const isSale = pricing.isOnSale;
 
     return {
       id: p.slug, // Use slug for routing
       dbId: p.id,
       title: locale === "ar" ? p.titleAr : p.titleEn,
-      price: currentPrice,
-      oldPrice: originalPrice,
+      ...pricing,
       // Cover and hover from the SAME colour — the gallery is ordered by
       // colour, so images[0] and images[1] can be two different shoes.
       imgSrc:
@@ -55,8 +53,6 @@ export default async function ShopDefaultGridPage({ params }) {
       imgHover:
         cardImages(p.images, p.colorImages, p.colors).hover ||
         "/images/products/womens/women-2.jpg",
-      isOnSale: isSale,
-      salePercentage: salePercent ? `${salePercent}%` : null,
       sizes: p.sizes,
       // Which run those sizes belong to. Without it the card assumes the
       // numeric ladder and draws 35-41 struck through on a product sold in

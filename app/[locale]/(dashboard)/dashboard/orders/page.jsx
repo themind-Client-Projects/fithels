@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { formatMoney } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DataTable from "@/components/dashboard/DataTable";
@@ -169,7 +169,16 @@ export default function OrdersPage() {
   // Shared formatter — these four files each had their own copy that
   // hardcoded $ and en-US, so the dashboard showed a different figure
   // than the storefront for the same order.
-  const formatCurrency = (amount) => formatMoney(amount, "IQD");
+  /**
+   * A price that has a stored dinar figure. Shows that figure exactly.
+   *
+   * The dashboard reads in dinars, and formatCurrency reaches those by
+   * converting the dollar value at a rate — which can only land on multiples of
+   * 15 dinars and showed an intended 59,000 as 58,995. Where the dinar number
+   * is stored (every product price and order total now), show it as it is.
+   * Legacy rows with no dinar value fall back to the conversion.
+   */
+  const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("ar-SA", {
@@ -212,7 +221,7 @@ export default function OrdersPage() {
       header: t("total"),
       accessorKey: "total",
       cell: ({ row }) => (
-        <span className="font-bold text-foreground">{formatCurrency(row.total)}</span>
+        <span className="font-bold text-foreground">{money(row.total, row.totalIqd)}</span>
       ),
     },
     {

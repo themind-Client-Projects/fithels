@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 // The photo of the colour on THIS line — a receipt showing a different colour
 // than the one bought is the kind of thing a customer writes in about.
 import { coverFor } from "@/lib/products/colorImages";
-import { formatMoney } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import { allowedNextStatuses } from "@/lib/orders/status";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import PaymentBadge from "@/components/dashboard/PaymentBadge";
@@ -138,7 +138,16 @@ export default function OrderDetailPage() {
   // Shared formatter — these four files each had their own copy that
   // hardcoded $ and en-US, so the dashboard showed a different figure
   // than the storefront for the same order.
-  const formatCurrency = (amount) => formatMoney(amount, "IQD");
+  /**
+   * A price that has a stored dinar figure. Shows that figure exactly.
+   *
+   * The dashboard reads in dinars, and formatCurrency reaches those by
+   * converting the dollar value at a rate — which can only land on multiples of
+   * 15 dinars and showed an intended 59,000 as 58,995. Where the dinar number
+   * is stored (every product price and order total now), show it as it is.
+   * Legacy rows with no dinar value fall back to the conversion.
+   */
+  const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
@@ -316,20 +325,20 @@ export default function OrderDetailPage() {
               <>
                 <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("subtotal")}</span>
-                  <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700, direction: "ltr" }}>{formatCurrency(order.subtotal)}</span>
+                  <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700, direction: "ltr" }}>{money(order.subtotal, order.subtotalIqd)}</span>
                 </div>
                 <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #f1f3f5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "0.875rem", color: "#059669", fontWeight: 600 }}>
                     {t("discount")}
                     {order.couponCode ? ` (${order.couponCode})` : ""}
                   </span>
-                  <span style={{ fontSize: "0.875rem", color: "#059669", fontWeight: 700, direction: "ltr" }}>− {formatCurrency(order.discount)}</span>
+                  <span style={{ fontSize: "0.875rem", color: "#059669", fontWeight: 700, direction: "ltr" }}>− {money(order.discount, order.discountIqd)}</span>
                 </div>
               </>
             )}
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f3f5", backgroundColor: "#f8f9fa", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 700 }}>{t("total")}</span>
-              <span style={{ fontSize: "1.25rem", color: "#1a1a2e", fontWeight: 800, direction: "ltr" }}>{formatCurrency(order.total)}</span>
+              <span style={{ fontSize: "1.25rem", color: "#1a1a2e", fontWeight: 800, direction: "ltr" }}>{money(order.total, order.totalIqd)}</span>
             </div>
             <div style={{ padding: "1.5rem", marginTop: "auto", borderTop: "1px solid #f1f3f5" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -426,9 +435,9 @@ export default function OrderDetailPage() {
               </div>
               
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-                <span style={{ fontWeight: 800, fontSize: "1.125rem", color: "#1a1a2e", direction: "ltr" }}>{formatCurrency(item.price * item.quantity)}</span>
+                <span style={{ fontWeight: 800, fontSize: "1.125rem", color: "#1a1a2e", direction: "ltr" }}>{money(item.price * item.quantity, item.priceIqd * item.quantity)}</span>
                 <span style={{ fontSize: "0.75rem", color: "#6c757d", fontWeight: 500, direction: "ltr", marginTop: "0.25rem" }}>
-                  {formatCurrency(item.price)} {t("each")}
+                  {money(item.price, item.priceIqd)} {t("each")}
                 </span>
               </div>
             </div>
