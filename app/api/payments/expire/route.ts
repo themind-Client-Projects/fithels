@@ -22,6 +22,15 @@ function secretMatches(provided: string | null, expected: string): boolean {
  *
  * Authenticated either by CRON_SECRET (for a scheduler) or by an admin session
  * (so it can be triggered by hand). Never left open — it mutates stock.
+ *
+ * SCHEDULED DAILY in vercel.json, not every 15 minutes as the TTL would want.
+ * Vercel's Hobby plan REFUSES a cron more frequent than once a day, and it
+ * refuses it by failing the whole deployment — so the tighter schedule did not
+ * merely not run, it stopped every subsequent deploy from shipping at all.
+ * Daily is valid on every plan. On Pro, change the schedule to the commented
+ * value in vercel.json; the reservation TTL is 30 minutes and the sweep also
+ * runs opportunistically whenever an order is created, so a daily pass is the
+ * backstop for a quiet shop rather than the primary mechanism.
  */
 /**
  * GET — for a scheduler only.
