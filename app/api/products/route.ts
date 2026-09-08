@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { normaliseVariants, withStockTotal } from '@/lib/products/variants'
 import { deriveGallery, normaliseColorImages } from '@/lib/products/colorImages'
 import { normaliseColorHex } from '@/lib/products/colors'
+import { matchesSearch, normaliseForSearch } from '@/lib/search'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth-utils'
 import {
@@ -48,18 +49,18 @@ export async function GET(request: NextRequest) {
       includeInactive = true
     }
 
+    // The DB filter deliberately does NOT include `search`.
+    //
+    // Postgres `contains` compares the letters as stored, and Arabic is written
+    // several ways for the same word: "احمد" (bare alef, what most phone
+    // keyboards produce) never matched "أحمد", "اناقه" never matched "أناقة",
+    // and any stored tashkeel made a title unsearchable outright. The shop is
+    // Arabic-first, so that is not an edge case — it is most queries.
+    //
+    // matchesSearch already solves it (lib/search.ts) and is what the dashboard
+    // tables use, so the match happens in JS below over the fetched rows.
     const where = {
       ...(includeInactive ? {} : { isActive: true }),
-      ...(search
-        ? {
-            OR: [
-              { titleEn: { contains: search, mode: 'insensitive' as const } },
-              { titleAr: { contains: search, mode: 'insensitive' as const } },
-              { descEn: { contains: search, mode: 'insensitive' as const } },
-              { descAr: { contains: search, mode: 'insensitive' as const } },
-            ],
-          }
-        : {}),
     }
 
     // `limit` is opt-in so the dashboard's product table keeps working unchanged,
@@ -72,19 +73,75 @@ export async function GET(request: NextRequest) {
         ? Math.min(requestedLimit, MAX_PRODUCT_PAGE_SIZE)
         : MAX_PRODUCT_PAGE_SIZE
 
-    const products = await prisma.product.findMany({
-      where,
-      take: limit,
-      include: { category: true, variants: true, colorImages: true },
-      orderBy: { createdAt: 'desc' },
-    })
+    const requestedOffset = Number(searchParams.get('offset'))
+    const offset =
+      Number.isFinite(requestedOffset) && requestedOffset > 0
+        ? Math.floor(requestedOffset)
+        : 0
+
+    const needle = search ? normaliseForSearch(search) : ''
+
+    /**
+     * A search reads the catalogue and filters in memory; a plain list pages in
+     * the database.
+     *
+     * Matching cannot be pushed into the query (see `where` above), so the rows
+     * have to be here to be matched. SCAN_LIMIT bounds that read, and the
+     * response says when it was hit rather than quietly returning a partial
+     * answer as if it were the whole one.
+     */
+    const SCAN_LIMIT = 500
+
+    const rows = needle
+      ? await prisma.product.findMany({
+          where,
+          take: SCAN_LIMIT,
+          include: { category: true, variants: true, colorImages: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : await prisma.product.findMany({
+          where,
+          take: limit,
+          skip: offset,
+          include: { category: true, variants: true, colorImages: true },
+          orderBy: { createdAt: 'desc' },
+        })
+
+    const matched = needle
+      ? rows.filter(
+          (p) =>
+            matchesSearch(p.titleAr, needle) ||
+            matchesSearch(p.titleEn, needle) ||
+            matchesSearch(p.descAr, needle) ||
+            matchesSearch(p.descEn, needle)
+        )
+      : rows
+
+    // How many there are in total, so a caller can page without guessing. For a
+    // search that is the matched count; otherwise the database counts.
+    const total = needle ? matched.length : await prisma.product.count({ where })
+
+    const products = needle ? matched.slice(offset, offset + limit) : matched
 
     // `stock` is answered as a derived total so every existing consumer — the
     // dashboard list, the order builder, the reorder button — keeps reading one
     // number, while the rows behind it stay the only stored truth.
     const withTotals = products.map(withStockTotal)
 
-    if (isStaff) return NextResponse.json(withTotals)
+    /**
+     * The count rides in a header, not the body.
+     *
+     * Every existing caller — the dashboard table, the order builder, the
+     * search drawer — reads this response as a bare ARRAY. Wrapping it in
+     * `{ items, total }` would be tidier and would break all three, so the
+     * extra fact goes where it costs nothing.
+     */
+    const meta = {
+      'X-Total-Count': String(total),
+      'X-Scan-Truncated': String(Boolean(needle && rows.length === SCAN_LIMIT)),
+    }
+
+    if (isStaff) return NextResponse.json(withTotals, { headers: meta })
 
     /**
      * Public callers get the total and not the breakdown.
@@ -100,7 +157,8 @@ export async function GET(request: NextRequest) {
      * `descEn`/`descAr` go too: unbounded Text nobody renders from here.
      */
     return NextResponse.json(
-      withTotals.map(({ variants: _variants, descEn: _descEn, descAr: _descAr, ...rest }) => rest)
+      withTotals.map(({ variants: _variants, descEn: _descEn, descAr: _descAr, ...rest }) => rest),
+      { headers: meta }
     )
   } catch (error) {
     console.error('Error fetching products:', error)

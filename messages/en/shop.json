@@ -56,5 +56,15 @@
   "viewProducts": "View products",
   "all": "All",
   "close": "Close",
-  "hotSale": "Hot Sale {percent} OFF"
+  "hotSale": "Hot Sale {percent} OFF",
+  "search": "Search",
+  "searchPlaceholder": "Search for a product…",
+  "searchLoading": "Searching…",
+  "searchNoResults": "No results for “{query}”",
+  "searchNoResultsHint": "Try a shorter word, or check the spelling.",
+  "searchFailed": "Search failed. Please try again.",
+  "searchLatest": "Latest products",
+  "searchResultsCount": "{count, plural, =0 {No results} one {# result} other {# results}}",
+  "searchShowMore": "Show more",
+  "searchClear": "Clear search"
 }
