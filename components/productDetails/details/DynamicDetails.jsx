@@ -21,6 +21,7 @@ import {
 import ProductInfoAccordion from "@/components/productDetails/ProductInfoAccordion";
 import ProductTrustBadges from "@/components/productDetails/ProductTrustBadges";
 import ProductGallery from "@/components/productDetails/ProductGallery";
+import ShareProduct from "@/components/productDetails/ShareProduct";
 import { galleryFor } from "@/lib/products/colorImages";
 
 /**
@@ -394,16 +395,31 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                 </div>
               )}
 
-              <h1
+              {/* The title and the share control share a row: the thing being
+                  shared and the way to share it, rather than a stray button
+                  further down the page. `gap` keeps them apart on a narrow
+                  screen where the title wraps. */}
+              <div
                 style={{
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  color: "#1a1a2e",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: "12px",
                   marginBottom: "16px",
                 }}
               >
-                {title}
-              </h1>
+                <h1
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: "700",
+                    color: "#1a1a2e",
+                    margin: 0,
+                  }}
+                >
+                  {title}
+                </h1>
+                <ShareProduct title={title} locale={locale} />
+              </div>
 
               <div
                 style={{

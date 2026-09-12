@@ -61,12 +61,27 @@ export default function Hero({ banners = [] }) {
               />
               )}
               <div className="box-content">
-                <div className="content-slider">
+                {/* The heading and kicker sit on the photograph, and
+                    `.text-white` made them white whatever it was underneath —
+                    a pale image swallowed them entirely. An explicit colour
+                    beats the class; with no colour chosen this is undefined and
+                    the class still applies, so an untouched banner is
+                    unchanged. */}
+                <div
+                  className="content-slider"
+                  style={banner?.textColor ? { color: banner.textColor } : undefined}
+                >
                   <div className="box-title-slider">
-                    <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
+                    <p
+                      className="fade-item fade-item-1 subheading text-btn-uppercase text-white"
+                      style={banner?.textColor ? { color: banner.textColor } : undefined}
+                    >
                       {banner?.titleEn && index > 0 ? banner.titleEn : t(`slide${Math.min(index, 1)}.subheading`)}
                     </p>
-                    <div className="fade-item fade-item-2 heading text-white title-display">
+                    <div
+                      className="fade-item fade-item-2 heading text-white title-display"
+                      style={banner?.textColor ? { color: banner.textColor } : undefined}
+                    >
                       {String(bannerHeading(banner, locale) || t(`slide${Math.min(index, 1)}.heading`)).split("\n").map((line, idx) => (
                         <span key={idx}>
                           {line}

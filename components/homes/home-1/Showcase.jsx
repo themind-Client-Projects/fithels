@@ -20,6 +20,13 @@ export default function Showcase({ banner = null }) {
   const t = useTranslations("home.showcase");
 
   const ar = locale === "ar";
+  /**
+   * The colour of the words over the photograph.
+   *
+   * White until the shop picks otherwise, which is what every banner rendered
+   * before the column existed — so an untouched banner looks identical.
+   */
+  const ink = banner?.textColor || "#ffffff";
   const image = banner?.image || "/images/banner/showcase-banner.png";
   const subtitle = (ar ? banner?.subtitleAr : banner?.subtitleEn) || t("subtitle");
   const title = (ar ? banner?.titleAr : banner?.titleEn) || t("title");
@@ -65,9 +72,9 @@ export default function Showcase({ banner = null }) {
         />
         {/* Centered overlay text */}
         <div className="showcase-overlay">
-          <span className={`showcase-subtitle${ar ? " ar-text" : ""}`}>{subtitle}</span>
-          <span className={`showcase-title${ar ? " ar-text" : ""}`}>{title}</span>
-          <span className={`showcase-btn${ar ? " ar-text" : ""}`}>{cta}</span>
+          <span className={`showcase-subtitle${ar ? " ar-text" : ""}`} style={{ color: ink, opacity: 0.85 }}>{subtitle}</span>
+          <span className={`showcase-title${ar ? " ar-text" : ""}`} style={{ color: ink }}>{title}</span>
+          <span className={`showcase-btn${ar ? " ar-text" : ""}`} style={{ color: ink, borderColor: ink }}>{cta}</span>
         </div>
       </Link>
 

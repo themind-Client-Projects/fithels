@@ -467,6 +467,15 @@ model Banner {
   /// Defaults to HERO so every existing banner keeps behaving exactly as it did
   /// before this column existed.
   placement BannerPlacement @default(HERO)
+  /// Colour of the text laid over the image, as "#rrggbb".
+  ///
+  /// The banner is words on top of a photograph, and the words were always
+  /// white — so a pale image swallowed them entirely. Only the shop can know
+  /// which the photo needs, because only the shop has seen the photo.
+  ///
+  /// Null means "white", which is what every existing banner already renders,
+  /// so nothing changes until someone picks a colour.
+  textColor String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

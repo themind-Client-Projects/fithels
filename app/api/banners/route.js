@@ -6,6 +6,22 @@ import {
   DEFAULT_BANNER_PLACEMENT,
 } from "@/lib/banners/placement";
 
+/**
+ * A banner's text colour, sanitised.
+ *
+ * The value is written straight into a CSS `color`, so it can never be taken
+ * from a request body as-is. Anything that is not a plain hex becomes null,
+ * which the banners render as white — the colour they have always been.
+ */
+function parseTextColor(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const t = String(value).trim().replace(/^#/, "");
+  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(t)) return null;
+  const full = t.length === 3 ? t.split("").map((c) => c + c).join("") : t;
+  return `#${full.toLowerCase()}`;
+}
+
+
 export async function GET(request) {
   try {
     const wantsInactive =
@@ -53,6 +69,7 @@ export async function POST(request) {
         // written through, so a bad payload cannot invent a placement.
         placement:
           parseBannerPlacement(data.placement) ?? DEFAULT_BANNER_PLACEMENT,
+        textColor: parseTextColor(data.textColor),
       },
     });
 

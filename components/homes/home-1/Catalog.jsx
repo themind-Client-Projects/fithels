@@ -38,6 +38,8 @@ export default function Catalog({
       alt: title || fallback.alt,
       label: title || fallback.label,
       cta: cta || fallback.cta,
+      // Null means white — the colour every banner was before this existed.
+      textColor: banner?.textColor || "#ffffff",
       // Admin links are stored site-relative ("/product-detail/slug"), and the
       // built-in fallbacks carry no locale either. Prefixing here means the
       // click lands directly instead of bouncing through a locale redirect.
@@ -121,8 +123,8 @@ export default function Catalog({
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className={labelClass}>{left.label}</span>
-            <span className={ctaClass}>{left.cta}</span>
+            <span className={labelClass} style={{ color: left.textColor }}>{left.label}</span>
+            <span className={ctaClass} style={{ color: left.textColor, opacity: 0.85 }}>{left.cta}</span>
           </div>
         </Link>
 
@@ -148,8 +150,8 @@ export default function Catalog({
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className={labelClass}>{right.label}</span>
-            <span className={ctaClass}>{right.cta}</span>
+            <span className={labelClass} style={{ color: right.textColor }}>{right.label}</span>
+            <span className={ctaClass} style={{ color: right.textColor, opacity: 0.85 }}>{right.cta}</span>
           </div>
         </Link>
       </div>

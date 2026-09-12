@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ColorField from "@/components/dashboard/ColorField";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
     image: "",
     link: "",
     order: 0,
+    textColor: null,
     isActive: true,
     placement: DEFAULT_BANNER_PLACEMENT,
   });
@@ -44,6 +46,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
         image: banner.image || "",
         link: banner.link || "",
         order: banner.order || 0,
+        textColor: banner.textColor ?? null,
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         placement: banner.placement || DEFAULT_BANNER_PLACEMENT,
       });
@@ -105,6 +108,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
       const payload = {
         ...formData,
         order: parseInt(formData.order) || 0,
+        textColor: formData.textColor || null,
       };
 
       const res = await fetch(url, {
@@ -283,6 +287,16 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
             />
           </div>
         </div>
+
+        {/* The banner is words laid over a photograph, and they were always
+            white — so a pale image swallowed them. Only the shop has seen the
+            photo, so only the shop can say what the words need to be. */}
+        <ColorField
+          label="لون النص على الصورة"
+          hint="يُطبَّق على العنوان والسطر العلوي وزر البانر. اتركه فارغًا للأبيض."
+          value={formData.textColor}
+          onChange={(hex) => setFormData({ ...formData, textColor: hex })}
+        />
 
         {/* Which part of the home page this banner belongs to. Buttons rather
             than a select: there are only three, and seeing all of them makes it
