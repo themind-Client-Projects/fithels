@@ -65,9 +65,9 @@ export default function Showcase({ banner = null }) {
         />
         {/* Centered overlay text */}
         <div className="showcase-overlay">
-          <span className="showcase-subtitle">{subtitle}</span>
-          <span className="showcase-title">{title}</span>
-          <span className="showcase-btn">{cta}</span>
+          <span className={`showcase-subtitle${ar ? " ar-text" : ""}`}>{subtitle}</span>
+          <span className={`showcase-title${ar ? " ar-text" : ""}`}>{title}</span>
+          <span className={`showcase-btn${ar ? " ar-text" : ""}`}>{cta}</span>
         </div>
       </Link>
 
@@ -103,6 +103,22 @@ export default function Showcase({ banner = null }) {
           letter-spacing: 2px;
           font-family: "Playfair Display", Georgia, serif;
           text-align: center;
+        }
+        /* Arabic is cursive — its letters join, and the join is part of the
+           letterform. Tracking prises those joins apart, so a word set at 4px
+           of spacing reads as a DIFFERENT word. Playfair Display goes with it:
+           it carries no Arabic glyphs, so this text was already falling through
+           to whatever serif the device happened to have.
+
+           Keyed on the locale prop, not [lang]/[dir], because app/layout.js
+           hardcodes
+           lang="ar" dir="rtl" for every locale — see Catalog.jsx. */
+        .ar-text {
+          letter-spacing: 0;
+          text-transform: none;
+        }
+        .showcase-title.ar-text {
+          font-family: var(--font-sans);
         }
         .showcase-btn {
           margin-top: 8px;

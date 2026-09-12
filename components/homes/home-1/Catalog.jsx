@@ -62,6 +62,26 @@ export default function Catalog({
     cta: rightCta,
     href: rightHref,
   });
+  /**
+   * Arabic takes NO letter-spacing.
+   *
+   * Arabic is cursive: letters join, and the join is part of the letterform.
+   * Tracking prises those joins apart, so "أناقة" rendered at 3px of spacing
+   * reads as "أذاقة" — a different word. It looked like a broken font or a
+   * typo in the banner; it was the stylesheet.
+   *
+   * Playfair Display goes too: it has no Arabic glyphs at all, so the text was
+   * already falling through to whatever serif the device happened to have.
+   * Naming the site's own stack means the fallback is the one we chose.
+   *
+   * Keyed on `locale`, not on [lang]/[dir], because app/layout.js hardcodes
+   * lang="ar" dir="rtl" for EVERY locale — a selector on either would strip the
+   * tracking from the English banner too, where it is wanted.
+   */
+  const ar = locale === "ar";
+  const labelClass = `catalog-label${ar ? " catalog-label--ar" : ""}`;
+  const ctaClass = `catalog-cta${ar ? " catalog-cta--ar" : ""}`;
+
   return (
     <section
       style={{
@@ -101,8 +121,8 @@ export default function Catalog({
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className="catalog-label">{left.label}</span>
-            <span className="catalog-cta">{left.cta}</span>
+            <span className={labelClass}>{left.label}</span>
+            <span className={ctaClass}>{left.cta}</span>
           </div>
         </Link>
 
@@ -128,8 +148,8 @@ export default function Catalog({
             className="catalog-img"
           />
           <div className="catalog-overlay">
-            <span className="catalog-label">{right.label}</span>
-            <span className="catalog-cta">{right.cta}</span>
+            <span className={labelClass}>{right.label}</span>
+            <span className={ctaClass}>{right.cta}</span>
           </div>
         </Link>
       </div>
@@ -166,6 +186,16 @@ export default function Catalog({
           font-size: 14px;
           letter-spacing: 1.5px;
           text-transform: uppercase;
+        }
+        .catalog-label--ar {
+          letter-spacing: 0;
+          font-family: var(--font-sans);
+        }
+        .catalog-cta--ar {
+          letter-spacing: 0;
+          /* A no-op on Arabic, which has no letter case — but it would still
+             uppercase any Latin mixed into the label. */
+          text-transform: none;
         }
         @media (max-width: 768px) {
           .catalog-wrapper {

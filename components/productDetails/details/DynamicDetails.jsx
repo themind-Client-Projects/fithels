@@ -380,8 +380,11 @@ export default function DynamicDetails({ product, locale = "ar", trustBadges = [
                 <div
                   style={{
                     fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
+                    // Neither applies to Arabic: it has no letter case, and it
+                    // is cursive, so tracking prises apart joins that are part
+                    // of the letterforms themselves.
+                    textTransform: ar ? "none" : "uppercase",
+                    letterSpacing: ar ? 0 : "1px",
                     color: "#6c757d",
                     marginBottom: "8px",
                     fontWeight: "600",
