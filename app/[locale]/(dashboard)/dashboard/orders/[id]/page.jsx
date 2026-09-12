@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Star, User, Truck, Receipt, Package, Calendar, Pencil } from "lucide-react";
 import Image from "next/image";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDateTime } from "@/lib/format-date";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -149,17 +150,6 @@ export default function OrderDetailPage() {
    */
   const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("ar-SA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (loading) {
     return (
       <DashboardShell title={t("orders")}>
@@ -188,7 +178,7 @@ export default function OrderDetailPage() {
   return (
     <DashboardShell
       title={`${t("orders")} ${orderLabel(order.id)}`}
-      description={t("placedOn", { date: formatDate(order.createdAt) })}
+      description={t("placedOn", { date: formatDateTime(order.createdAt) })}
       action={
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button 
@@ -290,12 +280,12 @@ export default function OrderDetailPage() {
             <div style={{ paddingTop: "1.5rem", borderTop: "1px solid #e9ecef" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
                 <span style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: 600 }}>{t("estimatedDelivery")}</span>
-                <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 600 }}>{formatDate(order.estimatedDelivery)}</span>
+                <span style={{ fontSize: "0.875rem", color: "#1a1a2e", fontWeight: 600 }}>{formatDateTime(order.estimatedDelivery)}</span>
               </div>
               {order.deliveredAt && (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
                   <span style={{ fontSize: "0.875rem", color: "#10b981", fontWeight: 600 }}>{t("deliveredAt")}</span>
-                  <span style={{ fontSize: "0.875rem", color: "#10b981", fontWeight: 700 }}>{formatDate(order.deliveredAt)}</span>
+                  <span style={{ fontSize: "0.875rem", color: "#10b981", fontWeight: 700 }}>{formatDateTime(order.deliveredAt)}</span>
                 </div>
               )}
             </div>

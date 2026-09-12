@@ -17,9 +17,10 @@ import {
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney } from "@/lib/currency";
+import { formatDate } from "@/lib/format-date";
 
 const fmtDate = (value) =>
-  value ? new Date(value).toLocaleDateString("ar", { year: "numeric", month: "short", day: "numeric" }) : "—";
+  value ? formatDate(value) : "—";
 
 export default function CouponsPage() {
   const queryClient = useQueryClient();

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Plus } from "lucide-react";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDate } from "@/lib/format-date";
 
 const StatusSelectCell = ({ order }) => {
   const t = useTranslations("Dashboard");
@@ -179,14 +180,6 @@ export default function OrdersPage() {
    * Legacy rows with no dinar value fall back to the conversion.
    */
   const money = (usd, iqd) => formatPrice(usd, iqd, "IQD");
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("ar-SA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const columns = [
     {

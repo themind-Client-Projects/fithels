@@ -11,6 +11,7 @@ import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import ReorderButton from "@/components/my-account/ReorderButton";
 import { Clock, CheckCircle2, Package, Truck, Home, Check } from "lucide-react";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDateTime, formatDateLong } from "@/lib/format-date";
 
 const STATUS_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
 
@@ -169,13 +170,7 @@ export default function OrderTracking({ orderId }) {
                 </span>
               </div>
               <div className="text-secondary" style={{ fontSize: "14px" }}>
-                {new Date(order.createdAt).toLocaleDateString("ar-SA", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatDateTime(order.createdAt, locale)}
               </div>
             </div>
 
@@ -414,11 +409,7 @@ export default function OrderTracking({ orderId }) {
                 <div className="d-flex justify-content-between" style={{ marginTop: "8px" }}>
                   <span className="text-secondary">{t("deliveredAt")}</span>
                   <span>
-                    {new Date(order.deliveredAt).toLocaleDateString("ar-SA", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {formatDateLong(order.deliveredAt, locale)}
                   </span>
                 </div>
               )}

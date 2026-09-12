@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, UserCog, ShieldCheck, ShieldAlert } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDate } from "@/lib/format-date";
 
 export default function CustomersPage() {
   const t = useTranslations("Dashboard");
@@ -74,14 +75,6 @@ export default function CustomersPage() {
       setDeleting(false);
       setDeleteTarget(null);
     }
-  };
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("ar-SA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   };
 
   const ALL_ROLES = [

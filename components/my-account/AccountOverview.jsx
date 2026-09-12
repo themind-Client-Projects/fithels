@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDateLong } from "@/lib/format-date";
 
 /** Delivery lifecycle, in order. CANCELLED sits outside it. */
 const DELIVERY_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "DELIVERED"];
@@ -229,9 +230,7 @@ export default function AccountOverview() {
                               {orderLabel(order.id)}
                             </div>
                             <div className="text-secondary" style={{ fontSize: "13px" }}>
-                              {new Date(order.createdAt).toLocaleDateString(locale === "ar" ? "ar" : "en-GB", {
-                                year: "numeric", month: "long", day: "numeric",
-                              })}
+                              {formatDateLong(order.createdAt, locale)}
                             </div>
                           </div>
                           <div style={{ textAlign: "end" }}>

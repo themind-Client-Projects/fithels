@@ -14,6 +14,7 @@ import {
   ShoppingCart, DollarSign, Truck, TicketPercent,
   XCircle, Users, Package, AlertTriangle, Boxes, TrendingUp,
 } from "lucide-react";
+import { formatDate } from "@/lib/format-date";
 
 const PERIODS = ["1m", "3m", "6m", "12m"];
 
@@ -147,9 +148,7 @@ export default function AnalyticsPage() {
   const dateOf = useCallback(
     (iso) =>
       iso
-        ? new Date(iso).toLocaleDateString(ar ? "ar-IQ" : "en-GB", {
-            year: "numeric", month: "short", day: "numeric",
-          })
+        ? formatDate(iso, ar ? "ar" : "en")
         : t("neverOrdered"),
     [ar, t]
   );

@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import CurrencyFormatter from "@/components/common/CurrencyFormatter";
 import ReorderButton from "@/components/my-account/ReorderButton";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDateLong } from "@/lib/format-date";
 
 const STATUS_COLORS = {
   PENDING: "bg-warning bg-opacity-10 text-warning",
@@ -193,11 +194,7 @@ export default function MyOrdersList() {
 
                   <div className="d-flex justify-content-between align-items-center" style={{ marginBottom: "8px" }}>
                     <span className="text-secondary" style={{ fontSize: "13px" }}>
-                      {new Date(order.createdAt).toLocaleDateString("ar-SA", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {formatDateLong(order.createdAt, locale)}
                     </span>
                     <span style={{ fontWeight: 600, fontSize: "16px" }}>
                       <CurrencyFormatter price={order.total} priceIqd={order.totalIqd} />

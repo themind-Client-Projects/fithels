@@ -19,6 +19,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { orderLabel } from "@/lib/orders/reference";
+import { formatDate } from "@/lib/format-date";
 
 export default function DashboardOverviewPage() {
   const { data: session } = useSession();
@@ -54,14 +55,6 @@ export default function DashboardOverviewPage() {
    */
   const formatCurrency = (amount) =>
     `${Math.round(Number(amount) || 0).toLocaleString("en-US")} IQD`;
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("ar-SA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const recentOrderColumns = [
     {
