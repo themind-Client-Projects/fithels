@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import Image from "next/image";
+import BannerMedia from "@/components/homes/home-1/BannerMedia";
 import Link from "next/link";
 
 /**
@@ -40,6 +40,7 @@ export default function Catalog({
       cta: cta || fallback.cta,
       // Null means white — the colour every banner was before this existed.
       textColor: banner?.textColor || "#ffffff",
+      video: banner?.video || null,
       // Admin links are stored site-relative ("/product-detail/slug"), and the
       // built-in fallbacks carry no locale either. Prefixing here means the
       // click lands directly instead of bouncing through a locale redirect.
@@ -114,13 +115,13 @@ export default function Catalog({
           }}
           className="catalog-panel"
         >
-          <Image
-            src={left.image}
+          <BannerMedia
+            image={left.image}
+            video={left.video}
             alt={left.alt}
-            fill
-            style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
             sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
+            style={{ transition: "transform 0.7s ease" }}
           />
           <div className="catalog-overlay">
             <span className={labelClass} style={{ color: left.textColor }}>{left.label}</span>
@@ -141,13 +142,13 @@ export default function Catalog({
           }}
           className="catalog-panel"
         >
-          <Image
-            src={right.image}
+          <BannerMedia
+            image={right.image}
+            video={right.video}
             alt={right.alt}
-            fill
-            style={{ objectFit: "cover", transition: "transform 0.7s ease" }}
             sizes="(max-width: 767px) 100vw, 50vw"
             className="catalog-img"
+            style={{ transition: "transform 0.7s ease" }}
           />
           <div className="catalog-overlay">
             <span className={labelClass} style={{ color: right.textColor }}>{right.label}</span>

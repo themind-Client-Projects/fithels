@@ -17,7 +17,14 @@ import {
 export default function BannerForm({ banner, onSuccess, onCancel }) {
   const t = useTranslations("Dashboard");
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  /**
+   * WHICH field is uploading, not merely that one is.
+   *
+   * A shared boolean put both uploaders into their loading state at once, so
+   * picking a video greyed out the image slot as well — the same trap the
+   * per-colour product uploader had.
+   */
+  const [uploading, setUploading] = useState(null);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     titleEn: "",
@@ -30,6 +37,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
     link: "",
     order: 0,
     textColor: null,
+    video: "",
     isActive: true,
     placement: DEFAULT_BANNER_PLACEMENT,
   });
@@ -47,6 +55,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
         link: banner.link || "",
         order: banner.order || 0,
         textColor: banner.textColor ?? null,
+        video: banner.video || "",
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         placement: banner.placement || DEFAULT_BANNER_PLACEMENT,
       });
@@ -54,15 +63,21 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
   }, [banner]);
 
   /** Same contract as the product uploader: POST /api/upload → { url }. */
-  const handleFileUpload = async (e) => {
+  /**
+   * @param field  which form field receives the URL — "image" or "video"
+   * @param kind   "video" raises the server's size ceiling for THIS request
+   *               only, so the image uploaders cannot be handed a 40 MB file.
+   */
+  const handleFileUpload = async (e, field = "image", kind = "image") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setUploading(field);
     setError("");
     try {
       const body = new FormData();
       body.append("file", file);
+      if (kind === "video") body.append("kind", "video");
       const res = await fetch("/api/upload", { method: "POST", body });
 
       if (!res.ok) {
@@ -81,12 +96,12 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
       if (typeof data?.url !== "string" || !data.url) {
         throw new Error(t("uploadError.GENERIC"));
       }
-      setFormData((prev) => ({ ...prev, image: data.url }));
+      setFormData((prev) => ({ ...prev, [field]: data.url }));
     } catch (err) {
       console.error(err);
       setError(err?.message || t("uploadError.GENERIC"));
     } finally {
-      setUploading(false);
+      setUploading(null);
       e.target.value = "";
     }
   };
@@ -109,6 +124,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
         ...formData,
         order: parseInt(formData.order) || 0,
         textColor: formData.textColor || null,
+        video: formData.video || null,
       };
 
       const res = await fetch(url, {
@@ -166,7 +182,7 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
             </div>
           ) : (
             <label className="flex h-40 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/20 text-muted-foreground transition-colors hover:bg-muted/40">
-              {uploading ? (
+              {uploading === "image" ? (
                 <span className="text-sm">جاري الرفع…</span>
               ) : (
                 <>
@@ -179,11 +195,67 @@ export default function BannerForm({ banner, onSuccess, onCancel }) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                 className="hidden"
-                disabled={uploading}
-                onChange={handleFileUpload}
+                disabled={Boolean(uploading)}
+                onChange={(e) => handleFileUpload(e, "image", "image")}
               />
             </label>
           )}
+        </div>
+
+        {/* Optional video. The image above stays required and is what shows
+            while this is still arriving — and what shows instead of it if the
+            browser cannot play the file — so a banner is never blank. */}
+        <div className="grid gap-2">
+          <Label className="text-start text-sm font-semibold text-muted-foreground">
+            فيديو البانر (اختياري)
+          </Label>
+          {formData.video ? (
+            <div className="relative w-full overflow-hidden rounded-xl border border-border">
+              {/* Muted and loops here too, so the preview behaves the way the
+                  storefront will rather than being a still to guess from. */}
+              <video
+                src={formData.video}
+                poster={formData.image || undefined}
+                className="h-40 w-full object-cover"
+                muted
+                loop
+                autoPlay
+                playsInline
+              />
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, video: "" }))}
+                className="absolute top-2 end-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+                aria-label="إزالة الفيديو"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/20 text-muted-foreground transition-colors hover:bg-muted/40">
+              {uploading === "video" ? (
+                <span className="text-sm">جاري رفع الفيديو…</span>
+              ) : (
+                <>
+                  <Upload size={20} />
+                  <span className="text-sm font-medium">اختر فيديو للبانر</span>
+                  <span className="text-xs">MP4 أو WebM · حتى ٤٠ ميغابايت</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="video/mp4,video/webm"
+                className="hidden"
+                disabled={Boolean(uploading)}
+                onChange={(e) => handleFileUpload(e, "video", "video")}
+              />
+            </label>
+          )}
+          <p className="text-xs text-muted-foreground">
+            يُعرض الفيديو تلقائيًا وبلا صوت فوق الصورة. الصورة تبقى ظاهرة حتى
+            يبدأ الفيديو، وتظل هي البديل إن تعذّر تشغيله. اختصر المقطع قدر
+            الإمكان — يُحمّل على بيانات الزائر.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

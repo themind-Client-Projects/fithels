@@ -15,7 +15,32 @@ const ALLOWED_TYPES: Record<string, string> = {
   "image/avif": "avif",
 };
 
+/**
+ * Video, for banners only.
+ *
+ * Kept in its own map so the per-type SIZE CEILING can differ: a 5 MB limit is
+ * generous for a photograph and unusable for footage, but raising the image
+ * limit to match would let someone push a 40 MB "image" through every uploader
+ * in the dashboard.
+ *
+ * MP4 (h.264) and WebM cover every browser this shop sees. QuickTime .mov is
+ * excluded deliberately — phones produce it, Safari plays it, and nothing else
+ * reliably does, so accepting it would ship a banner that is blank for most
+ * visitors.
+ */
+const ALLOWED_VIDEO_TYPES: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+};
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+/**
+ * A banner video is decoration that autoplays, so it is paid for by every
+ * visitor on mobile data before they have chosen to watch anything. 40 MB is
+ * already generous for a few seconds of loop; the real guidance is in the
+ * uploader's hint text.
+ */
+const MAX_VIDEO_SIZE = 40 * 1024 * 1024; // 40 MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,17 +90,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const ext = ALLOWED_TYPES[file.type];
+    // Video is opt-in per request: an uploader that does not ask for it cannot
+    // be handed a 40 MB file by relaxing the check for everyone.
+    const wantsVideo = formData.get("kind") === "video";
+    const ext = wantsVideo
+      ? ALLOWED_VIDEO_TYPES[file.type]
+      : ALLOWED_TYPES[file.type];
+
     if (!ext) {
       return NextResponse.json(
-        { error: "Unsupported file type. Allowed: JPEG, PNG, WebP, GIF, AVIF." },
+        {
+          error: wantsVideo
+            ? "Unsupported video type. Allowed: MP4, WebM."
+            : "Unsupported file type. Allowed: JPEG, PNG, WebP, GIF, AVIF.",
+        },
         { status: 415 }
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    const ceiling = wantsVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+    if (file.size > ceiling) {
       return NextResponse.json(
-        { error: "File is too large. Maximum size is 5MB." },
+        {
+          error: `File is too large. Maximum size is ${Math.round(ceiling / 1024 / 1024)}MB.`,
+        },
         { status: 413 }
       );
     }

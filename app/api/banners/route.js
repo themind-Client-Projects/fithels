@@ -13,6 +13,25 @@ import {
  * from a request body as-is. Anything that is not a plain hex becomes null,
  * which the banners render as white — the colour they have always been.
  */
+/**
+ * A banner's video URL, or null.
+ *
+ * Only a path or URL from our own uploader is acceptable — this ends up as a
+ * <video src>, and accepting arbitrary text would let a request point the
+ * storefront at someone else's server.
+ */
+function parseMediaUrl(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const v = String(value).trim();
+  if (v.startsWith("/")) return v;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseTextColor(value) {
   if (value === null || value === undefined || value === "") return null;
   const t = String(value).trim().replace(/^#/, "");
@@ -70,6 +89,7 @@ export async function POST(request) {
         placement:
           parseBannerPlacement(data.placement) ?? DEFAULT_BANNER_PLACEMENT,
         textColor: parseTextColor(data.textColor),
+        video: parseMediaUrl(data.video),
       },
     });
 

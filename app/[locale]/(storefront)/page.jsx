@@ -105,6 +105,7 @@ export default async function HomePage({ params }) {
       link: true,
       placement: true,
       textColor: true,
+      video: true,
       subtitleAr: true,
       subtitleEn: true,
     },

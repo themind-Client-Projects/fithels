@@ -467,6 +467,13 @@ model Banner {
   /// Defaults to HERO so every existing banner keeps behaving exactly as it did
   /// before this column existed.
   placement BannerPlacement @default(HERO)
+  /// An optional video, played in place of the image.
+  ///
+  /// `image` stays required and becomes the POSTER: what shows while the video
+  /// is still arriving, and what a browser falls back to if it refuses to play
+  /// at all. A banner therefore always has something to render, which is why
+  /// the video is the optional half rather than the image.
+  video     String?
   /// Colour of the text laid over the image, as "#rrggbb".
   ///
   /// The banner is words on top of a photograph, and the words were always

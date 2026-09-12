@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import Image from "next/image";
+import BannerMedia from "@/components/homes/home-1/BannerMedia";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -61,14 +61,13 @@ export default function Showcase({ banner = null }) {
         }}
         className="showcase-link"
       >
-        <Image
-          src={image}
+        <BannerMedia
+          image={image}
+          video={banner?.video}
           alt={title}
-          fill
-          style={{ objectFit: "cover", transition: "transform 0.8s ease" }}
-          sizes="100vw"
           priority
           className="showcase-img"
+          style={{ transition: "transform 0.8s ease" }}
         />
         {/* Centered overlay text */}
         <div className="showcase-overlay">
@@ -90,11 +89,10 @@ export default function Showcase({ banner = null }) {
           align-items: center;
           justify-content: center;
           gap: 12px;
-          background: rgba(0, 0, 0, 0.25);
-          transition: background 0.5s ease;
-        }
-        .showcase-link:hover .showcase-overlay {
-          background: rgba(0, 0, 0, 0.35);
+          /* No tint. The overlay existed to keep white text readable over any
+             photograph; the banner carries its own text colour now, so the
+             shop picks a colour that suits the image instead of the image
+             being darkened to suit the text. */
         }
         .showcase-subtitle {
           color: rgba(255, 255, 255, 0.85);

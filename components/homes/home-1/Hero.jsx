@@ -1,9 +1,9 @@
 "use client";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
-import ImageWithSkeleton from "@/components/common/ImageWithSkeleton";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import BannerMedia from "@/components/homes/home-1/BannerMedia";
 
 /** Banner copy in the active language, falling back to the other one. */
 const bannerHeading = (banner, locale) =>
@@ -47,17 +47,20 @@ export default function Hero({ banners = [] }) {
           <SwiperSlide key={index}>
             <div className="wrap-slider" style={{ maxHeight: "800px" }}>
               {banner?.image && (
-              <ImageWithSkeleton
+              <BannerMedia
+                image={banner.image}
+                video={banner.video}
                 alt={banner.titleAr || banner.titleEn || "slide"}
-                src={banner.image}
+                // Sized, not filled: .wrap-slider has no height of its own and
+                // takes it from this image. A filled one is absolutely
+                // positioned and would collapse the slide to nothing.
                 width={1920}
                 height={600}
-                style={{ maxHeight: "800px", objectFit: "cover", width: "100%", height: "100%" }}
                 // Full-bleed hero and the LCP element: priority preloads it,
                 // sizes stops the optimiser serving a 1920px file to a phone.
-                sizes="100vw"
                 priority={index === 0}
-                fetchPriority={index === 0 ? "high" : "auto"}
+                sizes="100vw"
+                style={{ maxHeight: "800px" }}
               />
               )}
               <div className="box-content">
@@ -73,13 +76,23 @@ export default function Hero({ banners = [] }) {
                 >
                   <div className="box-title-slider">
                     <p
-                      className="fade-item fade-item-1 subheading text-btn-uppercase text-white"
+                      className={`fade-item fade-item-1 subheading text-btn-uppercase${
+                        banner?.textColor ? "" : " text-white"
+                      }`}
                       style={banner?.textColor ? { color: banner.textColor } : undefined}
                     >
                       {banner?.titleEn && index > 0 ? banner.titleEn : t(`slide${Math.min(index, 1)}.subheading`)}
                     </p>
+                    {/* text-white is `color: var(--white) !important` in the
+                        template stylesheet, and !important beats an inline
+                        style — so the chosen colour was set and then overruled,
+                        and the heading stayed white on a white photograph. The
+                        class is dropped when a colour is chosen rather than
+                        fought with, since nothing else on the element needs it. */}
                     <div
-                      className="fade-item fade-item-2 heading text-white title-display"
+                      className={`fade-item fade-item-2 heading title-display${
+                        banner?.textColor ? "" : " text-white"
+                      }`}
                       style={banner?.textColor ? { color: banner.textColor } : undefined}
                     >
                       {String(bannerHeading(banner, locale) || t(`slide${Math.min(index, 1)}.heading`)).split("\n").map((line, idx) => (
